@@ -10,3 +10,13 @@ pc-app/installer/publish/
 pc-app/installer/PresentMon-*.exe
 pc-app/installer/PresentMon-*.csv
 dist/
+pc-app/installer/tool-cache/
+
+# Lokale ontwikkeltools en logs
+.appdata/
+.dotnet-cli/
+.nuget/
+.platformio/
+.impeccable/
+.snapshots/
+debug.log

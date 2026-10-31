@@ -37,14 +37,18 @@ Name: "pawnio"; Description: "PawnIO-driver installeren (nodig om de CPU-tempera
 [Files]
 Source: "publish\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 Source: "task.ps1"; DestDir: "{app}"; Flags: ignoreversion
+Source: "flash-firmware.ps1"; DestDir: "{app}"; Flags: ignoreversion
+
+[Icons]
+Name: "{autoprograms}\TempMonitor\Firmware installeren"; Filename: "{sys}\WindowsPowerShell\v1.0\powershell.exe"; Parameters: "-NoProfile -STA -ExecutionPolicy Bypass -WindowStyle Hidden -File ""{app}\flash-firmware.ps1"""; WorkingDir: "{app}"
 
 [Run]
 Filename: "{sys}\WindowsPowerShell\v1.0\powershell.exe"; \
-  Parameters: "-NoProfile -ExecutionPolicy Bypass -Command ""winget install --id namazso.PawnIO -e --silent --accept-package-agreements --accept-source-agreements"""; \
-  StatusMsg: "PawnIO-driver installeren..."; Tasks: pawnio; Flags: runhidden waituntilterminated
-Filename: "{sys}\WindowsPowerShell\v1.0\powershell.exe"; \
   Parameters: "-NoProfile -ExecutionPolicy Bypass -File ""{app}\task.ps1"" -Action Install -ExePath ""{app}\TempMonitor.exe"""; \
   StatusMsg: "Automatisch starten instellen..."; Flags: runhidden waituntilterminated
+Filename: "{sys}\WindowsPowerShell\v1.0\powershell.exe"; \
+  Parameters: "-NoProfile -STA -ExecutionPolicy Bypass -WindowStyle Hidden -File ""{app}\flash-firmware.ps1"""; \
+  Description: "Firmware op het aangesloten Waveshare-scherm installeren"; Flags: postinstall skipifsilent waituntilterminated runhidden
 
 [UninstallRun]
 Filename: "{sys}\WindowsPowerShell\v1.0\powershell.exe"; \
@@ -55,9 +59,36 @@ Filename: "{sys}\WindowsPowerShell\v1.0\powershell.exe"; \
 Type: filesandordirs; Name: "{commonappdata}\TempMonitor"
 
 [Code]
+var
+  DriverNeedsRestart: Boolean;
+
 function PawnIOInstalled: Boolean;
 begin
   Result := RegKeyExists(HKLM, 'SYSTEM\CurrentControlSet\Services\PawnIO');
+end;
+
+procedure CurStepChanged(CurStep: TSetupStep);
+var
+  ResultCode: Integer;
+begin
+  if (CurStep = ssPostInstall) and WizardIsTaskSelected('pawnio') and not PawnIOInstalled then
+  begin
+    WizardForm.StatusLabel.Caption := 'PawnIO-driver installeren...';
+    if not Exec(ExpandConstant('{app}\drivers\PawnIO_setup.exe'), '-install -silent',
+      '', SW_HIDE, ewWaitUntilTerminated, ResultCode) then
+      RaiseException('PawnIO kon niet worden gestart.');
+    if (ResultCode = 3010) or (ResultCode = 1641) then
+      DriverNeedsRestart := True
+    else if ResultCode <> 0 then
+      RaiseException(Format('PawnIO-installatie mislukt (code %d).', [ResultCode]));
+    if not PawnIOInstalled then
+      RaiseException('PawnIO-driver ontbreekt na installatie. Installeer de driver opnieuw.');
+  end;
+end;
+
+function NeedRestart: Boolean;
+begin
+  Result := DriverNeedsRestart;
 end;
 
 // Een draaiende versie stoppen voordat de bestanden overschreven worden (bij een update).

@@ -14,6 +14,24 @@ pc-app/installer/  Inno Setup-installer
 
 ## 1. Firmware op het scherm zetten
 
+### Voor gebruikers: via de Windows-installer (geen ontwikkeltools nodig)
+
+Download het installatiebestand via [GitHub Releases](https://github.com/quiandrosegier2/TempControl-main/releases/latest).
+
+1. Start `TempMonitor-Setup-1.0.0.exe` en geef toestemming voor beheerdersrechten.
+2. Sluit een **Waveshare ESP32-S3-Touch-LCD-1.46 (16 MB)** met een USB-C-datakabel aan.
+3. Laat aan het einde van Setup de optie om firmware te installeren aangevinkt.
+4. Kies de COM-poort van het scherm en klik op **Firmware installeren**. Dit vervangt de bestaande firmware.
+5. Laat de kabel aangesloten tot de upload klaar is. Druk zo nodig op RESET of sluit het scherm opnieuw aan.
+
+Geen poort of geen verbinding? Houd BOOT ingedrukt, druk op RESET, laat BOOT los en klik op **Vernieuwen**. Kies daarna de nieuwe COM-poort en probeer opnieuw.
+
+Opnieuw installeren kan via **Start > TempMonitor > Firmware installeren**. De monitor-app wordt tijdens de upload gepauzeerd en daarna hervat. Uploadlogs staan in `C:\ProgramData\TempMonitor`.
+
+De app, .NET, firmware, het uploadprogramma en de optionele PawnIO-driver zitten in de installer. Gebruikers hoeven geen VS Code, Python, PlatformIO, internetverbinding of winget te hebben. Windows kan na de driverinstallatie om een herstart vragen.
+
+### Voor ontwikkelaars: via VS Code
+
 1. Installeer **Visual Studio Code** en daarin de extensie **PlatformIO IDE**.
 2. Open in VS Code de map `firmware/` (*File → Open Folder*).
 3. Sluit het scherm met een USB-C-datakabel aan op de pc.
@@ -36,6 +54,12 @@ Verwijderen gaat via *Instellingen → Apps → TempMonitor*.
 **Werkt er iets niet?** Kijk in het logbestand `C:\ProgramData\TempMonitor\TempMonitor.log`. Daar staat of het scherm gevonden is en welke sensoren ontbreken.
 
 ### Installer zelf bouwen
+
+Installeer ook de pioarduino CLI (`pip install pioarduino==6.2.0`). Het buildscript bouwt de firmware en bundelt de volledige factory-image en de Windows-versie van esptool 5.1.0. De esptool-download wordt met de SHA256 uit de officiele GitHub-release gecontroleerd. Voor het bouwen is internet nodig.
+
+Met `-PlatformIO <pad-naar-pio.exe>` en `-InnoCompiler <pad-naar-ISCC.exe>` kun je eigen buildtools kiezen. De lokale `.platformio/penv/Scripts/pio.exe` wordt automatisch gebruikt als die aanwezig is.
+
+De ESP32-SDK bevat lange bestandsnamen. Zorg op de Windows-build-pc voor ondersteuning voor lange bestandspaden of gebruik een korte PlatformIO-map. Dit geldt alleen voor ontwikkelaars die de installer bouwen.
 
 Vereisten: [.NET 10 SDK](https://dotnet.microsoft.com/download/dotnet/10.0) en Inno Setup 6 (`winget install JRSoftware.InnoSetup`).
 
