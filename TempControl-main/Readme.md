@@ -18,7 +18,7 @@ pc-app/installer/  Inno Setup-installer
 
 Download het installatiebestand via [GitHub Releases](https://github.com/quiandrosegier2/TempControl-main/releases/latest).
 
-1. Start `Qprints esp installer-1.2.1.exe`, geef toestemming voor beheerdersrechten en kies een schermlayout.
+1. Start `Qprints esp installer-1.2.2.exe`, geef toestemming voor beheerdersrechten en kies een schermlayout.
 2. Sluit een **Waveshare ESP32-S3-Touch-LCD-1.46 (16 MB)** met een USB-C-datakabel aan.
 3. Laat aan het einde van Setup de optie om firmware te installeren aangevinkt.
 4. Kies de COM-poort van het scherm en klik op **Firmware installeren**. Dit vervangt de bestaande firmware.
@@ -42,15 +42,15 @@ De app, .NET, firmware, het uploadprogramma en de optionele PawnIO-driver zitten
 - **Waveform**: echte temperatuurhistorie met bewegende scanlijnen.
 - **Matrix**: vallende cijferkolommen achter donkere meetpanelen.
 - **Starfield**: sterren bewegen vanuit het midden naar buiten.
-- **Speedometer**: soepel bewegende FPS-naald met een schaal van 0 tot 240.
+- **Speedometer**: drie onafhankelijke meters: FPS groot bovenaan (0-240), CPU en GPU kleiner eronder (0-120 C). Elke naald volgt zijn eigen meetwaarde met een soepele beweging. Ontbrekende meetwaarden verbergen alleen de betreffende naald; de digitale getallen tonen de echte meetwaarden, ook boven het bereik van de meter. Voor deze indeling moet de firmware eenmaal naar 1.2.2 worden bijgewerkt.
 - **Aurora**: zacht golvende lichtgordijnen.
 - **Hex Grid**: verlicht honingraatraster met drie zeshoekige meetpanelen.
 
-Setup toont stilstaande, schematische voorbeelden met testwaarden en bewaart de keuze in `layout.txt` naast de Windows-app. De app stuurt die keuze via USB; het scherm onthoudt de layout. Installeer de meegeleverde firmware 1.2.0 eenmaal om alle dertien layouts te krijgen. Om later te wisselen voer je Setup opnieuw uit en vink je de firmwarestap aan het einde uit: opnieuw flashen is dan niet nodig.
+Setup toont stilstaande, schematische voorbeelden met testwaarden en bewaart de keuze in `layout.txt` naast de Windows-app. De app stuurt die keuze via USB; het scherm onthoudt de layout. Installeer de meegeleverde firmware eenmaal om alle dertien layouts en de actuele Speedometer-indeling te krijgen. Om later te wisselen voer je Setup opnieuw uit en vink je de firmwarestap aan het einde uit: opnieuw flashen is dan niet nodig.
 
 De tien nieuwe layouts blijven bewegen tussen USB-updates, met maximaal 20 animatiebeelden per seconde. Dit staat los van de getoonde game-FPS. Waveform bewaart de laatste 60 echte CPU- en GPU-samples in RAM; ontbrekende sensoren leveren gaten op, geen verzonnen meetwaarden. Na een herstart begint deze historie opnieuw. Alle layouts tonen ontbrekende meetwaarden als `--` en temperaturen boven 50 graden in rood.
 
-[Bekijk het overzicht met alle layouts](https://github.com/quiandrosegier2/TempControl-main/releases/download/v1.2.0/Layout-Overview-1.2.0.png).
+[Bekijk het overzicht met alle layouts](https://github.com/quiandrosegier2/TempControl-main/releases/download/v1.2.2/Layout-Overview-1.2.2.png).
 
 Voor stille installaties kan `/LAYOUT=` worden gevolgd door `classic`, `gauges`, `minimal`, `orbit`, `radar`, `neon-pulse`, `reactor`, `waveform`, `matrix`, `starfield`, `speedometer`, `aurora` of `hex-grid`. Zonder deze parameter blijft een bestaande keuze behouden.
 
@@ -66,7 +66,7 @@ Voor stille installaties kan `/LAYOUT=` worden gevolgd door `classic`, `gauges`,
 
 ## 2. Windows-app installeren
 
-Voer `Qprints esp installer-1.2.1.exe` uit. De donkere installer en het firmwarevenster tonen het QPRINTS //-beeldmerk. De installer:
+Voer `Qprints esp installer-1.2.2.exe` uit. De donkere installer en het firmwarevenster tonen het QPRINTS //-beeldmerk. De installer:
 
 - installeert de app in `C:\Program Files\TempMonitor`; .NET zit erin, dus dat hoef je niet apart te installeren
 - installeert desgewenst de **PawnIO**-driver (vinkje). Die is nodig om de CPU-temperatuur van een Ryzen te lezen.
@@ -107,6 +107,8 @@ powershell -ExecutionPolicy Bypass -File tests\Test-InstallerStartup.ps1 -InnoCo
 Voer dit uit vanuit de projectmap met `firmware/`, `pc-app/` en `tests/`, nadat de installer-payload en layoutvoorbeelden gebouwd zijn.
 
 `powershell -ExecutionPolicy Bypass -File tests\Test-Autostart.ps1` controleert taakregistratie, starten, verwijderen en foutafhandeling met mocks; er worden geen echte taken gewijzigd. Registratiefouten tijdens Setup worden gemeld en staan in `C:\ProgramData\TempMonitor\task-error.log`.
+
+`tests/speedometer/needle-tests.cpp` controleert met compile-time asserts de FPS- en temperatuurschalen, onafhankelijke naalden, vloeiende overgangen, ontbrekende waarden en het omslaan van de apparaattimer. Compileer dit bestand met een C++17-compiler, bijvoorbeeld `g++ -std=c++17 -fsyntax-only tests/speedometer/needle-tests.cpp`.
 
 In een terminal **als administrator**, in de map `pc-app/`:
 

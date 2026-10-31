@@ -134,11 +134,31 @@ foreach ($layout in @('classic', 'gauges', 'minimal', 'orbit', 'radar', 'neon-pu
                 $g.FillRectangle([Drawing.Brushes]::Black,107,145,198,115); Fps; Temperatures 335
             }
             'speedometer' {
-                for($a=135;$a -le 405;$a+=3){$c=if($a -gt 330){$purple}else{$blue}; Polar 135 143 $a (Dim $c .6)}
-                for($tail=0;$tail -lt 18;$tail+=3){Polar 146 151 (135+($phase*35-$tail+270)%270) (Dim $purple (.85*(18-$tail)/18))}
-                for($tick=0;$tick -le 8;$tick++){Polar 122 143 (135+$tick*33.75) (Dim $white .65)}
-                Polar -13 111 (135+165*270/240) $red; Dot 206 206 6 $white
-                Fps 275; Temperatures 355; Text '0' 91 318 22 $grey; Text '240' 321 318 22 $grey
+                function DialLine([float]$x,[float]$y,[float]$inner,[float]$outer,[float]$degrees,[Drawing.Color]$color) {
+                    $a=$degrees*[Math]::PI/180
+                    Line ($x+[Math]::Cos($a)*$inner) ($y+[Math]::Sin($a)*$inner) ($x+[Math]::Cos($a)*$outer) ($y+[Math]::Sin($a)*$outer) $color
+                }
+                function SpeedDial([string]$label,[float]$value,[float]$maximum,[int]$x,[int]$y,[int]$radius,[bool]$temperature) {
+                    $needleColor=if($temperature){if($value -gt 50){$red}else{$blue}}else{$purple}
+                    for($a=135;$a -le 405;$a+=3) {
+                        $scaleValue=($a-135)*$maximum/270
+                        $color=if($temperature){if($scaleValue -gt 50){$red}else{$blue}}else{if($scaleValue -gt $maximum*.75){$purple}else{$blue}}
+                        DialLine $x $y ($radius-5) $radius $a (Dim $color .65)
+                    }
+                    for($tick=0;$tick -le 8;$tick++){DialLine $x $y ($radius-12) $radius (135+$tick*33.75) (Dim $grey .85)}
+                    if(-not $temperature){for($tail=0;$tail -lt 18;$tail+=3){
+                        DialLine $x $y ($radius+3) ($radius+7) (135+($phase*35-$tail+270)%270) (Dim $purple (.85*(18-$tail)/18))
+                    }}
+                    DialLine $x $y -6 ($radius-22) (135+[Math]::Min([Math]::Max($value,0),$maximum)*270/$maximum) $needleColor
+                    Dot $x $y $(if($temperature){3}else{4}) $white
+                    Text $label $x ($y-$(if($temperature){28}else{35})) 22 $grey
+                    if($temperature){Text "$value C" $x ($y+28) 22 $needleColor}else{Text "$value" $x ($y+46) 43 $white}
+                    Text '0' ($x-$radius*.8) ($y+$radius*.7) 9 $grey
+                    Text "$maximum" ($x+$radius*.8) ($y+$radius*.7) 9 $grey
+                }
+                SpeedDial 'FPS' 165 240 206 164 88 $false
+                SpeedDial 'CPU' 42 120 122 305 65 $true
+                SpeedDial 'GPU' 58 120 290 305 65 $true
             }
             'aurora' {
                 for($wave=0;$wave -lt 4;$wave++){for($x=18;$x -lt 394;$x+=4){
@@ -166,10 +186,14 @@ foreach ($layout in @('classic', 'gauges', 'minimal', 'orbit', 'radar', 'neon-pu
                 }
             }
         }
-        if($layout -in @('matrix','speedometer')) { $g.FillRectangle([Drawing.Brushes]::Black,76,31,260,74) }
-        Text 'QPRINTS' 206 55 22 $white
-        $title=if($layout -eq 'waveform'){'THERMAL HISTORY'}else{$layout.Replace('-',' ').ToUpperInvariant()}
-        Text $title 206 88 22 $grey
+        if($layout -eq 'speedometer') {
+            Text 'QPRINTS' 206 40 22 $white
+        } else {
+            if($layout -eq 'matrix') { $g.FillRectangle([Drawing.Brushes]::Black,76,31,260,74) }
+            Text 'QPRINTS' 206 55 22 $white
+            $title=if($layout -eq 'waveform'){'THERMAL HISTORY'}else{$layout.Replace('-',' ').ToUpperInvariant()}
+            Text $title 206 88 22 $grey
+        }
     } elseif ($layout -eq 'classic') {
         Text 'QPRINTS //' 206 90 39 $white
         Text 'SYSTEM MONITOR' 206 127 23 $grey

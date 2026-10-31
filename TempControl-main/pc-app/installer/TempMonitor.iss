@@ -3,7 +3,7 @@
 
 #define AppName "Qprints esp installer"
 #ifndef AppVersion
-  #define AppVersion "1.2.1"
+  #define AppVersion "1.2.2"
 #endif
 
 [Setup]
@@ -127,7 +127,7 @@ begin
   AddLayout('waveform', 'Waveform (bewegend)', 'Echte CPU- en GPU-temperatuurhistorie van de laatste 60 samples, met bewegende scanlijnen.');
   AddLayout('matrix', 'Matrix (bewegend)', 'Vallende cijferkolommen achter drie donkere panelen met de meetwaarden.');
   AddLayout('starfield', 'Starfield (bewegend)', 'Een bewegend sterrenveld met grote FPS en temperaturen onderaan.');
-  AddLayout('speedometer', 'Speedometer (bewegend)', 'Analoge FPS-meter van 0 tot 240 met een soepele naald, lopende lichtaccenten en digitale meetwaarden.');
+  AddLayout('speedometer', 'Speedometer (bewegend)', 'Drie onafhankelijke meters: grote FPS-meter (0-240) en kleinere CPU- en GPU-meters (0-120 C), met soepele naalden en echte digitale meetwaarden.');
   AddLayout('aurora', 'Aurora (bewegend)', 'Zacht golvende lichtgordijnen achter een centrale FPS-weergave.');
   AddLayout('hex-grid', 'Hex Grid (bewegend)', 'Een golvend verlicht honingraatraster met drie zeshoekige meetpanelen.');
   for Index := 0 to LayoutIds.Count - 1 do

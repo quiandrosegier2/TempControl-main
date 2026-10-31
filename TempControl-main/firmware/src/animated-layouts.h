@@ -1,4 +1,5 @@
 #pragma once
+#include "dial-needle.h"
 // Code-native animaties: geen videobestanden, downloads of extra assets nodig.
 
 static const RGB MINT = {50, 235, 175};
@@ -101,6 +102,42 @@ static void drawHistory(const float *history, int top, RGB color, bool live, flo
   gfx->drawFastVLine(scan, top, height, to565(color, .25f));
 }
 
+static void drawSpeedDial(const char *label, float reading, float maximum, bool live,
+                          int x, int y, int radius, Speedometer::Needle &needle, float phase, bool temperature) {
+  bool valid = needle.update(reading, maximum, live, millis());
+  RGB needleColor = temperature ? temperatureColor(reading, valid) : PURPLE;
+  for (int degrees = 135; degrees <= 405; degrees += 3) {
+    float scaleValue = (degrees - 135) * maximum / 270.0f;
+    RGB color = !valid ? DIVIDER : temperature ? (isHot(scaleValue) ? VALUE_HOT : VALUE_COOL)
+                                                            : scaleValue > maximum * .75f ? PURPLE : VALUE_COOL;
+    polarLine(x, y, radius - 5, radius, degrees, color, .65f);
+  }
+  for (int tick = 0; tick <= 8; ++tick)
+    polarLine(x, y, radius - 12, radius, 135 + tick * 33.75f, GREY, valid ? .85f : .4f);
+  if (!temperature) for (int tail = 0; tail < 18; tail += 3)
+    polarLine(x, y, radius + 3, radius + 7, 135 + fmodf(phase * 35 - tail + 270, 270), PURPLE, .85f * (18-tail) / 18);
+  if (valid) {
+    polarLine(x, y, -6, radius - 22, Speedometer::angleFor(needle.value, maximum), needleColor);
+    gfx->fillCircle(x, y, temperature ? 3 : 4, to565(VALUE_WHITE));
+  }
+  // De labels en echte digitale waarden blijven leesbaar bovenop de meter.
+  themeText(label, x, y - (temperature ? 28 : 35), GREY);
+  char text[16];
+  formatReading(text, sizeof(text), reading, valid);
+  if (temperature) {
+    strncat(text, " C", sizeof(text) - strlen(text) - 1);
+    themeText(text, x, y + 28, valid ? needleColor : OFFLINE);
+  } else {
+    gfx->setFont(strlen(text) > 3 ? u8g2_font_fub30_tr : u8g2_font_fub35_tn);
+    gfx->setTextColor(to565(valid ? VALUE_WHITE : OFFLINE));
+    drawText(text, x, y + 46, CENTER);
+  }
+  gfx->setFont(u8g2_font_5x7_tr);
+  gfx->setTextColor(to565(GREY));
+  drawText("0", x - radius * .8f, y + radius * .7f, CENTER);
+  drawText(temperature ? "120" : "240", x + radius * .8f, y + radius * .7f, CENTER);
+}
+
 static void renderAnimated(bool live) {
   gfx->fillScreen(RGB565_BLACK);
   const float phase = (millis() % 360000u) / 1000.0f;
@@ -187,20 +224,16 @@ static void renderAnimated(bool live) {
       break;
     }
     case DisplayLayout::Speedometer: {
-      for (int angle = 135; angle <= 405; angle += 3) polarLine(CX, CY, 135, 143, angle, angle > 330 ? PURPLE : VALUE_COOL, .6f);
-      for (int tail = 0; tail < 18; tail += 3)
-        polarLine(CX, CY, 146, 151, 135 + fmodf(phase * 35 - tail + 270, 270), PURPLE, .85f * (18-tail) / 18);
-      for (int tick = 0; tick <= 8; ++tick) polarLine(CX, CY, 122, 143, 135 + tick * 33.75f, VALUE_WHITE, .65f);
-      static float needle = 0;
-      float target = live && !isnan(fps) ? constrain(fps, 0.0f, 240.0f) : 0;
-      needle += (target - needle) * .14f;
-      if (live && !isnan(fps)) {
-        polarLine(CX, CY, -13, 111, 135 + needle * 270 / 240, VALUE_HOT);
-        gfx->fillCircle(CX, CY, 6, to565(VALUE_WHITE));
+      static Speedometer::Needle fpsNeedle, cpuNeedle, gpuNeedle;
+      drawSpeedDial("FPS", fps, 240, live, 206, 164, 88, fpsNeedle, phase, false);
+      drawSpeedDial("CPU", cpuTemp, 120, live, 122, 305, 65, cpuNeedle, phase, true);
+      drawSpeedDial("GPU", gpuTemp, 120, live, 290, 305, 65, gpuNeedle, phase, true);
+      themeText(BRAND, CX, 40, VALUE_WHITE);
+      if (!live) {
+        gfx->setFont(u8g2_font_5x7_tr);
+        gfx->setTextColor(to565(OFFLINE));
+        drawText(everReceived ? "VERBINDING VERLOREN" : "WACHTEN OP PC", CX, 61, CENTER);
       }
-      gfx->fillRect(76, 31, 260, 74, RGB565_BLACK);
-      themeHeader("SPEEDOMETER", live); themeFps(live, 275); themeTemperatures(live, 355);
-      themeText("0", 91, 318, GREY); themeText("240", 321, 318, GREY);
       break;
     }
     case DisplayLayout::Aurora: {
