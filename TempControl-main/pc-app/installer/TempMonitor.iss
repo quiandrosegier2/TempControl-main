@@ -3,7 +3,7 @@
 
 #define AppName "TempMonitor"
 #ifndef AppVersion
-  #define AppVersion "1.1.2"
+  #define AppVersion "1.2.0"
 #endif
 
 [Setup]
@@ -63,26 +63,26 @@ var
   LayoutChoice: TNewComboBox;
   LayoutPreview: TBitmapImage;
   LayoutDescription: TNewStaticText;
+  LayoutIds, LayoutDescriptions: TStringList;
 
 function SelectedLayout: String;
 begin
-  case LayoutChoice.ItemIndex of
-    1: Result := 'gauges';
-    2: Result := 'minimal';
-  else
-    Result := 'classic';
-  end;
+  Result := 'classic';
+  if LayoutChoice.ItemIndex >= 0 then Result := LayoutIds[LayoutChoice.ItemIndex];
 end;
 
 procedure LayoutChanged(Sender: TObject);
 begin
   LayoutPreview.Bitmap.LoadFromFile(ExpandConstant('{tmp}\layout-' + SelectedLayout + '.bmp'));
-  case LayoutChoice.ItemIndex of
-    1: LayoutDescription.Caption := 'Gauges: twee ronde temperatuurmeters met FPS eronder.';
-    2: LayoutDescription.Caption := 'Minimal: grote FPS-weergave met compacte CPU- en GPU-temperaturen.';
-  else
-    LayoutDescription.Caption := 'Classic: de originele QPRINTS-weergave met CPU, GPU en FPS in drie rijen.';
-  end;
+  if LayoutChoice.ItemIndex >= 0 then
+    LayoutDescription.Caption := LayoutDescriptions[LayoutChoice.ItemIndex];
+end;
+
+procedure AddLayout(Id, Title, Description: String);
+begin
+  LayoutIds.Add(Id);
+  LayoutChoice.Items.Add(Title);
+  LayoutDescriptions.Add(Description);
 end;
 
 procedure InitializeWizard;
@@ -90,28 +90,41 @@ var
   SavedLayout: AnsiString;
   InitialLayout: String;
   Note: TNewStaticText;
+  Index: Integer;
 begin
-  ExtractTemporaryFile('layout-classic.bmp');
-  ExtractTemporaryFile('layout-gauges.bmp');
-  ExtractTemporaryFile('layout-minimal.bmp');
+  LayoutIds := TStringList.Create;
+  LayoutDescriptions := TStringList.Create;
   LayoutPage := CreateCustomPage(wpSelectTasks, 'Kies je schermlayout',
-    'Alle layouts tonen CPU-temperatuur, GPU-temperatuur en FPS.');
+    '13 layouts, waarvan 10 bewegend. Nieuwe thema''s vereisen de meegeleverde firmware.');
   LayoutChoice := TNewComboBox.Create(LayoutPage);
   LayoutChoice.Parent := LayoutPage.Surface;
   LayoutChoice.SetBounds(0, ScaleY(12), ScaleX(205), ScaleY(28));
   LayoutChoice.Style := csDropDownList;
-  LayoutChoice.Items.Add('Classic');
-  LayoutChoice.Items.Add('Gauges');
-  LayoutChoice.Items.Add('Minimal');
+  AddLayout('classic', 'Classic', 'De originele QPRINTS-weergave met CPU, GPU en FPS in drie rijen.');
+  AddLayout('gauges', 'Gauges', 'Twee ronde temperatuurmeters met FPS eronder.');
+  AddLayout('minimal', 'Minimal', 'Grote FPS-weergave met compacte CPU- en GPU-temperaturen.');
+  AddLayout('orbit', 'Orbit (bewegend)', 'Lichtpunten draaien in drie banen rond de FPS-weergave. Temperaturen staan onderaan.');
+  AddLayout('radar', 'Radar (bewegend)', 'Een draaiende radarsweep met meetwaarden in drie goed leesbare panelen.');
+  AddLayout('neon-pulse', 'Neon Pulse (bewegend)', 'Pulserende neonranden en temperatuur- en FPS-balken op een donkere achtergrond.');
+  AddLayout('reactor', 'Reactor (bewegend)', 'Tegengesteld draaiende segmentringen en een pulserende zeshoek rond de FPS.');
+  AddLayout('waveform', 'Waveform (bewegend)', 'Echte CPU- en GPU-temperatuurhistorie van de laatste 60 samples, met bewegende scanlijnen.');
+  AddLayout('matrix', 'Matrix (bewegend)', 'Vallende cijferkolommen achter drie donkere panelen met de meetwaarden.');
+  AddLayout('starfield', 'Starfield (bewegend)', 'Een bewegend sterrenveld met grote FPS en temperaturen onderaan.');
+  AddLayout('speedometer', 'Speedometer (bewegend)', 'Analoge FPS-meter van 0 tot 240 met een soepele naald, lopende lichtaccenten en digitale meetwaarden.');
+  AddLayout('aurora', 'Aurora (bewegend)', 'Zacht golvende lichtgordijnen achter een centrale FPS-weergave.');
+  AddLayout('hex-grid', 'Hex Grid (bewegend)', 'Een golvend verlicht honingraatraster met drie zeshoekige meetpanelen.');
+  for Index := 0 to LayoutIds.Count - 1 do
+    ExtractTemporaryFile('layout-' + LayoutIds[Index] + '.bmp');
   LayoutChoice.ItemIndex := 0;
   InitialLayout := 'classic';
   if LoadStringFromFile(AddBackslash(WizardDirValue) + 'layout.txt', SavedLayout) then
     InitialLayout := Trim(String(SavedLayout));
   InitialLayout := ExpandConstant('{param:LAYOUT|' + InitialLayout + '}');
-  if InitialLayout = 'gauges' then LayoutChoice.ItemIndex := 1
-  else if InitialLayout = 'minimal' then LayoutChoice.ItemIndex := 2
-  else if InitialLayout <> 'classic' then
-    RaiseException('Onbekende layout. Kies classic, gauges of minimal.');
+  LayoutChoice.ItemIndex := -1;
+  for Index := 0 to LayoutIds.Count - 1 do
+    if InitialLayout = LayoutIds[Index] then LayoutChoice.ItemIndex := Index;
+  if LayoutChoice.ItemIndex < 0 then
+    RaiseException('Onbekende layout. Kies een van de dertien ondersteunde layouts.');
   LayoutDescription := TNewStaticText.Create(LayoutPage);
   LayoutDescription.Parent := LayoutPage.Surface;
   LayoutDescription.AutoSize := False;
@@ -126,7 +139,7 @@ begin
   Note.AutoSize := False;
   Note.WordWrap := True;
   Note.SetBounds(0, ScaleY(190), ScaleX(205), ScaleY(45));
-  Note.Caption := 'Voorbeeld met testwaarden.' + #13#10 + 'Later wisselen? Start Setup opnieuw.';
+  Note.Caption := 'Voorbeeld met testwaarden.' + #13#10 + 'Animaties bewegen op het scherm.' + #13#10 + 'Wisselen? Start Setup opnieuw.';
   LayoutChoice.OnChange := @LayoutChanged;
   LayoutChanged(nil);
 end;

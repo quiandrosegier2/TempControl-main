@@ -18,7 +18,7 @@ pc-app/installer/  Inno Setup-installer
 
 Download het installatiebestand via [GitHub Releases](https://github.com/quiandrosegier2/TempControl-main/releases/latest).
 
-1. Start `TempMonitor-Setup-1.1.2.exe`, geef toestemming voor beheerdersrechten en kies een schermlayout.
+1. Start `TempMonitor-Setup-1.2.0.exe`, geef toestemming voor beheerdersrechten en kies een schermlayout.
 2. Sluit een **Waveshare ESP32-S3-Touch-LCD-1.46 (16 MB)** met een USB-C-datakabel aan.
 3. Laat aan het einde van Setup de optie om firmware te installeren aangevinkt.
 4. Kies de COM-poort van het scherm en klik op **Firmware installeren**. Dit vervangt de bestaande firmware.
@@ -35,10 +35,24 @@ De app, .NET, firmware, het uploadprogramma en de optionele PawnIO-driver zitten
 - **Classic**: de originele QPRINTS-weergave met drie rijen.
 - **Gauges**: ronde CPU- en GPU-temperatuurmeters met FPS eronder.
 - **Minimal**: grote FPS-weergave met compacte CPU- en GPU-temperaturen.
+- **Orbit**: lichtpunten draaien in banen rond de FPS-weergave.
+- **Radar**: draaiende radarsweep achter drie meetpanelen.
+- **Neon Pulse**: pulserende neonranden en meetbalken.
+- **Reactor**: tegengesteld draaiende segmentringen en een pulserende kern.
+- **Waveform**: echte temperatuurhistorie met bewegende scanlijnen.
+- **Matrix**: vallende cijferkolommen achter donkere meetpanelen.
+- **Starfield**: sterren bewegen vanuit het midden naar buiten.
+- **Speedometer**: soepel bewegende FPS-naald met een schaal van 0 tot 240.
+- **Aurora**: zacht golvende lichtgordijnen.
+- **Hex Grid**: verlicht honingraatraster met drie zeshoekige meetpanelen.
 
-Setup toont schematische voorbeelden met testwaarden en bewaart de keuze in `layout.txt` naast de Windows-app. De app stuurt die keuze via USB; het scherm onthoudt de layout. Om later te wisselen voer je Setup opnieuw uit. Staat firmware 1.1.0 al op het scherm, vink dan de firmwarestap aan het einde uit: opnieuw flashen is niet nodig. Bij een upgrade van 1.0.0 moet je de nieuwe firmware eenmaal uploaden voor de nieuwe layouts.
+Setup toont stilstaande, schematische voorbeelden met testwaarden en bewaart de keuze in `layout.txt` naast de Windows-app. De app stuurt die keuze via USB; het scherm onthoudt de layout. Installeer de meegeleverde firmware 1.2.0 eenmaal om alle dertien layouts te krijgen. Om later te wisselen voer je Setup opnieuw uit en vink je de firmwarestap aan het einde uit: opnieuw flashen is dan niet nodig.
 
-Voor stille installaties kan de layout worden opgegeven met `/LAYOUT=classic`, `/LAYOUT=gauges` of `/LAYOUT=minimal`. Zonder deze parameter blijft een bestaande keuze behouden.
+De tien nieuwe layouts blijven bewegen tussen USB-updates, met maximaal 20 animatiebeelden per seconde. Dit staat los van de getoonde game-FPS. Waveform bewaart de laatste 60 echte CPU- en GPU-samples in RAM; ontbrekende sensoren leveren gaten op, geen verzonnen meetwaarden. Na een herstart begint deze historie opnieuw. Alle layouts tonen ontbrekende meetwaarden als `--` en temperaturen boven 50 graden in rood.
+
+[Bekijk het overzicht met alle layouts](https://github.com/quiandrosegier2/TempControl-main/releases/download/v1.2.0/Layout-Overview-1.2.0.png).
+
+Voor stille installaties kan `/LAYOUT=` worden gevolgd door `classic`, `gauges`, `minimal`, `orbit`, `radar`, `neon-pulse`, `reactor`, `waveform`, `matrix`, `starfield`, `speedometer`, `aurora` of `hex-grid`. Zonder deze parameter blijft een bestaande keuze behouden.
 
 ### Firmware zelf bouwen met VS Code
 
@@ -52,7 +66,7 @@ Voor stille installaties kan de layout worden opgegeven met `/LAYOUT=classic`, `
 
 ## 2. Windows-app installeren
 
-Voer `TempMonitor-Setup-1.1.2.exe` uit. De installer:
+Voer `TempMonitor-Setup-1.2.0.exe` uit. De installer:
 
 - installeert de app in `C:\Program Files\TempMonitor`; .NET zit erin, dus dat hoef je niet apart te installeren
 - installeert desgewenst de **PawnIO**-driver (vinkje). Die is nodig om de CPU-temperatuur van een Ryzen te lezen.
@@ -118,7 +132,7 @@ CPU=42.5;GPU=48.0;FPS=165
 
 Een onbekende waarde wordt `nan`. Stuur je `PING`, dan antwoordt het scherm met `TEMPMON`.
 
-Optioneel kan `;LAYOUT=classic`, `;LAYOUT=gauges` of `;LAYOUT=minimal` worden toegevoegd. Een afzonderlijke `LAYOUT=gauges`-regel werkt ook, zonder de meetwaarden te veranderen. Onbekende layoutnamen worden genegeerd. Het scherm schrijft de keuze alleen naar het geheugen wanneer deze verandert.
+Optioneel kan `;LAYOUT=` met een van de dertien layoutnamen worden toegevoegd, bijvoorbeeld `;LAYOUT=orbit`. Een afzonderlijke `LAYOUT=orbit`-regel werkt ook, zonder de meetwaarden te veranderen. Onbekende layoutnamen worden genegeerd. Het scherm schrijft de keuze alleen naar het geheugen wanneer deze verandert.
 
 ## Aanpassen
 

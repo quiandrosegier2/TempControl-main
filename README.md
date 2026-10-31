@@ -8,7 +8,7 @@ A compact PC system monitor featuring a round Waveshare ESP32-S3-Touch-LCD-1.46 
 - Blue values and rings at or below 50 °C, turning red above 50 °C.
 - Windows companion app that sends monitoring data to the display.
 - Waiting indicator when no PC data is received.
-- Choose Classic, Gauges or Minimal in Setup, with a schematic preview of each layout. The display remembers the selection.
+- Choose from 13 layouts in Setup, including ten animated themes, with a schematic preview of each. The display remembers the selection.
 
 ### Project structure
 - `TempControl-main/firmware/`: firmware for the ESP32-S3 display.
@@ -19,7 +19,7 @@ A compact PC system monitor featuring a round Waveshare ESP32-S3-Touch-LCD-1.46 
 
 Download the setup executable from [GitHub Releases](https://github.com/quiandrosegier2/TempControl-main/releases/latest).
 
-1. Run `TempMonitor-Setup-1.1.2.exe` on a Windows x64 PC and allow administrator access. Choose Classic, Gauges or Minimal on the layout page.
+1. Run `TempMonitor-Setup-1.2.0.exe` on a Windows x64 PC and allow administrator access. Choose your preferred layout on the layout page.
 2. Connect a **Waveshare ESP32-S3-Touch-LCD-1.46 (16 MB)** using a USB-C data cable.
 3. Leave the firmware installation option selected at the end of Setup.
 4. Select the display's COM port and click **Firmware installeren**. This replaces any existing firmware on that display.
@@ -31,6 +31,28 @@ You can repeat the upload from **Start > TempMonitor > Firmware installeren**. T
 
 The app, .NET runtime, firmware, uploader and optional PawnIO driver are included. No internet connection or winget is needed during installation. Windows may request a restart after installing the driver. Developer build instructions are in [the project guide](TempControl-main/Readme.md).
 
-To change layouts later, run Setup again and choose another layout. With firmware 1.1.0 or newer already on the display, leave the final firmware installation option unchecked: no new flash is needed. When upgrading from 1.0.0, upload the new firmware once to enable Gauges and Minimal. Updates preserve the current layout selection.
+To change layouts later, run Setup again and choose another layout. Upload the bundled 1.2.0 firmware once to enable all thirteen layouts. After that, leave the final firmware installation option unchecked when changing layouts: no new flash is needed. Updates preserve the current layout selection.
+
+### Layouts
+
+| Layout | Appearance |
+| --- | --- |
+| Classic | Original three-row monitor |
+| Gauges | Round CPU and GPU temperature meters |
+| Minimal | Large FPS reading with compact temperatures |
+| Orbit | Animated lights circling the FPS reading |
+| Radar | Rotating radar sweep behind the readings |
+| Neon Pulse | Pulsing neon panels and value bars |
+| Reactor | Counter-rotating segmented rings and a pulsing core |
+| Waveform | Real temperature history with moving scan lines |
+| Matrix | Falling digit columns behind dark reading panels |
+| Starfield | Stars moving outward around the FPS reading |
+| Speedometer | A smoothly moving analog FPS needle (0–240 scale) |
+| Aurora | Gently moving curtains of light |
+| Hex Grid | A glowing honeycomb with hexagonal reading panels |
+
+Animations run independently of incoming readings. Waveform retains up to 60 actual temperature samples in memory; unavailable readings remain gaps. Setup previews are still images with example values. Temperature values turn red above 50 °C in every layout.
+
+[View the layout overview](https://github.com/quiandrosegier2/TempControl-main/releases/download/v1.2.0/Layout-Overview-1.2.0.png).
 
 Built with PlatformIO, .NET, LibreHardwareMonitor, and PresentMon.

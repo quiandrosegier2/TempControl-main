@@ -61,6 +61,8 @@ static bool dirty = true;
 static DisplayLayout displayLayout = DisplayLayout::Classic;
 static Preferences layoutPreferences;
 static bool preferencesReady = false;
+static float cpuHistory[60], gpuHistory[60];
+static uint8_t historyCount = 0, historyNext = 0;
 
 static float parseValue(const char *s) {
   char *end;
@@ -94,6 +96,10 @@ static void handleLine(char *line) {
   cpuTemp = cpu;
   gpuTemp = gpu;
   fps = f;
+  cpuHistory[historyNext] = cpu;
+  gpuHistory[historyNext] = gpu;
+  historyNext = (historyNext + 1) % 60;
+  if (historyCount < 60) ++historyCount;
   lastRx = millis();
   everReceived = true;
   dirty = true;
@@ -336,7 +342,13 @@ static void renderMinimal(bool live) {
   gfx->flush();
 }
 
+#include "animated-layouts.h"
+
 static void render(bool live) {
+  if (isAnimatedLayout(displayLayout)) {
+    renderAnimated(live);
+    return;
+  }
   switch (displayLayout) {
     case DisplayLayout::Gauges: renderGauges(live); break;
     case DisplayLayout::Minimal: renderMinimal(live); break;
@@ -382,7 +394,8 @@ void loop() {
 
   static uint32_t lastFrame = 0;
   static bool wasLive = false;
-  if (millis() - lastFrame < 40) return;  // max ~25 fps
+  const bool animated = isAnimatedLayout(displayLayout);
+  if (millis() - lastFrame < (animated ? 50u : 40u)) return; // animaties max 20 fps
   lastFrame = millis();
 
   const bool live = everReceived && (millis() - lastRx < DATA_TIMEOUT_MS);
@@ -391,7 +404,7 @@ void loop() {
     dirty = true;
   }
 
-  if (dirty) {
+  if (dirty || animated) {
     dirty = false;
     render(live);
   }

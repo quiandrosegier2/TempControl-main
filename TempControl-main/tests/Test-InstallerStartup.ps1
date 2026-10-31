@@ -21,9 +21,12 @@ $assertions = @'
   end;
   if (LayoutPreview.Bitmap.Width = 0) or (LayoutPreview.Bitmap.Height = 0) then
     ExitProcess(92);
-  LayoutChoice.ItemIndex := 0; LayoutChanged(nil);
-  LayoutChoice.ItemIndex := 1; LayoutChanged(nil);
-  LayoutChoice.ItemIndex := 2; LayoutChanged(nil);
+  if LayoutChoice.Items.Count <> 13 then ExitProcess(93);
+  for Index := 0 to LayoutChoice.Items.Count - 1 do
+  begin
+    LayoutChoice.ItemIndex := Index; LayoutChanged(nil);
+    if (LayoutPreview.Bitmap.Width = 0) or (LayoutPreview.Bitmap.Height = 0) then ExitProcess(92);
+  end;
   Log('LAYOUT_SMOKE_PASS');
   ExitProcess(0);
 '@
@@ -40,12 +43,12 @@ try {
     Set-Content (Join-Path $upgrade 'layout.txt') -Value 'minimal' -Encoding ASCII
     $cases = @(
         @{ Name='fresh'; Directory=$fresh; Layout=''; Expected='classic' },
-        @{ Name='classic'; Directory=$fresh; Layout='classic'; Expected='classic' },
-        @{ Name='gauges'; Directory=$fresh; Layout='gauges'; Expected='gauges' },
-        @{ Name='minimal'; Directory=$fresh; Layout='minimal'; Expected='minimal' },
         @{ Name='upgrade'; Directory=$upgrade; Layout=''; Expected='minimal' },
         @{ Name='override'; Directory=$upgrade; Layout='gauges'; Expected='gauges' }
     )
+    $ids = [regex]::Matches($source, "AddLayout\('([^']+)'") | ForEach-Object { $_.Groups[1].Value }
+    if ($ids.Count -ne 13) { throw 'Verwacht dertien layouts in de installer' }
+    foreach ($id in $ids) { $cases += @{ Name=$id; Directory=$fresh; Layout=$id; Expected=$id } }
     foreach ($case in $cases) {
         $log = Join-Path $cache ($case.Name + '.log')
         $arguments = @('/VERYSILENT','/SUPPRESSMSGBOXES','/SP-', ('/LOG="' + $log + '"'),

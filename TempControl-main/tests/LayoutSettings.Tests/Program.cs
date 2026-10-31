@@ -9,7 +9,18 @@ void Expect(string expected)
 try
 {
     Expect("classic");
-    foreach (string layout in new[] { "classic", "gauges", "minimal" })
+    if (LayoutSettings.Names.Length != 13 || LayoutSettings.Names.Distinct().Count() != 13)
+        throw new Exception("Expected thirteen unique layouts");
+    string project = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "../../../../.."));
+    var firmwareNames = System.Text.RegularExpressions.Regex.Matches(
+        File.ReadAllText(Path.Combine(project, "firmware/src/display-layout.h")),
+        "strcmp\\(name,\\s*\"([^\"]+)\"\\)").Select(match => match.Groups[1].Value);
+    var installerNames = System.Text.RegularExpressions.Regex.Matches(
+        File.ReadAllText(Path.Combine(project, "pc-app/installer/TempMonitor.iss")),
+        "AddLayout\\('([^']+)'").Select(match => match.Groups[1].Value);
+    if (!LayoutSettings.Names.SequenceEqual(firmwareNames) || !LayoutSettings.Names.SequenceEqual(installerNames))
+        throw new Exception("Layout identifiers differ between app, firmware and installer");
+    foreach (string layout in LayoutSettings.Names)
     {
         File.WriteAllText(file, "  " + layout + "\r\n");
         Expect(layout);
@@ -23,7 +34,7 @@ try
     Directory.CreateDirectory(file);
     Expect("classic"); // An unreadable configuration must not stop monitoring.
     Directory.Delete(file);
-    Console.WriteLine("PASS: default, all three layouts, whitespace, invalid settings and I/O failure.");
+    Console.WriteLine("PASS: default, all thirteen layouts, whitespace, invalid settings and I/O failure.");
 }
 finally
 {
