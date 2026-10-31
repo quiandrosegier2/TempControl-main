@@ -22,6 +22,12 @@ for (int i = 0; i < args.Length; i++)
     else if (args[i] == "--list") listOnly = true;
 }
 
+if (!listOnly)
+{
+    Log.Start();
+    Log.Write("TempMonitor wordt gestart.");
+    AppDomain.CurrentDomain.UnhandledException += (_, e) => Log.Write($"Onverwachte fout: {e.ExceptionObject}");
+}
 var computer = new Computer { IsCpuEnabled = true, IsGpuEnabled = true };
 computer.Open();
 AppDomain.CurrentDomain.ProcessExit += (_, _) => computer.Close();
@@ -35,7 +41,6 @@ if (listOnly)
     return;
 }
 
-Log.Start();
 Log.Write("TempMonitor gestart.");
 string layout = LayoutSettings.Read(AppContext.BaseDirectory);
 Log.Write($"Layout: {layout}");

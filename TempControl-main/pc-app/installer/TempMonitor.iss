@@ -3,7 +3,7 @@
 
 #define AppName "TempMonitor"
 #ifndef AppVersion
-  #define AppVersion "1.1.1"
+  #define AppVersion "1.1.2"
 #endif
 
 [Setup]
@@ -44,9 +44,6 @@ Source: "layout-previews\*.bmp"; Flags: dontcopy
 Name: "{autoprograms}\TempMonitor\Firmware installeren"; Filename: "{sys}\WindowsPowerShell\v1.0\powershell.exe"; Parameters: "-NoProfile -STA -ExecutionPolicy Bypass -WindowStyle Hidden -File ""{app}\flash-firmware.ps1"""; WorkingDir: "{app}"
 
 [Run]
-Filename: "{sys}\WindowsPowerShell\v1.0\powershell.exe"; \
-  Parameters: "-NoProfile -ExecutionPolicy Bypass -File ""{app}\task.ps1"" -Action Install -ExePath ""{app}\TempMonitor.exe"""; \
-  StatusMsg: "Automatisch starten instellen..."; Flags: runhidden waituntilterminated
 Filename: "{sys}\WindowsPowerShell\v1.0\powershell.exe"; \
   Parameters: "-NoProfile -STA -ExecutionPolicy Bypass -WindowStyle Hidden -File ""{app}\flash-firmware.ps1"""; \
   Description: "Firmware op het aangesloten Waveshare-scherm installeren"; Flags: postinstall skipifsilent waituntilterminated runhidden
@@ -158,6 +155,17 @@ begin
       RaiseException(Format('PawnIO-installatie mislukt (code %d).', [ResultCode]));
     if not PawnIOInstalled then
       RaiseException('PawnIO-driver ontbreekt na installatie. Installeer de driver opnieuw.');
+  end;
+  if CurStep = ssPostInstall then
+  begin
+    WizardForm.StatusLabel.Caption := 'Automatisch starten instellen...';
+    if not Exec(ExpandConstant('{sys}\WindowsPowerShell\v1.0\powershell.exe'),
+      '-NoProfile -ExecutionPolicy Bypass -File "' + ExpandConstant('{app}\task.ps1') +
+      '" -Action Install -ExePath "' + ExpandConstant('{app}\TempMonitor.exe') + '"',
+      '', SW_HIDE, ewWaitUntilTerminated, ResultCode) then
+      RaiseException('Automatisch starten kon niet worden ingesteld.');
+    if ResultCode <> 0 then
+      RaiseException('Automatisch starten is mislukt. Zie C:\ProgramData\TempMonitor\task-error.log.');
   end;
 end;
 

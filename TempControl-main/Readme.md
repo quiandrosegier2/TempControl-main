@@ -18,7 +18,7 @@ pc-app/installer/  Inno Setup-installer
 
 Download het installatiebestand via [GitHub Releases](https://github.com/quiandrosegier2/TempControl-main/releases/latest).
 
-1. Start `TempMonitor-Setup-1.1.1.exe`, geef toestemming voor beheerdersrechten en kies een schermlayout.
+1. Start `TempMonitor-Setup-1.1.2.exe`, geef toestemming voor beheerdersrechten en kies een schermlayout.
 2. Sluit een **Waveshare ESP32-S3-Touch-LCD-1.46 (16 MB)** met een USB-C-datakabel aan.
 3. Laat aan het einde van Setup de optie om firmware te installeren aangevinkt.
 4. Kies de COM-poort van het scherm en klik op **Firmware installeren**. Dit vervangt de bestaande firmware.
@@ -52,7 +52,7 @@ Voor stille installaties kan de layout worden opgegeven met `/LAYOUT=classic`, `
 
 ## 2. Windows-app installeren
 
-Voer `TempMonitor-Setup-1.1.1.exe` uit. De installer:
+Voer `TempMonitor-Setup-1.1.2.exe` uit. De installer:
 
 - installeert de app in `C:\Program Files\TempMonitor`; .NET zit erin, dus dat hoef je niet apart te installeren
 - installeert desgewenst de **PawnIO**-driver (vinkje). Die is nodig om de CPU-temperatuur van een Ryzen te lezen.
@@ -91,6 +91,8 @@ powershell -ExecutionPolicy Bypass -File tests\Test-InstallerStartup.ps1 -InnoCo
 ```
 
 Voer dit uit vanuit de projectmap met `firmware/`, `pc-app/` en `tests/`, nadat de installer-payload en layoutvoorbeelden gebouwd zijn.
+
+`powershell -ExecutionPolicy Bypass -File tests\Test-Autostart.ps1` controleert taakregistratie, starten, verwijderen en foutafhandeling met mocks; er worden geen echte taken gewijzigd. Registratiefouten tijdens Setup worden gemeld en staan in `C:\ProgramData\TempMonitor\task-error.log`.
 
 In een terminal **als administrator**, in de map `pc-app/`:
 
