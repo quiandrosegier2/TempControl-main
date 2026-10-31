@@ -3,7 +3,7 @@ $ErrorActionPreference = 'Stop'
 Add-Type -AssemblyName System.Drawing
 $output = Join-Path $PSScriptRoot 'layout-previews'
 New-Item -ItemType Directory -Path $output -Force | Out-Null
-foreach ($layout in @('classic', 'gauges', 'minimal', 'orbit', 'radar', 'neon-pulse', 'reactor', 'waveform', 'matrix', 'starfield', 'speedometer', 'aurora', 'hex-grid')) {
+foreach ($layout in @('classic', 'gauges', 'minimal', 'orbit', 'radar', 'neon-pulse', 'reactor', 'waveform', 'matrix', 'starfield', 'speedometer', 'aurora', 'hex-grid', 'arsenal', 'bullet-storm', 'inferno', 'warzone-city', 'sniper-scope', 'cyber-ops', 'plasma-core', 'boss-fight')) {
     $bitmap = New-Object Drawing.Bitmap(412, 412)
     $g = [Drawing.Graphics]::FromImage($bitmap)
     $g.SmoothingMode = 'AntiAlias'
@@ -19,6 +19,9 @@ foreach ($layout in @('classic', 'gauges', 'minimal', 'orbit', 'radar', 'neon-pu
     $divider = [Drawing.Color]::FromArgb(55,55,65)
     $mint = [Drawing.Color]::FromArgb(50,235,175)
     $purple = [Drawing.Color]::FromArgb(175,100,255)
+    $gold = [Drawing.Color]::FromArgb(245,184,65)
+    $orange = [Drawing.Color]::FromArgb(255,105,25)
+    $tactical = [Drawing.Color]::FromArgb(120,235,95)
     function Text([string]$value, [float]$x, [float]$y, [float]$size, [Drawing.Color]$color) {
         $font = New-Object Drawing.Font('Segoe UI', $size, [Drawing.FontStyle]::Bold, [Drawing.GraphicsUnit]::Pixel)
         $brush = New-Object Drawing.SolidBrush($color)
@@ -41,6 +44,13 @@ foreach ($layout in @('classic', 'gauges', 'minimal', 'orbit', 'radar', 'neon-pu
     function Dot([float]$x,[float]$y,[float]$radius,[Drawing.Color]$color) {
         $brush = New-Object Drawing.SolidBrush($color)
         $g.FillEllipse($brush,($x-$radius),($y-$radius),(2*$radius),(2*$radius)); $brush.Dispose()
+    }
+    function Fill([float]$x,[float]$y,[float]$w,[float]$h,[Drawing.Color]$color) {
+        $brush=[Drawing.SolidBrush]::new($color); $g.FillRectangle($brush,$x,$y,$w,$h); $brush.Dispose()
+    }
+    function Triangle([float]$x1,[float]$y1,[float]$x2,[float]$y2,[float]$x3,[float]$y3,[Drawing.Color]$color) {
+        $points=[Drawing.PointF[]]@([Drawing.PointF]::new($x1,$y1),[Drawing.PointF]::new($x2,$y2),[Drawing.PointF]::new($x3,$y3))
+        $brush=[Drawing.SolidBrush]::new($color); $g.FillPolygon($brush,$points); $brush.Dispose()
     }
     function Polar([float]$inner,[float]$outer,[float]$degrees,[Drawing.Color]$color) {
         $r = $degrees * [Math]::PI/180
@@ -72,9 +82,103 @@ foreach ($layout in @('classic', 'gauges', 'minimal', 'orbit', 'radar', 'neon-pu
             if($pulse) { Line 113 ($y+25) (190+$i*35) ($y+25) $colors[$i] 3 }
         }
     }
+    function CombatHud([Drawing.Color]$accent) {
+        foreach($x in @(69,343)){foreach($y in @(116,318)){
+            $left=if($x -eq 343){$x-18}else{$x}; $top=if($y -eq 318){$y-18}else{$y}
+            Line $left $y ($left+18) $y (Dim $accent .6); Line $x $top $x ($top+18) (Dim $accent .6)
+        }}
+        Fill 95 29 222 72 ([Drawing.Color]::Black)
+        Fill 124 123 164 112 ([Drawing.Color]::Black)
+        Fps 166; Temperatures 346
+        Line 74 363 184 363 $divider 3; Line 228 363 338 363 $divider 3
+        Line 74 363 (74+42*110/120) 363 $blue 3; Line 228 363 (228+58*110/120) 363 $red 3
+    }
     if ($layout -notin @('classic','gauges','minimal')) {
         $phase=1.6
         switch($layout) {
+            'arsenal' {
+                for($y=115;$y -lt 320;$y+=20){Line 75 $y 337 $y (Dim $tactical .08)}
+                $x=73;$y=251;$metal=[Drawing.Color]::FromArgb(108,125,108)
+                Triangle $x ($y+9) ($x+46) ($y+3) ($x+46) ($y+29) $metal
+                Fill ($x+43) $y 92 27 $metal; Fill ($x+130) ($y+6) 83 9 $metal; Fill ($x+210) ($y+3) 13 15 $metal
+                Fill ($x+73) ($y-10) 45 7 $metal; Fill ($x+81) ($y-3) 5 8 $metal
+                Triangle ($x+98) ($y+25) ($x+118) ($y+25) ($x+106) ($y+59) $metal
+                Triangle ($x+98) ($y+25) ($x+106) ($y+59) ($x+87) ($y+53) $metal
+                Triangle ($x+59) ($y+25) ($x+75) ($y+25) ($x+63) ($y+47) $metal
+                Line ($x+52) ($y+8) ($x+120) ($y+8) (Dim $gold .7)
+                Triangle ($x+224) ($y+10) ($x+245) ($y-1) ($x+240) ($y+21) $orange
+                Triangle ($x+225) ($y+10) ($x+235) ($y+5) ($x+235) ($y+15) $gold
+                for($shell=0;$shell -lt 5;$shell++){
+                    $t=($phase*.7+$shell*.2)%1; Fill (176+$t*115) (244-65*[Math]::Sin($t*[Math]::PI)) 8 3 (Dim $gold (.6*(1-$t)))
+                }; CombatHud $tactical
+            }
+            'bullet-storm' {
+                for($bullet=0;$bullet -lt 18;$bullet++){
+                    $t=($phase*(.13+$bullet%3*.025)+$bullet*.137)%1; $x=35+($bullet*53)%340; $y=425-$t*470
+                    Line ($x+6) ($y+35) ($x+17) ($y+68) (Dim $gold .13)
+                    Triangle $x $y ($x+6) ($y-11) ($x+12) $y (Dim $gold .85)
+                    Fill $x $y 12 24 (Dim $gold .5); Line $x ($y+20) ($x+12) ($y+20) (Dim $orange .8)
+                }; CombatHud $gold
+            }
+            'inferno' {
+                for($x=14;$x -lt 398;$x+=9){
+                    $height=90+30*[Math]::Sin($x*.08+$phase*2)+24*[Math]::Sin($x*.17-$phase*3)
+                    Triangle ($x-8) 399 ($x+6) 399 ($x+2) (399-$height) ([Drawing.Color]::FromArgb(155,27,12))
+                    Triangle ($x-5) 400 ($x+6) 400 ($x+1) (419-$height) (Dim $orange .75)
+                    Triangle ($x-3) 402 ($x+5) 402 ($x+1) (446-$height) (Dim $gold .8)
+                }
+                for($spark=0;$spark -lt 30;$spark++){
+                    $t=($phase*.22+$spark*.081)%1; Dot (35+($spark*67)%340+8*[Math]::Sin($phase+$spark)) (400-$t*270) $(if($spark%4 -eq 0){2}else{1}) (Dim $gold ((1-$t)*.8))
+                }; CombatHud $orange
+            }
+            'warzone-city' {
+                for($layer=0;$layer -lt 2;$layer++){for($b=0;$b -lt 18;$b++){
+                    $speed=if($layer){7}else{3};$x=($b*29+430-[int]($phase*$speed)%430)%430-20
+                    $height=45+($b*31+$layer*47)%115;$width=if($layer){25}else{28};$base=if($layer){320}else{289}
+                    $color=if($layer){[Drawing.Color]::FromArgb(34,42,49)}else{[Drawing.Color]::FromArgb(17,23,30)}
+                    Fill $x ($base-$height) $width $height $color
+                    for($wy=$base-$height+9;$wy -lt $base-5;$wy+=14){for($wx=$x+5;$wx -lt $x+$width-3;$wx+=9){
+                        if(($wx+$wy+$b)%3){$c=if($b%4){$blue}else{$gold};Fill $wx $wy 3 5 (Dim $c .35)}
+                    }}
+                    if($layer -and $b%5 -eq 0){$flare=10+6*[Math]::Sin($phase*4+$b);Triangle ($x+4) $base ($x+22) $base ($x+13) ($base-$flare-13) (Dim $orange .8)}
+                }}
+                for($tracer=0;$tracer -lt 4;$tracer++){$t=($phase*.45+$tracer*.25)%1;$x=40+$t*340;$y=305-$t*165;Line $x $y ($x+22) ($y-11) (Dim $gold .55)}
+                CombatHud $orange
+            }
+            'sniper-scope' {
+                Circle 206 206 185 (Dim $tactical .5);Circle 206 206 153 (Dim $tactical .17)
+                Line 22 206 390 206 (Dim $tactical .4);Line 206 22 206 390 (Dim $tactical .4)
+                for($offset=-150;$offset -le 150;$offset+=15){Line (206+$offset) 202 (206+$offset) 211 (Dim $tactical .6);Line 202 (206+$offset) 211 (206+$offset) (Dim $tactical .6)}
+                $x=125+[Math]::Sin($phase*.7)*34;$y=271+[Math]::Cos($phase*.9)*13
+                Line ($x-17) ($y-17) ($x+17) ($y-17) $tactical;Line ($x-17) ($y+17) ($x+17) ($y+17) $tactical
+                Line ($x-17) ($y-17) ($x-17) ($y+17) $tactical;Line ($x+17) ($y-17) ($x+17) ($y+17) $tactical
+                Dot $x $y 3 $tactical;CombatHud $tactical
+            }
+            'cyber-ops' {
+                for($wire=0;$wire -lt 14;$wire++){
+                    $y=114+$wire*15;$x=35+($wire%4)*11;$turn=104+($wire*31)%193;$color=if($wire%2){$purple}else{$blue}
+                    Line $x $y $turn $y (Dim $color .22);Line $turn $y ($turn+26) ($y+18) (Dim $color .22);Line ($turn+26) ($y+18) 379 ($y+18) (Dim $color .22)
+                    $t=($phase*.22+$wire*.13)%1;$px=$x+$t*(379-$x);$py=if($px -lt $turn){$y}elseif($px -gt $turn+26){$y+18}else{$y+($px-$turn)*18/26}
+                    Dot $px $py 2 (Dim $color .9)
+                };CombatHud $blue
+            }
+            'plasma-core' {
+                for($bolt=0;$bolt -lt 18;$bolt++){
+                    $angle=($bolt*20+$phase*18)*[Math]::PI/180;$r=72+14*[Math]::Sin($phase*4+$bolt)
+                    $x=206+[Math]::Cos($angle)*$r;$y=270+[Math]::Sin($angle)*$r;$mx=(206+$x)/2+7*[Math]::Sin($phase*7+$bolt);$my=(270+$y)/2
+                    Line 206 270 $mx $my (Dim $purple .45);Line $mx $my $x $y (Dim $blue .7)
+                }
+                for($radius=43;$radius -gt 0;$radius-=4){$c=if($radius -gt 31){$purple}else{$blue};Dot 206 270 $radius (Dim $c (.12+(43-$radius)*.012))}
+                Circle 206 270 (43+3*[Math]::Sin($phase*3)) (Dim $purple .8);CombatHud $purple
+            }
+            'boss-fight' {
+                $sprite=@('001101100','011111110','110111011','111111111','001111100','010010010','100000001')
+                $x=156+[Math]::Sin($phase*1.8)*16;$y=237+[Math]::Sin($phase*2.7)*5
+                for($row=0;$row -lt 7;$row++){for($column=0;$column -lt 9;$column++){
+                    if($sprite[$row][$column] -eq '1'){$c=if($row -lt 3){$purple}else{$red};Fill ($x+$column*11) ($y+$row*11) 10 10 (Dim $c .9)}
+                }}
+                $beam=(1+[Math]::Sin($phase*3))/2;Line ($x+22) ($y+25) 61 322 (Dim $red (.2+$beam*.45));Line ($x+77) ($y+25) 351 322 (Dim $red (.2+$beam*.45));CombatHud $red
+            }
             'orbit' {
                 for($i=0;$i -lt 3;$i++) {
                     $color=if($i -eq 1){$purple}else{$blue}

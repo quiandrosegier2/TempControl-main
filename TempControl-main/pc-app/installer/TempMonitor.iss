@@ -3,7 +3,7 @@
 
 #define AppName "Qprints esp installer"
 #ifndef AppVersion
-  #define AppVersion "1.2.2"
+  #define AppVersion "1.3.0"
 #endif
 
 [Setup]
@@ -112,7 +112,7 @@ begin
   LayoutIds := TStringList.Create;
   LayoutDescriptions := TStringList.Create;
   LayoutPage := CreateCustomPage(wpSelectTasks, 'Kies je schermlayout',
-    '13 layouts, waarvan 10 bewegend. Nieuwe thema''s vereisen de meegeleverde firmware.');
+    '21 layouts, waarvan 18 bewegend. Nieuwe thema''s vereisen de meegeleverde firmware.');
   LayoutChoice := TNewComboBox.Create(LayoutPage);
   LayoutChoice.Parent := LayoutPage.Surface;
   LayoutChoice.SetBounds(0, ScaleY(12), ScaleX(205), ScaleY(28));
@@ -130,6 +130,14 @@ begin
   AddLayout('speedometer', 'Speedometer (bewegend)', 'Drie onafhankelijke meters: grote FPS-meter (0-240) en kleinere CPU- en GPU-meters (0-120 C), met soepele naalden en echte digitale meetwaarden.');
   AddLayout('aurora', 'Aurora (bewegend)', 'Zacht golvende lichtgordijnen achter een centrale FPS-weergave.');
   AddLayout('hex-grid', 'Hex Grid (bewegend)', 'Een golvend verlicht honingraatraster met drie zeshoekige meetpanelen.');
+  AddLayout('arsenal', 'Arsenal (gaming)', 'Geanimeerd geweersilhouet, mondingsflitsen en uitgeworpen hulzen rond een tactische FPS- en temperatuur-HUD.');
+  AddLayout('bullet-storm', 'Bullet Storm (gaming)', 'Bewegende gouden patronen en lichtsporen achter een donkere combat-HUD.');
+  AddLayout('inferno', 'Inferno (gaming)', 'Golvende vlammen en opstijgende vonken, met helder leesbare echte meetwaarden.');
+  AddLayout('warzone-city', 'Warzone City (gaming)', 'Een bewegende skyline met gebouwen, brandhaarden en lichtsporen in een urban-combat-sfeer.');
+  AddLayout('sniper-scope', 'Sniper Scope (gaming)', 'Groene viziermarkeringen, een bewegend doelkader en tactische uitlezing van CPU, GPU en FPS.');
+  AddLayout('cyber-ops', 'Cyber Ops (gaming)', 'Neoncircuits, reizende datapulsen en een cyberpunk-HUD.');
+  AddLayout('plasma-core', 'Plasma Core (gaming)', 'Een pulserende energiekern met elektrische bogen en een futuristische wapen-HUD.');
+  AddLayout('boss-fight', 'Boss Fight (gaming)', 'Een bewegende pixelbaas met laseraccenten en echte CPU- en GPU-hittebalken.');
   for Index := 0 to LayoutIds.Count - 1 do
     ExtractTemporaryFile('layout-' + LayoutIds[Index] + '.bmp');
   LayoutChoice.ItemIndex := 0;
@@ -141,7 +149,7 @@ begin
   for Index := 0 to LayoutIds.Count - 1 do
     if InitialLayout = LayoutIds[Index] then LayoutChoice.ItemIndex := Index;
   if LayoutChoice.ItemIndex < 0 then
-    RaiseException('Onbekende layout. Kies een van de dertien ondersteunde layouts.');
+    RaiseException('Onbekende layout. Kies een van de eenentwintig ondersteunde layouts.');
   LayoutDescription := TNewStaticText.Create(LayoutPage);
   LayoutDescription.Parent := LayoutPage.Surface;
   LayoutDescription.AutoSize := False;

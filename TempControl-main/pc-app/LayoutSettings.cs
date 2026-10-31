@@ -2,7 +2,8 @@ static class LayoutSettings
 {
     public static readonly string[] Names = [
         "classic", "gauges", "minimal", "orbit", "radar", "neon-pulse", "reactor",
-        "waveform", "matrix", "starfield", "speedometer", "aurora", "hex-grid"
+        "waveform", "matrix", "starfield", "speedometer", "aurora", "hex-grid",
+        "arsenal", "bullet-storm", "inferno", "warzone-city", "sniper-scope", "cyber-ops", "plasma-core", "boss-fight"
     ];
     public static string Read(string appDirectory)
     {

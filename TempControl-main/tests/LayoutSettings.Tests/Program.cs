@@ -9,8 +9,8 @@ void Expect(string expected)
 try
 {
     Expect("classic");
-    if (LayoutSettings.Names.Length != 13 || LayoutSettings.Names.Distinct().Count() != 13)
-        throw new Exception("Expected thirteen unique layouts");
+    if (LayoutSettings.Names.Length != 21 || LayoutSettings.Names.Distinct().Count() != 21)
+        throw new Exception("Expected twenty-one unique layouts");
     string project = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "../../../../.."));
     var firmwareNames = System.Text.RegularExpressions.Regex.Matches(
         File.ReadAllText(Path.Combine(project, "firmware/src/display-layout.h")),
@@ -34,7 +34,7 @@ try
     Directory.CreateDirectory(file);
     Expect("classic"); // An unreadable configuration must not stop monitoring.
     Directory.Delete(file);
-    Console.WriteLine("PASS: default, all thirteen layouts, whitespace, invalid settings and I/O failure.");
+    Console.WriteLine("PASS: default, all twenty-one layouts, whitespace, invalid settings and I/O failure.");
 }
 finally
 {

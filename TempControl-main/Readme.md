@@ -18,7 +18,7 @@ pc-app/installer/  Inno Setup-installer
 
 Download het installatiebestand via [GitHub Releases](https://github.com/quiandrosegier2/TempControl-main/releases/latest).
 
-1. Start `Qprints esp installer-1.2.2.exe`, geef toestemming voor beheerdersrechten en kies een schermlayout.
+1. Start `Qprints esp installer-1.3.0.exe`, geef toestemming voor beheerdersrechten en kies een schermlayout.
 2. Sluit een **Waveshare ESP32-S3-Touch-LCD-1.46 (16 MB)** met een USB-C-datakabel aan.
 3. Laat aan het einde van Setup de optie om firmware te installeren aangevinkt.
 4. Kies de COM-poort van het scherm en klik op **Firmware installeren**. Dit vervangt de bestaande firmware.
@@ -45,14 +45,24 @@ De app, .NET, firmware, het uploadprogramma en de optionele PawnIO-driver zitten
 - **Speedometer**: drie onafhankelijke meters: FPS groot bovenaan (0-240), CPU en GPU kleiner eronder (0-120 C). Elke naald volgt zijn eigen meetwaarde met een soepele beweging. Ontbrekende meetwaarden verbergen alleen de betreffende naald; de digitale getallen tonen de echte meetwaarden, ook boven het bereik van de meter. Voor deze indeling moet de firmware eenmaal naar 1.2.2 worden bijgewerkt.
 - **Aurora**: zacht golvende lichtgordijnen.
 - **Hex Grid**: verlicht honingraatraster met drie zeshoekige meetpanelen.
+- **Arsenal**: bewegend geweersilhouet met terugslag, mondingsflitsen en hulzen.
+- **Bullet Storm**: bewegende gouden patronen en lichtsporen.
+- **Inferno**: geanimeerde vlammen en opstijgende vonken.
+- **Warzone City**: verschuivende gebouwen, brandhaarden en lichtsporen.
+- **Sniper Scope**: groene viziermarkeringen en een bewegend doelkader.
+- **Cyber Ops**: neoncircuits met reizende datapulsen.
+- **Plasma Core**: pulserende energiekern met elektrische bogen.
+- **Boss Fight**: bewegende pixelbaas, laseraccenten en echte temperatuur-hittebalken.
 
-Setup toont stilstaande, schematische voorbeelden met testwaarden en bewaart de keuze in `layout.txt` naast de Windows-app. De app stuurt die keuze via USB; het scherm onthoudt de layout. Installeer de meegeleverde firmware eenmaal om alle dertien layouts en de actuele Speedometer-indeling te krijgen. Om later te wisselen voer je Setup opnieuw uit en vink je de firmwarestap aan het einde uit: opnieuw flashen is dan niet nodig.
+Setup toont stilstaande, schematische voorbeelden met testwaarden en bewaart de keuze in `layout.txt` naast de Windows-app. De app stuurt die keuze via USB; het scherm onthoudt de layout. Installeer de meegeleverde firmware eenmaal om alle eenentwintig layouts en de actuele Speedometer-indeling te krijgen. Om later te wisselen voer je Setup opnieuw uit en vink je de firmwarestap aan het einde uit: opnieuw flashen is dan niet nodig.
 
-De tien nieuwe layouts blijven bewegen tussen USB-updates, met maximaal 20 animatiebeelden per seconde. Dit staat los van de getoonde game-FPS. Waveform bewaart de laatste 60 echte CPU- en GPU-samples in RAM; ontbrekende sensoren leveren gaten op, geen verzonnen meetwaarden. Na een herstart begint deze historie opnieuw. Alle layouts tonen ontbrekende meetwaarden als `--` en temperaturen boven 50 graden in rood.
+De achttien bewegende layouts blijven bewegen tussen USB-updates, met maximaal 20 animatiebeelden per seconde. Dit staat los van de getoonde game-FPS. Waveform bewaart de laatste 60 echte CPU- en GPU-samples in RAM; ontbrekende sensoren leveren gaten op, geen verzonnen meetwaarden. Na een herstart begint deze historie opnieuw. Alle layouts tonen ontbrekende meetwaarden als `--` en temperaturen boven 50 graden in rood.
 
-[Bekijk het overzicht met alle layouts](https://github.com/quiandrosegier2/TempControl-main/releases/download/v1.2.2/Layout-Overview-1.2.2.png).
+[Bekijk alle layouts](https://github.com/quiandrosegier2/TempControl-main/releases/download/v1.3.0/Layout-Overview-1.3.0.png) of [de acht gamingthema's](https://github.com/quiandrosegier2/TempControl-main/releases/download/v1.3.0/Gaming-Layouts-1.3.0.png).
 
-Voor stille installaties kan `/LAYOUT=` worden gevolgd door `classic`, `gauges`, `minimal`, `orbit`, `radar`, `neon-pulse`, `reactor`, `waveform`, `matrix`, `starfield`, `speedometer`, `aurora` of `hex-grid`. Zonder deze parameter blijft een bestaande keuze behouden.
+De gaming-art wordt in code getekend. Geweren, patronen, vuur en de pixelbaas zijn decoratieve animaties; CPU, GPU, FPS en de hittebalken gebruiken echte meetgegevens. Werk de firmware eenmaal bij naar 1.3.0 voor deze acht thema's.
+
+Voor stille installaties kan `/LAYOUT=` worden gevolgd door `classic`, `gauges`, `minimal`, `orbit`, `radar`, `neon-pulse`, `reactor`, `waveform`, `matrix`, `starfield`, `speedometer`, `aurora`, `hex-grid`, `arsenal`, `bullet-storm`, `inferno`, `warzone-city`, `sniper-scope`, `cyber-ops`, `plasma-core` of `boss-fight`. Zonder deze parameter blijft een bestaande keuze behouden.
 
 ### Firmware zelf bouwen met VS Code
 
@@ -66,7 +76,7 @@ Voor stille installaties kan `/LAYOUT=` worden gevolgd door `classic`, `gauges`,
 
 ## 2. Windows-app installeren
 
-Voer `Qprints esp installer-1.2.2.exe` uit. De donkere installer en het firmwarevenster tonen het QPRINTS //-beeldmerk. De installer:
+Voer `Qprints esp installer-1.3.0.exe` uit. De donkere installer en het firmwarevenster tonen het QPRINTS //-beeldmerk. De installer:
 
 - installeert de app in `C:\Program Files\TempMonitor`; .NET zit erin, dus dat hoef je niet apart te installeren
 - installeert desgewenst de **PawnIO**-driver (vinkje). Die is nodig om de CPU-temperatuur van een Ryzen te lezen.
@@ -92,7 +102,7 @@ cd pc-app
 powershell -ExecutionPolicy Bypass -File .\build-installer.ps1
 ```
 
-Het resultaat komt in `dist\Qprints esp installer-<versie>.exe`. De versie haalt het script uit `TempMonitor.csproj`. Met `-OutputDir E:\` komt de setup op een andere plek terecht, bijvoorbeeld rechtstreeks op een USB-stick. `build-branding.ps1` genereert het woordmerk, pictogram en de welkomstafbeelding; `build-layout-previews.ps1` genereert de dertien donkere layoutvoorbeelden.
+Het resultaat komt in `dist\Qprints esp installer-<versie>.exe`. De versie haalt het script uit `TempMonitor.csproj`. Met `-OutputDir E:\` komt de setup op een andere plek terecht, bijvoorbeeld rechtstreeks op een USB-stick. `build-branding.ps1` genereert het woordmerk, pictogram en de welkomstafbeelding; `build-layout-previews.ps1` genereert de eenentwintig donkere layoutvoorbeelden.
 
 > **Verkenner loopt vast of de setup is "geblokkeerd"?** Op beheerde pc's met Microsoft Defender for Endpoint blokkeert de ASR-regel *"Block executable files from running unless they meet a prevalence, age, or trusted list criterion"* (`01443614-cd74-433a-b99e-2ecdc07bfc25`) zelfgebouwde, niet-ondertekende exe-bestanden. Installeer dan op een pc zonder die regel, of voeg een ASR-uitzondering of een code-signing-certificaat toe.
 
@@ -134,7 +144,7 @@ CPU=42.5;GPU=48.0;FPS=165
 
 Een onbekende waarde wordt `nan`. Stuur je `PING`, dan antwoordt het scherm met `TEMPMON`.
 
-Optioneel kan `;LAYOUT=` met een van de dertien layoutnamen worden toegevoegd, bijvoorbeeld `;LAYOUT=orbit`. Een afzonderlijke `LAYOUT=orbit`-regel werkt ook, zonder de meetwaarden te veranderen. Onbekende layoutnamen worden genegeerd. Het scherm schrijft de keuze alleen naar het geheugen wanneer deze verandert.
+Optioneel kan `;LAYOUT=` met een van de eenentwintig layoutnamen worden toegevoegd, bijvoorbeeld `;LAYOUT=arsenal`. Een afzonderlijke `LAYOUT=arsenal`-regel werkt ook, zonder de meetwaarden te veranderen. Onbekende layoutnamen worden genegeerd. Het scherm schrijft de keuze alleen naar het geheugen wanneer deze verandert.
 
 ## Aanpassen
 

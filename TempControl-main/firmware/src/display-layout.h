@@ -3,7 +3,8 @@
 
 enum class DisplayLayout {
   Classic, Gauges, Minimal, Orbit, Radar, NeonPulse, Reactor,
-  Waveform, Matrix, Starfield, Speedometer, Aurora, HexGrid
+  Waveform, Matrix, Starfield, Speedometer, Aurora, HexGrid,
+  Arsenal, BulletStorm, Inferno, WarzoneCity, SniperScope, CyberOps, PlasmaCore, BossFight
 };
 
 inline bool isAnimatedLayout(DisplayLayout layout) {
@@ -24,6 +25,14 @@ inline bool parseLayout(const char *name, DisplayLayout &layout) {
   else if (strcmp(name, "speedometer") == 0) layout = DisplayLayout::Speedometer;
   else if (strcmp(name, "aurora") == 0) layout = DisplayLayout::Aurora;
   else if (strcmp(name, "hex-grid") == 0) layout = DisplayLayout::HexGrid;
+  else if (strcmp(name, "arsenal") == 0) layout = DisplayLayout::Arsenal;
+  else if (strcmp(name, "bullet-storm") == 0) layout = DisplayLayout::BulletStorm;
+  else if (strcmp(name, "inferno") == 0) layout = DisplayLayout::Inferno;
+  else if (strcmp(name, "warzone-city") == 0) layout = DisplayLayout::WarzoneCity;
+  else if (strcmp(name, "sniper-scope") == 0) layout = DisplayLayout::SniperScope;
+  else if (strcmp(name, "cyber-ops") == 0) layout = DisplayLayout::CyberOps;
+  else if (strcmp(name, "plasma-core") == 0) layout = DisplayLayout::PlasmaCore;
+  else if (strcmp(name, "boss-fight") == 0) layout = DisplayLayout::BossFight;
   else return false;
   return true;
 }

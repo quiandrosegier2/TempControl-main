@@ -23,7 +23,7 @@ $assertions = @'
   end;
   if (LayoutPreview.Bitmap.Width = 0) or (LayoutPreview.Bitmap.Height = 0) then
     ExitProcess(92);
-  if LayoutChoice.Items.Count <> 13 then ExitProcess(93);
+  if LayoutChoice.Items.Count <> 21 then ExitProcess(93);
   for Index := 0 to LayoutChoice.Items.Count - 1 do
   begin
     LayoutChoice.ItemIndex := Index; LayoutChanged(nil);
@@ -49,7 +49,7 @@ try {
         @{ Name='override'; Directory=$upgrade; Layout='gauges'; Expected='gauges' }
     )
     $ids = [regex]::Matches($source, "AddLayout\('([^']+)'") | ForEach-Object { $_.Groups[1].Value }
-    if ($ids.Count -ne 13) { throw 'Verwacht dertien layouts in de installer' }
+    if ($ids.Count -ne 21) { throw 'Verwacht eenentwintig layouts in de installer' }
     foreach ($id in $ids) { $cases += @{ Name=$id; Directory=$fresh; Layout=$id; Expected=$id } }
     foreach ($case in $cases) {
         $log = Join-Path $cache ($case.Name + '.log')

@@ -138,9 +138,16 @@ static void drawSpeedDial(const char *label, float reading, float maximum, bool 
   drawText(temperature ? "120" : "240", x + radius * .8f, y + radius * .7f, CENTER);
 }
 
+#include "gaming-layouts.h"
+
 static void renderAnimated(bool live) {
   gfx->fillScreen(RGB565_BLACK);
   const float phase = (millis() % 360000u) / 1000.0f;
+  if (displayLayout >= DisplayLayout::Arsenal) {
+    renderGaming(live, phase);
+    gfx->flush();
+    return;
+  }
   switch (displayLayout) {
     case DisplayLayout::Orbit: {
       for (int orbit = 0; orbit < 3; ++orbit) {
