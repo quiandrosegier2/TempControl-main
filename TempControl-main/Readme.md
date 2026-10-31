@@ -18,7 +18,7 @@ pc-app/installer/  Inno Setup-installer
 
 Download het installatiebestand via [GitHub Releases](https://github.com/quiandrosegier2/TempControl-main/releases/latest).
 
-1. Start `Qprints esp installer-1.3.0.exe`, geef toestemming voor beheerdersrechten en kies een schermlayout.
+1. Start `Qprints esp installer-1.3.1.exe`, geef toestemming voor beheerdersrechten en kies een schermlayout. Het bewegende demovoorbeeld speelt op de layoutpagina; met **Pauzeren/Afspelen** stop of start je de animatie.
 2. Sluit een **Waveshare ESP32-S3-Touch-LCD-1.46 (16 MB)** met een USB-C-datakabel aan.
 3. Laat aan het einde van Setup de optie om firmware te installeren aangevinkt.
 4. Kies de COM-poort van het scherm en klik op **Firmware installeren**. Dit vervangt de bestaande firmware.
@@ -54,7 +54,7 @@ De app, .NET, firmware, het uploadprogramma en de optionele PawnIO-driver zitten
 - **Plasma Core**: pulserende energiekern met elektrische bogen.
 - **Boss Fight**: bewegende pixelbaas, laseraccenten en echte temperatuur-hittebalken.
 
-Setup toont stilstaande, schematische voorbeelden met testwaarden en bewaart de keuze in `layout.txt` naast de Windows-app. De app stuurt die keuze via USB; het scherm onthoudt de layout. Installeer de meegeleverde firmware eenmaal om alle eenentwintig layouts en de actuele Speedometer-indeling te krijgen. Om later te wisselen voer je Setup opnieuw uit en vink je de firmwarestap aan het einde uit: opnieuw flashen is dan niet nodig.
+Setup toont schematische demo's met testwaarden en bewaart de keuze in `layout.txt` naast de Windows-app. De achttien bewegende layouts hebben een automatisch afspelend voorbeeld in een lus van vier seconden, met een knop **Pauzeren/Afspelen**. Classic, Gauges en Minimal tonen een stilstaand voorbeeld. Een scherm of internetverbinding is niet nodig om de voorbeelden vooraf te bekijken. De app stuurt de gekozen layout via USB; het scherm onthoudt die keuze. Installeer de meegeleverde firmware eenmaal om alle eenentwintig layouts en de actuele Speedometer-indeling te krijgen. Om later te wisselen voer je Setup opnieuw uit en vink je de firmwarestap aan het einde uit: opnieuw flashen is dan niet nodig.
 
 De achttien bewegende layouts blijven bewegen tussen USB-updates, met maximaal 20 animatiebeelden per seconde. Dit staat los van de getoonde game-FPS. Waveform bewaart de laatste 60 echte CPU- en GPU-samples in RAM; ontbrekende sensoren leveren gaten op, geen verzonnen meetwaarden. Na een herstart begint deze historie opnieuw. Alle layouts tonen ontbrekende meetwaarden als `--` en temperaturen boven 50 graden in rood.
 
@@ -76,7 +76,7 @@ Voor stille installaties kan `/LAYOUT=` worden gevolgd door `classic`, `gauges`,
 
 ## 2. Windows-app installeren
 
-Voer `Qprints esp installer-1.3.0.exe` uit. De donkere installer en het firmwarevenster tonen het QPRINTS //-beeldmerk. De installer:
+Voer `Qprints esp installer-1.3.1.exe` uit. De donkere installer en het firmwarevenster tonen het QPRINTS //-beeldmerk. De installer:
 
 - installeert de app in `C:\Program Files\TempMonitor`; .NET zit erin, dus dat hoef je niet apart te installeren
 - installeert desgewenst de **PawnIO**-driver (vinkje). Die is nodig om de CPU-temperatuur van een Ryzen te lezen.
@@ -95,14 +95,14 @@ Met `-PlatformIO <pad-naar-pio.exe>` en `-InnoCompiler <pad-naar-ISCC.exe>` kun 
 
 De ESP32-SDK bevat lange bestandsnamen. Zorg op de Windows-build-pc voor ondersteuning voor lange bestandspaden of gebruik een korte PlatformIO-map. Dit geldt alleen voor ontwikkelaars die de installer bouwen.
 
-Vereisten: [.NET 10 SDK](https://dotnet.microsoft.com/download/dotnet/10.0) en Inno Setup 6.6 of nieuwer (`winget install JRSoftware.InnoSetup`).
+Vereisten: [.NET 10 SDK](https://dotnet.microsoft.com/download/dotnet/10.0) en Inno Setup 6.6 of nieuwer binnen de 6.x-serie (`winget install JRSoftware.InnoSetup`). De previewtimer gebruikt de 32-bit wizard-ABI van Inno Setup 6; dit staat los van de x64 Windows-app die wordt meegeleverd.
 
 ```powershell
 cd pc-app
 powershell -ExecutionPolicy Bypass -File .\build-installer.ps1
 ```
 
-Het resultaat komt in `dist\Qprints esp installer-<versie>.exe`. De versie haalt het script uit `TempMonitor.csproj`. Met `-OutputDir E:\` komt de setup op een andere plek terecht, bijvoorbeeld rechtstreeks op een USB-stick. `build-branding.ps1` genereert het woordmerk, pictogram en de welkomstafbeelding; `build-layout-previews.ps1` genereert de eenentwintig donkere layoutvoorbeelden.
+Het resultaat komt in `dist\Qprints esp installer-<versie>.exe`. De versie haalt het script uit `TempMonitor.csproj`. Met `-OutputDir E:\` komt de setup op een andere plek terecht, bijvoorbeeld rechtstreeks op een USB-stick. `build-branding.ps1` genereert het woordmerk, pictogram en de welkomstafbeelding; `build-layout-previews.ps1` genereert de eenentwintig donkere layoutvoorbeelden. `build-animated-previews.ps1` genereert daarnaast 40 beelden voor elk van de achttien bewegende layouts. De installer speelt deze lokaal af op de layoutpagina en stopt de timer bij pauzeren, verlaten van de pagina en afsluiten.
 
 > **Verkenner loopt vast of de setup is "geblokkeerd"?** Op beheerde pc's met Microsoft Defender for Endpoint blokkeert de ASR-regel *"Block executable files from running unless they meet a prevalence, age, or trusted list criterion"* (`01443614-cd74-433a-b99e-2ecdc07bfc25`) zelfgebouwde, niet-ondertekende exe-bestanden. Installeer dan op een pc zonder die regel, of voeg een ASR-uitzondering of een code-signing-certificaat toe.
 
@@ -119,6 +119,8 @@ Voer dit uit vanuit de projectmap met `firmware/`, `pc-app/` en `tests/`, nadat 
 `powershell -ExecutionPolicy Bypass -File tests\Test-Autostart.ps1` controleert taakregistratie, starten, verwijderen en foutafhandeling met mocks; er worden geen echte taken gewijzigd. Registratiefouten tijdens Setup worden gemeld en staan in `C:\ProgramData\TempMonitor\task-error.log`.
 
 `tests/speedometer/needle-tests.cpp` controleert met compile-time asserts de FPS- en temperatuurschalen, onafhankelijke naalden, vloeiende overgangen, ontbrekende waarden en het omslaan van de apparaattimer. Compileer dit bestand met een C++17-compiler, bijvoorbeeld `g++ -std=c++17 -fsyntax-only tests/speedometer/needle-tests.cpp`.
+
+`powershell -ExecutionPolicy Bypass -File tests\Test-PreviewFrames.ps1` controleert de 720 animatiebeelden op volledigheid, afmetingen en beeldvariatie. De installer-opstarttest controleert ook echte Windows-timerberichten, framewissels, pauzeren/hervatten en het stoppen bij het verlaten van de layoutpagina.
 
 In een terminal **als administrator**, in de map `pc-app/`:
 

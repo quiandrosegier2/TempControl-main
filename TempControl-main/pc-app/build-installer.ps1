@@ -1,7 +1,7 @@
 # Bouwt dist\Qprints esp installer-<versie>.exe
 #   powershell -ExecutionPolicy Bypass -File .\build-installer.ps1
 #   powershell -ExecutionPolicy Bypass -File .\build-installer.ps1 -OutputDir E:\   (bv. rechtstreeks naar een USB-stick)
-# Vereist: pioarduino 6.2.0, .NET 10 SDK en Inno Setup 6.6 of nieuwer.
+# Vereist: pioarduino 6.2.0, .NET 10 SDK en Inno Setup 6.6 of nieuwer binnen 6.x.
 
 param([string]$OutputDir, [string]$PlatformIO, [string]$InnoCompiler)
 
@@ -88,6 +88,7 @@ Copy-Item $pawnio (Join-Path $publishDir 'drivers\PawnIO_setup.exe')
 
 # 5. Installer compileren
 & (Join-Path $installerDir 'build-layout-previews.ps1')
+& (Join-Path $installerDir 'build-animated-previews.ps1')
 & (Join-Path $installerDir 'build-branding.ps1')
 $iscc = $InnoCompiler
 if (-not $iscc) { $iscc = @(

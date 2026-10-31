@@ -2,8 +2,9 @@
 ; Bouwen: voer ..\build-installer.ps1 uit (publiceert de app, haalt PresentMon op en compileert dit script).
 
 #define AppName "Qprints esp installer"
+#define PreviewFrameCount 40
 #ifndef AppVersion
-  #define AppVersion "1.3.0"
+  #define AppVersion "1.3.1"
 #endif
 
 [Setup]
@@ -44,7 +45,10 @@ Name: "pawnio"; Description: "PawnIO-driver installeren (nodig om de CPU-tempera
 Source: "publish\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 Source: "task.ps1"; DestDir: "{app}"; Flags: ignoreversion
 Source: "flash-firmware.ps1"; DestDir: "{app}"; Flags: ignoreversion
-Source: "layout-previews\*.bmp"; Flags: dontcopy
+Source: "layout-previews\layout-classic.bmp"; Flags: dontcopy solidbreak
+Source: "layout-previews\layout-gauges.bmp"; Flags: dontcopy solidbreak
+Source: "layout-previews\layout-minimal.bmp"; Flags: dontcopy solidbreak
+Source: "preview-animation\*.bmp"; Flags: dontcopy solidbreak
 Source: "branding\qprints-footer.bmp"; Flags: dontcopy
 Source: "branding\qprints-wordmark.png"; DestDir: "{app}\branding"; Flags: ignoreversion
 Source: "branding\qprints.ico"; DestDir: "{app}\branding"; Flags: ignoreversion
@@ -66,6 +70,15 @@ Filename: "{sys}\WindowsPowerShell\v1.0\powershell.exe"; \
 Type: filesandordirs; Name: "{commonappdata}\TempMonitor"
 
 [Code]
+const
+  PreviewFrameCount = {#PreviewFrameCount};
+
+// Inno Setup 6 gebruikt een 32-bit wizard, ook bij een x64-installatie.
+function SetTimer(hWnd: HWND; nIDEvent: LongWord; uElapse: LongWord; lpTimerFunc: LongWord): LongWord;
+  external 'SetTimer@user32.dll stdcall';
+function KillTimer(hWnd: HWND; uIDEvent: LongWord): Integer;
+  external 'KillTimer@user32.dll stdcall';
+
 var
   DriverNeedsRestart: Boolean;
   LayoutPage: TWizardPage;
@@ -74,6 +87,10 @@ var
   LayoutDescription: TNewStaticText;
   LayoutIds, LayoutDescriptions: TStringList;
   BrandLogo: TBitmapImage;
+  PreviewButton: TNewButton;
+  PreviewFrame, PreviewTickCount: Integer;
+  PreviewTimer, PreviewCallback: LongWord;
+  PreviewPaused, PreviewClosing, PreviewPageActive, PreviewBusy: Boolean;
 
 function SelectedLayout: String;
 begin
@@ -81,11 +98,104 @@ begin
   if LayoutChoice.ItemIndex >= 0 then Result := LayoutIds[LayoutChoice.ItemIndex];
 end;
 
+procedure StopPreview;
+begin
+  if PreviewTimer <> 0 then
+  begin
+    KillTimer(0, PreviewTimer);
+    PreviewTimer := 0;
+  end;
+end;
+
+procedure LoadPreviewFrame;
+var
+  Name, Path: String;
+begin
+  if LayoutChoice.ItemIndex < 3 then
+    Name := 'layout-' + SelectedLayout + '.bmp'
+  else
+    Name := Format('%s-%.2d.bmp', [SelectedLayout, PreviewFrame]);
+  Path := ExpandConstant('{tmp}\' + Name);
+  if not FileExists(Path) then ExtractTemporaryFile(Name);
+  LayoutPreview.Bitmap.LoadFromFile(Path);
+end;
+
+procedure AdvancePreview;
+begin
+  if LayoutChoice.ItemIndex < 3 then Exit;
+  PreviewFrame := (PreviewFrame + 1) mod PreviewFrameCount;
+  LoadPreviewFrame;
+  Inc(PreviewTickCount);
+end;
+
+procedure PreviewTick(Arg1: HWND; Arg2, Arg3, Arg4: LongWord);
+begin
+  if PreviewClosing or PreviewBusy or not PreviewPageActive or PreviewPaused then Exit;
+  if (PreviewTimer = 0) or (Arg3 <> PreviewTimer) then Exit;
+  if (LayoutChoice = nil) or (LayoutChoice.ItemIndex < 3) then Exit;
+  PreviewBusy := True;
+  try
+    try
+      AdvancePreview;
+    except
+      StopPreview;
+      PreviewPaused := True;
+      PreviewButton.Caption := 'Afspelen';
+      Log('Animatievoorbeeld gestopt: ' + GetExceptionMessage);
+    end;
+  finally
+    PreviewBusy := False;
+  end;
+end;
+
+procedure StartPreview;
+begin
+  if PreviewClosing or not PreviewPageActive or PreviewPaused then Exit;
+  if LayoutChoice.ItemIndex < 3 then Exit;
+  if PreviewCallback = 0 then PreviewCallback := CreateCallback(@PreviewTick);
+  if PreviewTimer = 0 then PreviewTimer := SetTimer(0, 0, 100, PreviewCallback);
+end;
+
+procedure TogglePreview(Sender: TObject);
+begin
+  PreviewPaused := not PreviewPaused;
+  if PreviewPaused then
+  begin
+    StopPreview;
+    PreviewButton.Caption := 'Afspelen';
+  end
+  else
+  begin
+    StartPreview;
+    PreviewButton.Caption := 'Pauzeren';
+  end;
+end;
+
 procedure LayoutChanged(Sender: TObject);
 begin
-  LayoutPreview.Bitmap.LoadFromFile(ExpandConstant('{tmp}\layout-' + SelectedLayout + '.bmp'));
+  StopPreview;
+  PreviewFrame := 0;
+  PreviewPaused := False;
+  LoadPreviewFrame;
+  PreviewButton.Enabled := LayoutChoice.ItemIndex >= 3;
+  if PreviewButton.Enabled then PreviewButton.Caption := 'Pauzeren'
+  else PreviewButton.Caption := 'Statisch';
   if LayoutChoice.ItemIndex >= 0 then
     LayoutDescription.Caption := LayoutDescriptions[LayoutChoice.ItemIndex];
+  StartPreview;
+end;
+
+procedure CurPageChanged(CurPageID: Integer);
+begin
+  if LayoutPage = nil then Exit;
+  PreviewPageActive := CurPageID = LayoutPage.ID;
+  if PreviewPageActive then StartPreview else StopPreview;
+end;
+
+procedure DeinitializeSetup;
+begin
+  PreviewClosing := True;
+  StopPreview;
 end;
 
 procedure AddLayout(Id, Title, Description: String);
@@ -100,7 +210,7 @@ var
   SavedLayout: AnsiString;
   InitialLayout: String;
   Note: TNewStaticText;
-  Index: Integer;
+  Index, PreviewSize: Integer;
 begin
   ExtractTemporaryFile('qprints-footer.bmp');
   BrandLogo := TBitmapImage.Create(WizardForm);
@@ -138,7 +248,8 @@ begin
   AddLayout('cyber-ops', 'Cyber Ops (gaming)', 'Neoncircuits, reizende datapulsen en een cyberpunk-HUD.');
   AddLayout('plasma-core', 'Plasma Core (gaming)', 'Een pulserende energiekern met elektrische bogen en een futuristische wapen-HUD.');
   AddLayout('boss-fight', 'Boss Fight (gaming)', 'Een bewegende pixelbaas met laseraccenten en echte CPU- en GPU-hittebalken.');
-  for Index := 0 to LayoutIds.Count - 1 do
+  // Alleen de drie statische voorbeelden vooraf laden; animatiebeelden volgen op aanvraag.
+  for Index := 0 to 2 do
     ExtractTemporaryFile('layout-' + LayoutIds[Index] + '.bmp');
   LayoutChoice.ItemIndex := 0;
   InitialLayout := 'classic';
@@ -157,14 +268,21 @@ begin
   LayoutDescription.SetBounds(0, ScaleY(58), ScaleX(205), ScaleY(115));
   LayoutPreview := TBitmapImage.Create(LayoutPage);
   LayoutPreview.Parent := LayoutPage.Surface;
-  LayoutPreview.SetBounds(LayoutPage.SurfaceWidth - ScaleX(220), 0, ScaleX(220), ScaleY(220));
+  PreviewSize := ScaleX(220);
+  if PreviewSize > LayoutPage.SurfaceHeight - ScaleY(34) then
+    PreviewSize := LayoutPage.SurfaceHeight - ScaleY(34);
+  LayoutPreview.SetBounds(LayoutPage.SurfaceWidth - PreviewSize, 0, PreviewSize, PreviewSize);
   LayoutPreview.Stretch := True;
+  PreviewButton := TNewButton.Create(LayoutPage);
+  PreviewButton.Parent := LayoutPage.Surface;
+  PreviewButton.SetBounds(LayoutPage.SurfaceWidth - PreviewSize, PreviewSize + ScaleY(6), PreviewSize, ScaleY(24));
+  PreviewButton.OnClick := @TogglePreview;
   Note := TNewStaticText.Create(LayoutPage);
   Note.Parent := LayoutPage.Surface;
   Note.AutoSize := False;
   Note.WordWrap := True;
   Note.SetBounds(0, ScaleY(190), ScaleX(205), ScaleY(45));
-  Note.Caption := 'Voorbeeld met testwaarden.' + #13#10 + 'Animaties bewegen op het scherm.' + #13#10 + 'Wisselen? Start Setup opnieuw.';
+  Note.Caption := 'Demo met testwaarden.' + #13#10 + 'Pauzeren kan rechts.' + #13#10 + 'Zonder scherm of internet.';
   LayoutChoice.OnChange := @LayoutChanged;
   LayoutChanged(nil);
 end;

@@ -9,7 +9,22 @@ $source = Get-Content (Join-Path $installer 'TempMonitor.iss') -Raw
 $source = $source.Replace('PrivilegesRequired=admin', 'PrivilegesRequired=lowest')
 $source = $source.Replace('DefaultDirName={autopf}\TempMonitor', 'DefaultDirName=' + $cache + '\fresh')
 $source = $source.Replace('DisableDirPage=yes', "DisableDirPage=yes`r`nUsePreviousAppDir=no")
-$source = $source.Replace('[Code]', "[Code]`r`nprocedure ExitProcess(Code: Cardinal); external 'ExitProcess@kernel32.dll stdcall';")
+$nativeTest = @'
+[Code]
+type
+  TPreviewTestMessage = record
+    WindowHandle, MessageId, WParam, LParam, Time: LongWord;
+    PointX, PointY: Integer;
+    PrivateData: LongWord;
+  end;
+procedure ExitProcess(Code: Cardinal); external 'ExitProcess@kernel32.dll stdcall';
+function PeekMessage(var Msg: TPreviewTestMessage; Window: HWND; Min, Max, Remove: LongWord): Integer;
+  external 'PeekMessageW@user32.dll stdcall';
+function DispatchMessage(var Msg: TPreviewTestMessage): Integer;
+  external 'DispatchMessageW@user32.dll stdcall';
+'@
+$source = $source.Replace('[Code]', $nativeTest)
+$source = $source.Replace('Index, PreviewSize: Integer;', "Index, PreviewSize, Pump, BeforeTicks: Integer;`r`n  TimerMessage: TPreviewTestMessage;")
 $marker = '  LayoutChanged(nil);'
 if (-not $source.Contains($marker)) { throw 'InitializeWizard-testpunt ontbreekt' }
 $assertions = @'
@@ -28,6 +43,39 @@ $assertions = @'
   begin
     LayoutChoice.ItemIndex := Index; LayoutChanged(nil);
     if (LayoutPreview.Bitmap.Width = 0) or (LayoutPreview.Bitmap.Height = 0) then ExitProcess(92);
+    if Index < 3 then
+    begin
+      if PreviewButton.Enabled or (PreviewTimer <> 0) then ExitProcess(96);
+    end
+    else
+    begin
+      CurPageChanged(LayoutPage.ID);
+      if PreviewTimer = 0 then ExitProcess(96);
+      if Index = 3 then
+      begin
+        BeforeTicks := PreviewTickCount;
+        Sleep(150);
+        for Pump := 0 to 7 do
+        begin
+          if PeekMessage(TimerMessage, 0, 275, 275, 1) = 0 then Break;
+          DispatchMessage(TimerMessage);
+        end;
+        if PreviewTickCount <= BeforeTicks then ExitProcess(100);
+        LayoutChanged(nil);
+      end;
+      PreviewTick(0, 275, PreviewTimer, 0);
+      if PreviewFrame <> 1 then ExitProcess(97);
+      TogglePreview(nil);
+      if not PreviewPaused or (PreviewTimer <> 0) then ExitProcess(98);
+      PreviewTick(0, 275, 0, 0);
+      if PreviewFrame <> 1 then ExitProcess(98);
+      TogglePreview(nil);
+      if PreviewPaused or (PreviewTimer = 0) then ExitProcess(99);
+      PreviewTick(0, 275, PreviewTimer, 0);
+      if PreviewFrame <> 2 then ExitProcess(99);
+      CurPageChanged(wpReady);
+      if PreviewTimer <> 0 then ExitProcess(99);
+    end;
   end;
   Log('LAYOUT_SMOKE_PASS');
   ExitProcess(0);

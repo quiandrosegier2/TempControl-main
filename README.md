@@ -9,7 +9,7 @@ A compact PC system monitor featuring a round Waveshare ESP32-S3-Touch-LCD-1.46 
 - Blue values and rings at or below 50 °C, turning red above 50 °C.
 - Windows companion app that sends monitoring data to the display.
 - Waiting indicator when no PC data is received.
-- Choose from 21 layouts in Setup, including eighteen animated themes and eight gaming HUDs, with a schematic preview of each. The display remembers the selection.
+- Choose from 21 layouts in Setup, including eighteen animated themes and eight gaming HUDs. Moving offline previews with Play/Pause let you try the animated layouts before installing. The display remembers the selection.
 
 ### Project structure
 - `TempControl-main/firmware/`: firmware for the ESP32-S3 display.
@@ -20,7 +20,7 @@ A compact PC system monitor featuring a round Waveshare ESP32-S3-Touch-LCD-1.46 
 
 Download the setup executable from [GitHub Releases](https://github.com/quiandrosegier2/TempControl-main/releases/latest).
 
-1. Run `Qprints esp installer-1.3.0.exe` on a Windows x64 PC and allow administrator access. Choose your preferred layout on the layout page.
+1. Run `Qprints esp installer-1.3.1.exe` on a Windows x64 PC and allow administrator access. Choose a layout and watch its demo on the layout page; use **Pauzeren/Afspelen** to pause or play.
 2. Connect a **Waveshare ESP32-S3-Touch-LCD-1.46 (16 MB)** using a USB-C data cable.
 3. Leave the firmware installation option selected at the end of Setup.
 4. Select the display's COM port and click **Firmware installeren**. This replaces any existing firmware on that display.
@@ -60,7 +60,7 @@ To change layouts later, run Setup again and choose another layout. Upload the b
 | Plasma Core | A pulsing energy orb and electrical arcs |
 | Boss Fight | An animated pixel boss, lasers and live temperature bars |
 
-Animations run independently of incoming readings. Waveform retains up to 60 actual temperature samples in memory; unavailable readings remain gaps. Setup previews are still images with example values. Temperature values turn red above 50 °C in every layout.
+Animations run independently of incoming readings. Waveform retains up to 60 actual temperature samples in memory; unavailable readings remain gaps. Setup includes four-second looping, schematic demos with sample values for all eighteen moving themes; Classic, Gauges and Minimal have static previews. No screen or internet connection is needed to view the previews. Temperature values turn red above 50 °C in every layout.
 
 [View all layouts](https://github.com/quiandrosegier2/TempControl-main/releases/download/v1.3.0/Layout-Overview-1.3.0.png) or [the eight gaming themes](https://github.com/quiandrosegier2/TempControl-main/releases/download/v1.3.0/Gaming-Layouts-1.3.0.png).
 

@@ -1,11 +1,23 @@
 # Schematische voorbeelden in dezelfde 412x412-coordinaten als de firmware.
+param(
+    [string]$OutputDirectory,
+    [string[]]$Layouts = @('classic', 'gauges', 'minimal', 'orbit', 'radar', 'neon-pulse', 'reactor', 'waveform', 'matrix', 'starfield', 'speedometer', 'aurora', 'hex-grid', 'arsenal', 'bullet-storm', 'inferno', 'warzone-city', 'sniper-scope', 'cyber-ops', 'plasma-core', 'boss-fight'),
+    [float]$FrameTime = 1.6,
+    [int]$FrameIndex = -1,
+    [int]$RenderSize = 412
+)
 $ErrorActionPreference = 'Stop'
 Add-Type -AssemblyName System.Drawing
-$output = Join-Path $PSScriptRoot 'layout-previews'
+$output = if($OutputDirectory){$OutputDirectory}else{Join-Path $PSScriptRoot 'layout-previews'}
 New-Item -ItemType Directory -Path $output -Force | Out-Null
-foreach ($layout in @('classic', 'gauges', 'minimal', 'orbit', 'radar', 'neon-pulse', 'reactor', 'waveform', 'matrix', 'starfield', 'speedometer', 'aurora', 'hex-grid', 'arsenal', 'bullet-storm', 'inferno', 'warzone-city', 'sniper-scope', 'cyber-ops', 'plasma-core', 'boss-fight')) {
-    $bitmap = New-Object Drawing.Bitmap(412, 412)
+foreach ($layout in $Layouts) {
+    $phase = $FrameTime
+    $demoFps = if($FrameIndex -ge 0){[int][Math]::Round(165+30*[Math]::Sin($phase*.8))}else{165}
+    $demoCpu = if($FrameIndex -ge 0){[int][Math]::Round(42+4*[Math]::Sin($phase*.7))}else{42}
+    $demoGpu = if($FrameIndex -ge 0){[int][Math]::Round(58+5*[Math]::Sin($phase*.9))}else{58}
+    $bitmap = New-Object Drawing.Bitmap($RenderSize, $RenderSize)
     $g = [Drawing.Graphics]::FromImage($bitmap)
+    $g.ScaleTransform([float]($RenderSize/412.0),[float]($RenderSize/412.0))
     $g.SmoothingMode = 'AntiAlias'
     $g.TextRenderingHint = 'AntiAliasGridFit'
     $g.Clear([Drawing.Color]::FromArgb(32, 32, 32))
@@ -64,22 +76,27 @@ foreach ($layout in @('classic', 'gauges', 'minimal', 'orbit', 'radar', 'neon-pu
         $pen = New-Object Drawing.Pen($color,1)
         $g.DrawPolygon($pen,$points); $pen.Dispose()
     }
-    function Fps([int]$y=201) { Text '165' 206 $y 56 $white; Text 'FPS' 206 ($y+49) 22 $grey }
+    function Fps([int]$y=201) { Text "$demoFps" 206 $y 56 $white; Text 'FPS' 206 ($y+49) 22 $grey }
     function Temperatures([int]$y=325) {
         $g.FillRectangle([Drawing.Brushes]::Black,51,($y-16),148,32)
         $g.FillRectangle([Drawing.Brushes]::Black,213,($y-16),148,32)
-        Text 'CPU 42 C' 125 $y 22 $blue; Text 'GPU 58 C' 287 $y 22 $red
+        Text "CPU $demoCpu C" 125 $y 22 $blue; Text "GPU $demoGpu C" 287 $y 22 $red
     }
     function Rows([bool]$pulse=$false) {
-        $labels=@('CPU','GPU','FPS'); $values=@('42','58','165'); $colors=@($blue,$red,$purple)
+        $labels=@('CPU','GPU','FPS'); $values=@("$demoCpu","$demoGpu","$demoFps"); $colors=@($blue,$red,$purple)
         for($i=0;$i -lt 3;$i++) {
             $y=153+$i*80
             $g.FillRectangle([Drawing.Brushes]::Black,73,($y-32),266,65)
-            $pen=New-Object Drawing.Pen((Dim $colors[$i] .6),1)
+            $brightness=if($pulse){.45+.35*(1+[Math]::Sin($phase*2-$i))/2}else{.45}
+            $pen=New-Object Drawing.Pen((Dim $colors[$i] $brightness),1)
             $g.DrawRectangle($pen,73,($y-32),266,65); $pen.Dispose()
             Text $labels[$i] 119 $y 22 $grey; Text $values[$i] 260 $y 43 $colors[$i]
             if($i -lt 2) { Text 'C' 323 $y 22 $colors[$i] }
-            if($pulse) { Line 113 ($y+25) (190+$i*35) ($y+25) $colors[$i] 3 }
+            if($pulse) {
+                $factor=if($i -eq 2){.75}else{1.8}
+                $width=[Math]::Min(186,[Math]::Max(0,[double]$values[$i]*$factor))
+                Line 113 ($y+25) (113+$width) ($y+25) $colors[$i] 3
+            }
         }
     }
     function CombatHud([Drawing.Color]$accent) {
@@ -91,14 +108,14 @@ foreach ($layout in @('classic', 'gauges', 'minimal', 'orbit', 'radar', 'neon-pu
         Fill 124 123 164 112 ([Drawing.Color]::Black)
         Fps 166; Temperatures 346
         Line 74 363 184 363 $divider 3; Line 228 363 338 363 $divider 3
-        Line 74 363 (74+42*110/120) 363 $blue 3; Line 228 363 (228+58*110/120) 363 $red 3
+        Line 74 363 (74+$demoCpu*110/120) 363 $blue 3; Line 228 363 (228+$demoGpu*110/120) 363 $red 3
     }
     if ($layout -notin @('classic','gauges','minimal')) {
-        $phase=1.6
         switch($layout) {
             'arsenal' {
                 for($y=115;$y -lt 320;$y+=20){Line 75 $y 337 $y (Dim $tactical .08)}
-                $x=73;$y=251;$metal=[Drawing.Color]::FromArgb(108,125,108)
+                $flash=($phase%1.6) -lt .13
+                $x=76+$(if($flash){-3}else{0});$y=251;$metal=[Drawing.Color]::FromArgb(108,125,108)
                 Triangle $x ($y+9) ($x+46) ($y+3) ($x+46) ($y+29) $metal
                 Fill ($x+43) $y 92 27 $metal; Fill ($x+130) ($y+6) 83 9 $metal; Fill ($x+210) ($y+3) 13 15 $metal
                 Fill ($x+73) ($y-10) 45 7 $metal; Fill ($x+81) ($y-3) 5 8 $metal
@@ -106,8 +123,10 @@ foreach ($layout in @('classic', 'gauges', 'minimal', 'orbit', 'radar', 'neon-pu
                 Triangle ($x+98) ($y+25) ($x+106) ($y+59) ($x+87) ($y+53) $metal
                 Triangle ($x+59) ($y+25) ($x+75) ($y+25) ($x+63) ($y+47) $metal
                 Line ($x+52) ($y+8) ($x+120) ($y+8) (Dim $gold .7)
-                Triangle ($x+224) ($y+10) ($x+245) ($y-1) ($x+240) ($y+21) $orange
-                Triangle ($x+225) ($y+10) ($x+235) ($y+5) ($x+235) ($y+15) $gold
+                if($flash){
+                    Triangle ($x+224) ($y+10) ($x+245) ($y-1) ($x+240) ($y+21) $orange
+                    Triangle ($x+225) ($y+10) ($x+235) ($y+5) ($x+235) ($y+15) $gold
+                }
                 for($shell=0;$shell -lt 5;$shell++){
                     $t=($phase*.7+$shell*.2)%1; Fill (176+$t*115) (244-65*[Math]::Sin($t*[Math]::PI)) 8 3 (Dim $gold (.6*(1-$t)))
                 }; CombatHud $tactical
@@ -195,13 +214,13 @@ foreach ($layout in @('classic', 'gauges', 'minimal', 'orbit', 'radar', 'neon-pu
                 for($tail=0;$tail -lt 45;$tail+=3){Polar 30 187 ($phase*45-$tail) (Dim $mint (.5*(45-$tail)/45))}
                 Dot 103 126 3 $blue; Dot 304 278 3 $red; Rows
             }
-            'neon-pulse' { for($r=196;$r -lt 202;$r++){Circle 206 206 $r (Dim $purple .26)}; Rows $true }
+            'neon-pulse' { for($r=196;$r -lt 202;$r++){Circle 206 206 $r (Dim $purple (.12+.18*(1+[Math]::Sin($phase*2))/2))}; Rows $true }
             'reactor' {
                 for($ring=0;$ring -lt 3;$ring++){for($segment=0;$segment -lt 48;$segment++){
                     $speed=if($ring%2){-16}else{22}; $color=if($ring -eq 1){$purple}else{$mint}
                     Polar (152+$ring*15) (161+$ring*15) ($segment*7.5+$phase*$speed) (Dim $color .65)
                 }}
-                Hex 206 206 107 (Dim $mint .45); Fps; Temperatures 341
+                Hex 206 206 (107+4*[Math]::Sin($phase*2)) (Dim $mint .45); Fps; Temperatures 341
             }
             'waveform' {
                 Fps 132
@@ -215,7 +234,8 @@ foreach ($layout in @('classic', 'gauges', 'minimal', 'orbit', 'radar', 'neon-pu
                         $y2=$top+22+[Math]::Sin($x*.07+$top)*5
                         Line ($x-4) $y1 $x $y2 $color
                     }
-                    Line 147 $top 147 ($top+40) (Dim $color .3)
+                    $scan=83+($phase*40)%246
+                    Line $scan $top $scan ($top+40) (Dim $color .3)
                 }
             }
             'matrix' {
@@ -260,9 +280,9 @@ foreach ($layout in @('classic', 'gauges', 'minimal', 'orbit', 'radar', 'neon-pu
                     Text '0' ($x-$radius*.8) ($y+$radius*.7) 9 $grey
                     Text "$maximum" ($x+$radius*.8) ($y+$radius*.7) 9 $grey
                 }
-                SpeedDial 'FPS' 165 240 206 164 88 $false
-                SpeedDial 'CPU' 42 120 122 305 65 $true
-                SpeedDial 'GPU' 58 120 290 305 65 $true
+                SpeedDial 'FPS' $demoFps 240 206 164 88 $false
+                SpeedDial 'CPU' $demoCpu 120 122 305 65 $true
+                SpeedDial 'GPU' $demoGpu 120 290 305 65 $true
             }
             'aurora' {
                 for($wave=0;$wave -lt 4;$wave++){for($x=18;$x -lt 394;$x+=4){
@@ -278,7 +298,7 @@ foreach ($layout in @('classic', 'gauges', 'minimal', 'orbit', 'radar', 'neon-pu
             'hex-grid' {
                 for($row=0;$row -lt 8;$row++){for($column=0;$column -lt 8;$column++){
                     $x=20+$column*54+($row%2)*27; $y=26+$row*47
-                    if([Math]::Pow($x-206,2)+[Math]::Pow($y-206,2) -lt 172*172){Hex $x $y 29 (Dim $blue .22)}
+                    if([Math]::Pow($x-206,2)+[Math]::Pow($y-206,2) -lt 172*172){Hex $x $y 29 (Dim $blue (.08+.23*(1+[Math]::Sin($phase*1.5-$column*.7-$row*.35))/2))}
                 }}
                 $xs=@(126,286,206);$ys=@(180,180,304);$labels=@('CPU','GPU','FPS');$vals=@('42','58','165');$colors=@($blue,$red,$purple)
                 for($i=0;$i -lt 3;$i++){
@@ -334,7 +354,11 @@ foreach ($layout in @('classic', 'gauges', 'minimal', 'orbit', 'radar', 'neon-pu
             Text '42 C' 133 347 22 $blue; Text '58 C' 279 347 22 $red
         }
     }
-    $bitmap.Save((Join-Path $output "layout-$layout.bmp"), [Drawing.Imaging.ImageFormat]::Bmp)
-    $bitmap.Save((Join-Path $output "layout-$layout.png"), [Drawing.Imaging.ImageFormat]::Png)
+    if($FrameIndex -ge 0){
+        $bitmap.Save((Join-Path $output ('{0}-{1:D2}.bmp' -f $layout,$FrameIndex)),[Drawing.Imaging.ImageFormat]::Bmp)
+    }else{
+        $bitmap.Save((Join-Path $output "layout-$layout.bmp"), [Drawing.Imaging.ImageFormat]::Bmp)
+        $bitmap.Save((Join-Path $output "layout-$layout.png"), [Drawing.Imaging.ImageFormat]::Png)
+    }
     $g.Dispose(); $clip.Dispose(); $bitmap.Dispose()
 }
