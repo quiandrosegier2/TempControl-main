@@ -9,6 +9,8 @@
 #include <Wire.h>
 #include <U8g2lib.h>
 #include <Arduino_GFX_Library.h>
+#include <Preferences.h>
+#include "display-layout.h"
 
 // ---------- Instellingen ----------
 static const char *BRAND = "QPRINTS";
@@ -56,6 +58,9 @@ static float fps = NAN;
 static uint32_t lastRx = 0;
 static bool everReceived = false;
 static bool dirty = true;
+static DisplayLayout displayLayout = DisplayLayout::Classic;
+static Preferences layoutPreferences;
+static bool preferencesReady = false;
 
 static float parseValue(const char *s) {
   char *end;
@@ -75,6 +80,14 @@ static void handleLine(char *line) {
     if (strncmp(tok, "CPU=", 4) == 0) cpu = parseValue(tok + 4);
     else if (strncmp(tok, "GPU=", 4) == 0) gpu = parseValue(tok + 4);
     else if (strncmp(tok, "FPS=", 4) == 0) f = parseValue(tok + 4);
+    else if (strncmp(tok, "LAYOUT=", 7) == 0) {
+      DisplayLayout requested;
+      if (parseLayout(tok + 7, requested) && requested != displayLayout) {
+        displayLayout = requested;
+        if (preferencesReady) layoutPreferences.putString("layout", tok + 7);
+        dirty = true;
+      }
+    }
   }
   if (isnan(cpu) && isnan(gpu) && isnan(f)) return;
 
@@ -210,7 +223,7 @@ static void drawTemp(void (*icon)(int, int, uint16_t), const char *label, float 
   drawValue(val, live ? (isHot(t) ? VALUE_HOT : VALUE_COOL) : OFFLINE, cy, true);
 }
 
-static void render(bool live) {
+static void renderClassic(bool live) {
   gfx->fillScreen(RGB565_BLACK);
 
   // Merk: "QPRINTS //"
@@ -243,6 +256,94 @@ static void render(bool live) {
   gfx->flush();
 }
 
+static void compactHeader(bool live) {
+  gfx->setFont(u8g2_font_fub30_tr);
+  gfx->setTextColor(to565(VALUE_WHITE));
+  drawText(BRAND, CX, 77, CENTER);
+  gfx->setFont(u8g2_font_fub17_tr);
+  gfx->setTextColor(to565(GREY));
+  drawText(live ? "SYSTEM MONITOR" : (everReceived ? "VERBINDING VERLOREN" : "WACHTEN OP PC"), CX, 116, CENTER);
+}
+
+static void formatReading(char *buffer, size_t size, float value, bool live) {
+  if (live && !isnan(value)) snprintf(buffer, size, "%ld", min(lroundf(value), 9999L));
+  else snprintf(buffer, size, "--");
+}
+
+static void drawGauge(const char *label, float value, bool live, int x) {
+  const int y = 212, radius = 64;
+  RGB color = !live || isnan(value) ? OFFLINE : isHot(value) ? VALUE_HOT : VALUE_COOL;
+  const int filled = live && !isnan(value) ? constrain((int)lroundf(value * 2.7f), 0, 270) : 0;
+  for (int angle = 0; angle <= 270; angle += 2) {
+    const float radians = (135 + angle) * PI / 180.0f;
+    gfx->drawLine(x + cosf(radians) * (radius - 7), y + sinf(radians) * (radius - 7),
+                  x + cosf(radians) * radius, y + sinf(radians) * radius,
+                  to565(angle < filled ? color : DIVIDER));
+  }
+  gfx->setFont(u8g2_font_fub17_tr);
+  gfx->setTextColor(to565(GREY));
+  drawText(label, x, 186, CENTER);
+  char valueText[12];
+  formatReading(valueText, sizeof(valueText), value, live);
+  gfx->setFont(u8g2_font_fub35_tn);
+  gfx->setTextColor(to565(color));
+  drawText(valueText, x, 225, CENTER);
+  gfx->setFont(u8g2_font_fub17_tr);
+  drawText("C", x, 267, CENTER);
+}
+
+static void renderGauges(bool live) {
+  gfx->fillScreen(RGB565_BLACK);
+  compactHeader(live);
+  drawGauge("CPU", cpuTemp, live, 126);
+  drawGauge("GPU", gpuTemp, live, 286);
+  char value[12];
+  formatReading(value, sizeof(value), fps, live);
+  gfx->setFont(u8g2_font_fub35_tn);
+  gfx->setTextColor(to565(live ? VALUE_WHITE : OFFLINE));
+  drawText(value, CX, 326, CENTER);
+  gfx->setFont(u8g2_font_fub17_tr);
+  gfx->setTextColor(to565(GREY));
+  drawText("FPS", CX, 367, CENTER);
+  gfx->flush();
+}
+
+static void renderMinimal(bool live) {
+  gfx->fillScreen(RGB565_BLACK);
+  compactHeader(live);
+  char value[12];
+  formatReading(value, sizeof(value), fps, live);
+  gfx->setFont(u8g2_font_fub42_tn);
+  gfx->setTextSize(2);
+  gfx->setTextColor(to565(live ? VALUE_WHITE : OFFLINE));
+  drawText(value, CX, 198, CENTER);
+  gfx->setTextSize(1);
+  gfx->setFont(u8g2_font_fub17_tr);
+  gfx->setTextColor(to565(GREY));
+  drawText("FPS", CX, 262, CENTER);
+  gfx->drawFastHLine(83, 287, 246, to565(DIVIDER));
+  for (int i = 0; i < 2; ++i) {
+    int x = i == 0 ? 133 : 279;
+    float temperature = i == 0 ? cpuTemp : gpuTemp;
+    gfx->setFont(u8g2_font_fub17_tr);
+    gfx->setTextColor(to565(GREY));
+    drawText(i == 0 ? "CPU" : "GPU", x, 313, CENTER);
+    formatReading(value, sizeof(value), temperature, live);
+    strncat(value, " C", sizeof(value) - strlen(value) - 1);
+    gfx->setTextColor(to565(!live || isnan(temperature) ? OFFLINE : isHot(temperature) ? VALUE_HOT : VALUE_COOL));
+    drawText(value, x, 347, CENTER);
+  }
+  gfx->flush();
+}
+
+static void render(bool live) {
+  switch (displayLayout) {
+    case DisplayLayout::Gauges: renderGauges(live); break;
+    case DisplayLayout::Minimal: renderMinimal(live); break;
+    default: renderClassic(live); break;
+  }
+}
+
 // Reset LCD + touch via de TCA9554 IO-expander (het bord heeft geen directe RST-pin).
 static void resetPanel() {
   Wire.begin(PIN_I2C_SDA, PIN_I2C_SCL);
@@ -261,6 +362,11 @@ static void resetPanel() {
 
 void setup() {
   Serial.begin(115200);
+  preferencesReady = layoutPreferences.begin("tempcontrol", false);
+  if (preferencesReady) {
+    String stored = layoutPreferences.getString("layout", "classic");
+    parseLayout(stored.c_str(), displayLayout);
+  }
 
   resetPanel();
 

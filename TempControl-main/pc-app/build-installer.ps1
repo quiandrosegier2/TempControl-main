@@ -87,6 +87,7 @@ New-Item -ItemType Directory -Path (Join-Path $publishDir 'drivers') -Force | Ou
 Copy-Item $pawnio (Join-Path $publishDir 'drivers\PawnIO_setup.exe')
 
 # 5. Installer compileren
+& (Join-Path $installerDir 'build-layout-previews.ps1')
 $iscc = $InnoCompiler
 if (-not $iscc) { $iscc = @(
     "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe",

@@ -4,6 +4,8 @@ firmware/.pio/
 # .NET
 pc-app/bin/
 pc-app/obj/
+tests/**/bin/
+tests/**/obj/
 
 # Installer build
 pc-app/installer/publish/
@@ -11,6 +13,7 @@ pc-app/installer/PresentMon-*.exe
 pc-app/installer/PresentMon-*.csv
 dist/
 pc-app/installer/tool-cache/
+pc-app/installer/layout-previews/
 
 # Lokale ontwikkeltools en logs
 .appdata/

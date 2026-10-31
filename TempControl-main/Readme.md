@@ -18,7 +18,7 @@ pc-app/installer/  Inno Setup-installer
 
 Download het installatiebestand via [GitHub Releases](https://github.com/quiandrosegier2/TempControl-main/releases/latest).
 
-1. Start `TempMonitor-Setup-1.0.0.exe` en geef toestemming voor beheerdersrechten.
+1. Start `TempMonitor-Setup-1.1.0.exe`, geef toestemming voor beheerdersrechten en kies een schermlayout.
 2. Sluit een **Waveshare ESP32-S3-Touch-LCD-1.46 (16 MB)** met een USB-C-datakabel aan.
 3. Laat aan het einde van Setup de optie om firmware te installeren aangevinkt.
 4. Kies de COM-poort van het scherm en klik op **Firmware installeren**. Dit vervangt de bestaande firmware.
@@ -30,7 +30,17 @@ Opnieuw installeren kan via **Start > TempMonitor > Firmware installeren**. De m
 
 De app, .NET, firmware, het uploadprogramma en de optionele PawnIO-driver zitten in de installer. Gebruikers hoeven geen VS Code, Python, PlatformIO, internetverbinding of winget te hebben. Windows kan na de driverinstallatie om een herstart vragen.
 
-### Voor ontwikkelaars: via VS Code
+### Schermlayouts
+
+- **Classic**: de originele QPRINTS-weergave met drie rijen.
+- **Gauges**: ronde CPU- en GPU-temperatuurmeters met FPS eronder.
+- **Minimal**: grote FPS-weergave met compacte CPU- en GPU-temperaturen.
+
+Setup toont schematische voorbeelden met testwaarden en bewaart de keuze in `layout.txt` naast de Windows-app. De app stuurt die keuze via USB; het scherm onthoudt de layout. Om later te wisselen voer je Setup opnieuw uit. Staat firmware 1.1.0 al op het scherm, vink dan de firmwarestap aan het einde uit: opnieuw flashen is niet nodig. Bij een upgrade van 1.0.0 moet je de nieuwe firmware eenmaal uploaden voor de nieuwe layouts.
+
+Voor stille installaties kan de layout worden opgegeven met `/LAYOUT=classic`, `/LAYOUT=gauges` of `/LAYOUT=minimal`. Zonder deze parameter blijft een bestaande keuze behouden.
+
+### Firmware zelf bouwen met VS Code
 
 1. Installeer **Visual Studio Code** en daarin de extensie **PlatformIO IDE**.
 2. Open in VS Code de map `firmware/` (*File → Open Folder*).
@@ -42,7 +52,7 @@ De app, .NET, firmware, het uploadprogramma en de optionele PawnIO-driver zitten
 
 ## 2. Windows-app installeren
 
-Voer `TempMonitor-Setup-1.0.0.exe` uit. De installer:
+Voer `TempMonitor-Setup-1.1.0.exe` uit. De installer:
 
 - installeert de app in `C:\Program Files\TempMonitor`; .NET zit erin, dus dat hoef je niet apart te installeren
 - installeert desgewenst de **PawnIO**-driver (vinkje). Die is nodig om de CPU-temperatuur van een Ryzen te lezen.
@@ -97,6 +107,8 @@ CPU=42.5;GPU=48.0;FPS=165
 ```
 
 Een onbekende waarde wordt `nan`. Stuur je `PING`, dan antwoordt het scherm met `TEMPMON`.
+
+Optioneel kan `;LAYOUT=classic`, `;LAYOUT=gauges` of `;LAYOUT=minimal` worden toegevoegd. Een afzonderlijke `LAYOUT=gauges`-regel werkt ook, zonder de meetwaarden te veranderen. Onbekende layoutnamen worden genegeerd. Het scherm schrijft de keuze alleen naar het geheugen wanneer deze verandert.
 
 ## Aanpassen
 

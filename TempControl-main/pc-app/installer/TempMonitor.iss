@@ -3,7 +3,7 @@
 
 #define AppName "TempMonitor"
 #ifndef AppVersion
-  #define AppVersion "1.0.0"
+  #define AppVersion "1.1.0"
 #endif
 
 [Setup]
@@ -38,6 +38,7 @@ Name: "pawnio"; Description: "PawnIO-driver installeren (nodig om de CPU-tempera
 Source: "publish\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 Source: "task.ps1"; DestDir: "{app}"; Flags: ignoreversion
 Source: "flash-firmware.ps1"; DestDir: "{app}"; Flags: ignoreversion
+Source: "layout-previews\*.bmp"; Flags: dontcopy
 
 [Icons]
 Name: "{autoprograms}\TempMonitor\Firmware installeren"; Filename: "{sys}\WindowsPowerShell\v1.0\powershell.exe"; Parameters: "-NoProfile -STA -ExecutionPolicy Bypass -WindowStyle Hidden -File ""{app}\flash-firmware.ps1"""; WorkingDir: "{app}"
@@ -61,6 +62,77 @@ Type: filesandordirs; Name: "{commonappdata}\TempMonitor"
 [Code]
 var
   DriverNeedsRestart: Boolean;
+  LayoutPage: TWizardPage;
+  LayoutChoice: TNewComboBox;
+  LayoutPreview: TBitmapImage;
+  LayoutDescription: TNewStaticText;
+
+function SelectedLayout: String;
+begin
+  case LayoutChoice.ItemIndex of
+    1: Result := 'gauges';
+    2: Result := 'minimal';
+  else
+    Result := 'classic';
+  end;
+end;
+
+procedure LayoutChanged(Sender: TObject);
+begin
+  LayoutPreview.Bitmap.LoadFromFile(ExpandConstant('{tmp}\layout-' + SelectedLayout + '.bmp'));
+  case LayoutChoice.ItemIndex of
+    1: LayoutDescription.Caption := 'Gauges: twee ronde temperatuurmeters met FPS eronder.';
+    2: LayoutDescription.Caption := 'Minimal: grote FPS-weergave met compacte CPU- en GPU-temperaturen.';
+  else
+    LayoutDescription.Caption := 'Classic: de originele QPRINTS-weergave met CPU, GPU en FPS in drie rijen.';
+  end;
+end;
+
+procedure InitializeWizard;
+var
+  SavedLayout: AnsiString;
+  InitialLayout: String;
+  Note: TNewStaticText;
+begin
+  ExtractTemporaryFile('layout-classic.bmp');
+  ExtractTemporaryFile('layout-gauges.bmp');
+  ExtractTemporaryFile('layout-minimal.bmp');
+  LayoutPage := CreateCustomPage(wpSelectTasks, 'Kies je schermlayout',
+    'Alle layouts tonen CPU-temperatuur, GPU-temperatuur en FPS.');
+  LayoutChoice := TNewComboBox.Create(LayoutPage);
+  LayoutChoice.Parent := LayoutPage.Surface;
+  LayoutChoice.SetBounds(0, ScaleY(12), ScaleX(205), ScaleY(28));
+  LayoutChoice.Style := csDropDownList;
+  LayoutChoice.Items.Add('Classic');
+  LayoutChoice.Items.Add('Gauges');
+  LayoutChoice.Items.Add('Minimal');
+  LayoutChoice.ItemIndex := 0;
+  InitialLayout := 'classic';
+  if LoadStringFromFile(ExpandConstant('{app}\layout.txt'), SavedLayout) then
+    InitialLayout := Trim(String(SavedLayout));
+  InitialLayout := ExpandConstant('{param:LAYOUT|' + InitialLayout + '}');
+  if InitialLayout = 'gauges' then LayoutChoice.ItemIndex := 1
+  else if InitialLayout = 'minimal' then LayoutChoice.ItemIndex := 2
+  else if InitialLayout <> 'classic' then
+    RaiseException('Onbekende layout. Kies classic, gauges of minimal.');
+  LayoutDescription := TNewStaticText.Create(LayoutPage);
+  LayoutDescription.Parent := LayoutPage.Surface;
+  LayoutDescription.AutoSize := False;
+  LayoutDescription.WordWrap := True;
+  LayoutDescription.SetBounds(0, ScaleY(58), ScaleX(205), ScaleY(115));
+  LayoutPreview := TBitmapImage.Create(LayoutPage);
+  LayoutPreview.Parent := LayoutPage.Surface;
+  LayoutPreview.SetBounds(LayoutPage.SurfaceWidth - ScaleX(220), 0, ScaleX(220), ScaleY(220));
+  LayoutPreview.Stretch := True;
+  Note := TNewStaticText.Create(LayoutPage);
+  Note.Parent := LayoutPage.Surface;
+  Note.AutoSize := False;
+  Note.WordWrap := True;
+  Note.SetBounds(0, ScaleY(190), ScaleX(205), ScaleY(45));
+  Note.Caption := 'Voorbeeld met testwaarden.' + #13#10 + 'Later wisselen? Start Setup opnieuw.';
+  LayoutChoice.OnChange := @LayoutChanged;
+  LayoutChanged(nil);
+end;
 
 function PawnIOInstalled: Boolean;
 begin
@@ -71,6 +143,9 @@ procedure CurStepChanged(CurStep: TSetupStep);
 var
   ResultCode: Integer;
 begin
+  if CurStep = ssPostInstall then
+    if not SaveStringToFile(ExpandConstant('{app}\layout.txt'), SelectedLayout + #13#10, False) then
+      RaiseException('De gekozen schermlayout kon niet worden opgeslagen.');
   if (CurStep = ssPostInstall) and WizardIsTaskSelected('pawnio') and not PawnIOInstalled then
   begin
     WizardForm.StatusLabel.Caption := 'PawnIO-driver installeren...';

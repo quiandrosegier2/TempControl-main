@@ -37,6 +37,8 @@ if (listOnly)
 
 Log.Start();
 Log.Write("TempMonitor gestart.");
+string layout = LayoutSettings.Read(AppContext.BaseDirectory);
+Log.Write($"Layout: {layout}");
 var fpsMonitor = new FpsMonitor();
 AppDomain.CurrentDomain.ProcessExit += (_, _) => fpsMonitor.Dispose();
 SerialPort? port = null;
@@ -48,7 +50,7 @@ while (true)
     float? cpu = ReadCpuTemp(computer);
     float? gpu = ReadGpuTemp(computer);
     float? fps = fpsMonitor.TakeFps();
-    string line = $"CPU={Fmt(cpu)};GPU={Fmt(gpu)};FPS={(fps.HasValue ? fps.Value.ToString("0", CultureInfo.InvariantCulture) : "nan")}";
+    string line = $"CPU={Fmt(cpu)};GPU={Fmt(gpu)};FPS={(fps.HasValue ? fps.Value.ToString("0", CultureInfo.InvariantCulture) : "nan")};LAYOUT={layout}";
 
     try
     {
