@@ -3,7 +3,7 @@
 
 #define AppName "TempMonitor"
 #ifndef AppVersion
-  #define AppVersion "1.1.0"
+  #define AppVersion "1.1.1"
 #endif
 
 [Setup]
@@ -108,7 +108,7 @@ begin
   LayoutChoice.Items.Add('Minimal');
   LayoutChoice.ItemIndex := 0;
   InitialLayout := 'classic';
-  if LoadStringFromFile(ExpandConstant('{app}\layout.txt'), SavedLayout) then
+  if LoadStringFromFile(AddBackslash(WizardDirValue) + 'layout.txt', SavedLayout) then
     InitialLayout := Trim(String(SavedLayout));
   InitialLayout := ExpandConstant('{param:LAYOUT|' + InitialLayout + '}');
   if InitialLayout = 'gauges' then LayoutChoice.ItemIndex := 1

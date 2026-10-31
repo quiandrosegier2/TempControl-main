@@ -19,7 +19,7 @@ A compact PC system monitor featuring a round Waveshare ESP32-S3-Touch-LCD-1.46 
 
 Download the setup executable from [GitHub Releases](https://github.com/quiandrosegier2/TempControl-main/releases/latest).
 
-1. Run `TempMonitor-Setup-1.1.0.exe` on a Windows x64 PC and allow administrator access. Choose Classic, Gauges or Minimal on the layout page.
+1. Run `TempMonitor-Setup-1.1.1.exe` on a Windows x64 PC and allow administrator access. Choose Classic, Gauges or Minimal on the layout page.
 2. Connect a **Waveshare ESP32-S3-Touch-LCD-1.46 (16 MB)** using a USB-C data cable.
 3. Leave the firmware installation option selected at the end of Setup.
 4. Select the display's COM port and click **Firmware installeren**. This replaces any existing firmware on that display.

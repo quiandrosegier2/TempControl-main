@@ -18,7 +18,7 @@ pc-app/installer/  Inno Setup-installer
 
 Download het installatiebestand via [GitHub Releases](https://github.com/quiandrosegier2/TempControl-main/releases/latest).
 
-1. Start `TempMonitor-Setup-1.1.0.exe`, geef toestemming voor beheerdersrechten en kies een schermlayout.
+1. Start `TempMonitor-Setup-1.1.1.exe`, geef toestemming voor beheerdersrechten en kies een schermlayout.
 2. Sluit een **Waveshare ESP32-S3-Touch-LCD-1.46 (16 MB)** met een USB-C-datakabel aan.
 3. Laat aan het einde van Setup de optie om firmware te installeren aangevinkt.
 4. Kies de COM-poort van het scherm en klik op **Firmware installeren**. Dit vervangt de bestaande firmware.
@@ -52,7 +52,7 @@ Voor stille installaties kan de layout worden opgegeven met `/LAYOUT=classic`, `
 
 ## 2. Windows-app installeren
 
-Voer `TempMonitor-Setup-1.1.0.exe` uit. De installer:
+Voer `TempMonitor-Setup-1.1.1.exe` uit. De installer:
 
 - installeert de app in `C:\Program Files\TempMonitor`; .NET zit erin, dus dat hoef je niet apart te installeren
 - installeert desgewenst de **PawnIO**-driver (vinkje). Die is nodig om de CPU-temperatuur van een Ryzen te lezen.
@@ -83,6 +83,14 @@ Het resultaat komt in `dist\TempMonitor-Setup-<versie>.exe`. De versie haalt het
 > **Verkenner loopt vast of de setup is "geblokkeerd"?** Op beheerde pc's met Microsoft Defender for Endpoint blokkeert de ASR-regel *"Block executable files from running unless they meet a prevalence, age, or trusted list criterion"* (`01443614-cd74-433a-b99e-2ecdc07bfc25`) zelfgebouwde, niet-ondertekende exe-bestanden. Installeer dan op een pc zonder die regel, of voeg een ASR-uitzondering of een code-signing-certificaat toe.
 
 ### Ontwikkelen / testen zonder installer
+
+De installer-opstarttest draait zonder software of drivers te installeren en controleert de drie layoutvoorbeelden, de standaardkeuze, een bestaande keuze en een expliciete override:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File tests\Test-InstallerStartup.ps1 -InnoCompiler "C:\Program Files (x86)\Inno Setup 6\ISCC.exe"
+```
+
+Voer dit uit vanuit de projectmap met `firmware/`, `pc-app/` en `tests/`, nadat de installer-payload en layoutvoorbeelden gebouwd zijn.
 
 In een terminal **als administrator**, in de map `pc-app/`:
 
