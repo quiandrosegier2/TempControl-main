@@ -1,7 +1,7 @@
-# Bouwt dist\TempMonitor-Setup-<versie>.exe
+# Bouwt dist\Qprints esp installer-<versie>.exe
 #   powershell -ExecutionPolicy Bypass -File .\build-installer.ps1
 #   powershell -ExecutionPolicy Bypass -File .\build-installer.ps1 -OutputDir E:\   (bv. rechtstreeks naar een USB-stick)
-# Vereist: pioarduino 6.2.0, .NET 10 SDK en Inno Setup 6.
+# Vereist: pioarduino 6.2.0, .NET 10 SDK en Inno Setup 6.6 of nieuwer.
 
 param([string]$OutputDir, [string]$PlatformIO, [string]$InnoCompiler)
 
@@ -88,6 +88,7 @@ Copy-Item $pawnio (Join-Path $publishDir 'drivers\PawnIO_setup.exe')
 
 # 5. Installer compileren
 & (Join-Path $installerDir 'build-layout-previews.ps1')
+& (Join-Path $installerDir 'build-branding.ps1')
 $iscc = $InnoCompiler
 if (-not $iscc) { $iscc = @(
     "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe",
@@ -99,4 +100,4 @@ if (-not $iscc) { throw 'Inno Setup 6 niet gevonden (winget install JRSoftware.I
 & $iscc "/DAppVersion=$version" "/O$OutputDir" (Join-Path $installerDir 'TempMonitor.iss')
 if ($LASTEXITCODE) { throw 'Inno Setup mislukt' }
 
-Write-Host "`nKlaar: $(Join-Path $OutputDir "TempMonitor-Setup-$version.exe")"
+Write-Host "`nKlaar: $(Join-Path $OutputDir "Qprints esp installer-$version.exe")"

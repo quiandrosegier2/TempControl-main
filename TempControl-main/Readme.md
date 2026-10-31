@@ -18,7 +18,7 @@ pc-app/installer/  Inno Setup-installer
 
 Download het installatiebestand via [GitHub Releases](https://github.com/quiandrosegier2/TempControl-main/releases/latest).
 
-1. Start `TempMonitor-Setup-1.2.0.exe`, geef toestemming voor beheerdersrechten en kies een schermlayout.
+1. Start `Qprints esp installer-1.2.1.exe`, geef toestemming voor beheerdersrechten en kies een schermlayout.
 2. Sluit een **Waveshare ESP32-S3-Touch-LCD-1.46 (16 MB)** met een USB-C-datakabel aan.
 3. Laat aan het einde van Setup de optie om firmware te installeren aangevinkt.
 4. Kies de COM-poort van het scherm en klik op **Firmware installeren**. Dit vervangt de bestaande firmware.
@@ -66,14 +66,14 @@ Voor stille installaties kan `/LAYOUT=` worden gevolgd door `classic`, `gauges`,
 
 ## 2. Windows-app installeren
 
-Voer `TempMonitor-Setup-1.2.0.exe` uit. De installer:
+Voer `Qprints esp installer-1.2.1.exe` uit. De donkere installer en het firmwarevenster tonen het QPRINTS //-beeldmerk. De installer:
 
 - installeert de app in `C:\Program Files\TempMonitor`; .NET zit erin, dus dat hoef je niet apart te installeren
 - installeert desgewenst de **PawnIO**-driver (vinkje). Die is nodig om de CPU-temperatuur van een Ryzen te lezen.
 - zorgt dat de app onzichtbaar en met beheerdersrechten start bij elke aanmelding
 - start de app meteen
 
-Verwijderen gaat via *Instellingen → Apps → TempMonitor*.
+Verwijderen gaat via *Instellingen → Apps → Qprints esp installer*.
 
 **Werkt er iets niet?** Kijk in het logbestand `C:\ProgramData\TempMonitor\TempMonitor.log`. Daar staat of het scherm gevonden is en welke sensoren ontbreken.
 
@@ -85,14 +85,14 @@ Met `-PlatformIO <pad-naar-pio.exe>` en `-InnoCompiler <pad-naar-ISCC.exe>` kun 
 
 De ESP32-SDK bevat lange bestandsnamen. Zorg op de Windows-build-pc voor ondersteuning voor lange bestandspaden of gebruik een korte PlatformIO-map. Dit geldt alleen voor ontwikkelaars die de installer bouwen.
 
-Vereisten: [.NET 10 SDK](https://dotnet.microsoft.com/download/dotnet/10.0) en Inno Setup 6 (`winget install JRSoftware.InnoSetup`).
+Vereisten: [.NET 10 SDK](https://dotnet.microsoft.com/download/dotnet/10.0) en Inno Setup 6.6 of nieuwer (`winget install JRSoftware.InnoSetup`).
 
 ```powershell
 cd pc-app
 powershell -ExecutionPolicy Bypass -File .\build-installer.ps1
 ```
 
-Het resultaat komt in `dist\TempMonitor-Setup-<versie>.exe`. De versie haalt het script uit `TempMonitor.csproj`. Met `-OutputDir E:\` komt de setup op een andere plek terecht, bijvoorbeeld rechtstreeks op een USB-stick.
+Het resultaat komt in `dist\Qprints esp installer-<versie>.exe`. De versie haalt het script uit `TempMonitor.csproj`. Met `-OutputDir E:\` komt de setup op een andere plek terecht, bijvoorbeeld rechtstreeks op een USB-stick. `build-branding.ps1` genereert het woordmerk, pictogram en de welkomstafbeelding; `build-layout-previews.ps1` genereert de dertien donkere layoutvoorbeelden.
 
 > **Verkenner loopt vast of de setup is "geblokkeerd"?** Op beheerde pc's met Microsoft Defender for Endpoint blokkeert de ASR-regel *"Block executable files from running unless they meet a prevalence, age, or trusted list criterion"* (`01443614-cd74-433a-b99e-2ecdc07bfc25`) zelfgebouwde, niet-ondertekende exe-bestanden. Installeer dan op een pc zonder die regel, of voeg een ASR-uitzondering of een code-signing-certificaat toe.
 

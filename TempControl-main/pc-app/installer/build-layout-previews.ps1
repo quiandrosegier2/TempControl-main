@@ -8,7 +8,7 @@ foreach ($layout in @('classic', 'gauges', 'minimal', 'orbit', 'radar', 'neon-pu
     $g = [Drawing.Graphics]::FromImage($bitmap)
     $g.SmoothingMode = 'AntiAlias'
     $g.TextRenderingHint = 'AntiAliasGridFit'
-    $g.Clear([Drawing.Color]::FromArgb(240, 240, 240))
+    $g.Clear([Drawing.Color]::FromArgb(32, 32, 32))
     $g.FillEllipse([Drawing.Brushes]::Black, 0, 0, 411, 411)
     $clip = New-Object Drawing.Drawing2D.GraphicsPath
     $clip.AddEllipse(0,0,412,412); $g.SetClip($clip)

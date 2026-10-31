@@ -19,35 +19,95 @@ if (-not $identity.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrat
         Start-Process -FilePath "$PSHOME\powershell.exe" -Verb RunAs `
             -ArgumentList ('-NoProfile -STA -ExecutionPolicy Bypass -WindowStyle Hidden -File "' + $PSCommandPath + '"') | Out-Null
     } catch {
-        [void][Windows.Forms.MessageBox]::Show('Beheerdersrechten zijn nodig om TempMonitor tijdelijk te stoppen en de firmware te installeren.', 'TempControl')
+        [void][Windows.Forms.MessageBox]::Show('Beheerdersrechten zijn nodig om TempMonitor tijdelijk te stoppen en de firmware te installeren.', 'Qprints esp installer')
     }
     return
 }
 [Windows.Forms.Application]::EnableVisualStyles()
+if (-not ('QprintsWindowStyle' -as [type])) {
+    Add-Type @'
+using System;
+using System.Runtime.InteropServices;
+public static class QprintsWindowStyle {
+    [DllImport("dwmapi.dll")]
+    public static extern int DwmSetWindowAttribute(IntPtr hwnd, int attribute, ref int value, int size);
+    [DllImport("uxtheme.dll", CharSet=CharSet.Unicode)]
+    public static extern int SetWindowTheme(IntPtr hwnd, string appName, string idList);
+}
+'@
+}
 $form = New-Object Windows.Forms.Form
-$form.Text = 'TempControl - Firmware installeren'
-$form.ClientSize = New-Object Drawing.Size(660, 470)
+$form.Text = 'Qprints esp installer - Firmware'
+$form.ClientSize = New-Object Drawing.Size(660, 530)
+$form.BackColor = [Drawing.Color]::FromArgb(24,25,31)
+$form.ForeColor = [Drawing.Color]::FromArgb(238,239,244)
+$form.Font = [Drawing.Font]::new('Segoe UI',9)
+$form.Add_HandleCreated({
+    $dark = 1
+    [void][QprintsWindowStyle]::DwmSetWindowAttribute($form.Handle,20,[ref]$dark,4)
+})
 $form.StartPosition = 'CenterScreen'
 $form.FormBorderStyle = 'FixedDialog'
 $form.MaximizeBox = $false
+$brandLogo = New-Object Windows.Forms.PictureBox
+$brandLogo.SetBounds(18,10,205,46)
+$brandLogo.SizeMode = 'Zoom'
+$brandPath = Join-Path $PSScriptRoot 'branding\qprints-wordmark.png'
+if (Test-Path $brandPath) {
+    $stream = [IO.MemoryStream]::new([IO.File]::ReadAllBytes($brandPath))
+    $loaded = [Drawing.Image]::FromStream($stream)
+    $brandLogo.Image = [Drawing.Bitmap]::new($loaded)
+    $loaded.Dispose(); $stream.Dispose()
+}
+$appIcon = $null
+$iconPath = Join-Path $PSScriptRoot 'branding\qprints.ico'
+if (Test-Path $iconPath) { $appIcon = [Drawing.Icon]::new($iconPath); $form.Icon = $appIcon }
 $intro = New-Object Windows.Forms.Label
-$intro.SetBounds(18, 15, 620, 100)
+$intro.SetBounds(18, 65, 620, 100)
 $intro.Text = "Alleen voor Waveshare ESP32-S3-Touch-LCD-1.46 (16 MB).`r`nSluit het scherm aan met een USB-C-datakabel en kies de poort hieronder.`r`nGeen poort of geen verbinding? Houd BOOT ingedrukt, druk op RESET,`r`nlaat BOOT los en klik op Vernieuwen. De COM-poort kan dan veranderen.`r`nInstalleren vervangt de bestaande firmware op het geselecteerde scherm."
 $ports = New-Object Windows.Forms.ComboBox
-$ports.SetBounds(18, 120, 440, 28)
+$ports.SetBounds(18, 170, 440, 28)
 $ports.DropDownStyle = 'DropDownList'
+$ports.BackColor = [Drawing.Color]::FromArgb(36,38,47)
+$ports.ForeColor = $form.ForeColor
+$ports.FlatStyle = 'Flat'
+$ports.DrawMode = 'OwnerDrawFixed'
+$ports.ItemHeight = 22
+$ports.Add_DrawItem({
+    param($sender,$eventArgs)
+    $brush = [Drawing.SolidBrush]::new($ports.BackColor)
+    $eventArgs.Graphics.FillRectangle($brush,$eventArgs.Bounds)
+    $brush.Dispose()
+    if ($eventArgs.Index -ge 0) {
+        $flags = [Windows.Forms.TextFormatFlags]::Left -bor [Windows.Forms.TextFormatFlags]::VerticalCenter -bor [Windows.Forms.TextFormatFlags]::NoPrefix
+        [Windows.Forms.TextRenderer]::DrawText($eventArgs.Graphics,[string]$ports.Items[$eventArgs.Index],$ports.Font,$eventArgs.Bounds,$ports.ForeColor,$flags)
+    }
+})
 $refresh = New-Object Windows.Forms.Button
-$refresh.SetBounds(470, 118, 170, 30)
+$refresh.SetBounds(470, 168, 170, 30)
 $refresh.Text = 'Vernieuwen'
+$refresh.FlatStyle = 'Flat'
+$refresh.BackColor = [Drawing.Color]::FromArgb(43,45,55)
+$refresh.ForeColor = $form.ForeColor
+$refresh.FlatAppearance.BorderColor = [Drawing.Color]::FromArgb(75,78,93)
 $flash = New-Object Windows.Forms.Button
-$flash.SetBounds(18, 160, 220, 34)
+$flash.SetBounds(18, 212, 220, 34)
 $flash.Text = 'Firmware installeren'
+$flash.FlatStyle = 'Flat'
+$flash.BackColor = [Drawing.Color]::FromArgb(190,35,44)
+$flash.ForeColor = [Drawing.Color]::White
+$flash.FlatAppearance.BorderSize = 0
 $log = New-Object Windows.Forms.TextBox
-$log.SetBounds(18, 210, 622, 240)
+$log.SetBounds(18, 262, 622, 246)
+$log.BackColor = [Drawing.Color]::FromArgb(32,34,42)
+$log.ForeColor = $form.ForeColor
+$log.BorderStyle = 'FixedSingle'
 $log.Multiline = $true
 $log.ReadOnly = $true
 $log.ScrollBars = 'Vertical'
-$form.Controls.AddRange(@($intro, $ports, $refresh, $flash, $log))
+$form.Controls.AddRange(@($brandLogo, $intro, $ports, $refresh, $flash, $log))
+[void][QprintsWindowStyle]::SetWindowTheme($ports.Handle,'DarkMode_CFD',$null)
+[void][QprintsWindowStyle]::SetWindowTheme($log.Handle,'DarkMode_Explorer',$null)
 $script:flashing = $false
 
 function Refresh-Ports {
@@ -82,7 +142,7 @@ $flash.Add_Click({
     $resumeMonitor = $false
     $process = $null
     try {
-        if (-not (Test-Path $image) -or -not (Test-Path $tool)) { throw 'Firmware of uploadprogramma ontbreekt. Installeer TempMonitor opnieuw.' }
+        if (-not (Test-Path $image) -or -not (Test-Path $tool)) { throw 'Firmware of uploadprogramma ontbreekt. Installeer Qprints esp installer opnieuw.' }
         $identity = [Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()
         if (-not $identity.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
             throw 'Start Firmware installeren opnieuw als administrator om TempMonitor tijdelijk te kunnen stoppen.'
@@ -127,4 +187,6 @@ $flash.Add_Click({
 })
 Refresh-Ports
 [void]$form.ShowDialog()
+if ($brandLogo.Image) { $brandLogo.Image.Dispose() }
+if ($appIcon) { $appIcon.Dispose() }
 $form.Dispose()

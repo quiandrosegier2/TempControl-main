@@ -1,9 +1,9 @@
 ; Inno Setup-script voor TempMonitor.
 ; Bouwen: voer ..\build-installer.ps1 uit (publiceert de app, haalt PresentMon op en compileert dit script).
 
-#define AppName "TempMonitor"
+#define AppName "Qprints esp installer"
 #ifndef AppVersion
-  #define AppVersion "1.2.0"
+  #define AppVersion "1.2.1"
 #endif
 
 [Setup]
@@ -12,19 +12,25 @@ AppName={#AppName}
 AppVersion={#AppVersion}
 AppPublisher=QPRINTS
 AppComments=Stuurt CPU/GPU-temperatuur en FPS naar het ronde USB-scherm
-DefaultDirName={autopf}\{#AppName}
+DefaultDirName={autopf}\TempMonitor
 DisableProgramGroupPage=yes
 DisableDirPage=yes
 PrivilegesRequired=admin
 ArchitecturesAllowed=x64compatible
 ArchitecturesInstallIn64BitMode=x64compatible
 OutputDir=..\..\dist
-OutputBaseFilename=TempMonitor-Setup-{#AppVersion}
+OutputBaseFilename=Qprints esp installer-{#AppVersion}
 Compression=lzma2/max
 SolidCompression=yes
-WizardStyle=modern
+WizardStyle=modern dark includetitlebar
+DisableWelcomePage=no
+SetupIconFile=branding\qprints.ico
+WizardImageFile=branding\qprints-banner.png
+WizardSmallImageFile=branding\qprints-mark.png
+WizardImageBackColor=#17181e
+WizardSmallImageBackColor=#202020
 UninstallDisplayName={#AppName}
-UninstallDisplayIcon={app}\TempMonitor.exe
+UninstallDisplayIcon={app}\branding\qprints.ico
 CloseApplications=no
 
 [Languages]
@@ -39,6 +45,9 @@ Source: "publish\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs creat
 Source: "task.ps1"; DestDir: "{app}"; Flags: ignoreversion
 Source: "flash-firmware.ps1"; DestDir: "{app}"; Flags: ignoreversion
 Source: "layout-previews\*.bmp"; Flags: dontcopy
+Source: "branding\qprints-footer.bmp"; Flags: dontcopy
+Source: "branding\qprints-wordmark.png"; DestDir: "{app}\branding"; Flags: ignoreversion
+Source: "branding\qprints.ico"; DestDir: "{app}\branding"; Flags: ignoreversion
 
 [Icons]
 Name: "{autoprograms}\TempMonitor\Firmware installeren"; Filename: "{sys}\WindowsPowerShell\v1.0\powershell.exe"; Parameters: "-NoProfile -STA -ExecutionPolicy Bypass -WindowStyle Hidden -File ""{app}\flash-firmware.ps1"""; WorkingDir: "{app}"
@@ -64,6 +73,7 @@ var
   LayoutPreview: TBitmapImage;
   LayoutDescription: TNewStaticText;
   LayoutIds, LayoutDescriptions: TStringList;
+  BrandLogo: TBitmapImage;
 
 function SelectedLayout: String;
 begin
@@ -92,6 +102,13 @@ var
   Note: TNewStaticText;
   Index: Integer;
 begin
+  ExtractTemporaryFile('qprints-footer.bmp');
+  BrandLogo := TBitmapImage.Create(WizardForm);
+  BrandLogo.Parent := WizardForm;
+  BrandLogo.Bitmap.LoadFromFile(ExpandConstant('{tmp}\qprints-footer.bmp'));
+  BrandLogo.Stretch := True;
+  BrandLogo.SetBounds(ScaleX(12), WizardForm.ClientHeight - ScaleY(43), ScaleX(150), ScaleY(34));
+  BrandLogo.Anchors := [akLeft, akBottom];
   LayoutIds := TStringList.Create;
   LayoutDescriptions := TStringList.Create;
   LayoutPage := CreateCustomPage(wpSelectTasks, 'Kies je schermlayout',

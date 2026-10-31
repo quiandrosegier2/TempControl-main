@@ -7,13 +7,15 @@ $cache = Join-Path $installer 'tool-cache\startup-tests'
 New-Item -ItemType Directory -Path $cache -Force | Out-Null
 $source = Get-Content (Join-Path $installer 'TempMonitor.iss') -Raw
 $source = $source.Replace('PrivilegesRequired=admin', 'PrivilegesRequired=lowest')
-$source = $source.Replace('DefaultDirName={autopf}\{#AppName}', 'DefaultDirName=' + $cache + '\fresh')
+$source = $source.Replace('DefaultDirName={autopf}\TempMonitor', 'DefaultDirName=' + $cache + '\fresh')
 $source = $source.Replace('DisableDirPage=yes', "DisableDirPage=yes`r`nUsePreviousAppDir=no")
 $source = $source.Replace('[Code]', "[Code]`r`nprocedure ExitProcess(Code: Cardinal); external 'ExitProcess@kernel32.dll stdcall';")
 $marker = '  LayoutChanged(nil);'
 if (-not $source.Contains($marker)) { throw 'InitializeWizard-testpunt ontbreekt' }
 $assertions = @'
   LayoutChanged(nil);
+  if not HighContrastActive and not IsDarkInstallMode then ExitProcess(94);
+  if (BrandLogo.Bitmap.Width = 0) or not BrandLogo.Visible then ExitProcess(95);
   if SelectedLayout <> ExpandConstant('{param:EXPECTLAYOUT|classic}') then
   begin
     Log('LAYOUT_SMOKE_FAIL: ' + SelectedLayout);

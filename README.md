@@ -4,6 +4,7 @@ A compact PC system monitor featuring a round Waveshare ESP32-S3-Touch-LCD-1.46 
 
 ### Features
 - One Windows installer for the companion app and USB display firmware; no VS Code, Python, PlatformIO or .NET installation needed by end users.
+- **Qprints esp installer** features a dark wizard and firmware window, with the QPRINTS // logo visible throughout setup.
 - Live CPU temperature, GPU temperature, and FPS readings.
 - Blue values and rings at or below 50 °C, turning red above 50 °C.
 - Windows companion app that sends monitoring data to the display.
@@ -19,7 +20,7 @@ A compact PC system monitor featuring a round Waveshare ESP32-S3-Touch-LCD-1.46 
 
 Download the setup executable from [GitHub Releases](https://github.com/quiandrosegier2/TempControl-main/releases/latest).
 
-1. Run `TempMonitor-Setup-1.2.0.exe` on a Windows x64 PC and allow administrator access. Choose your preferred layout on the layout page.
+1. Run `Qprints esp installer-1.2.1.exe` on a Windows x64 PC and allow administrator access. Choose your preferred layout on the layout page.
 2. Connect a **Waveshare ESP32-S3-Touch-LCD-1.46 (16 MB)** using a USB-C data cable.
 3. Leave the firmware installation option selected at the end of Setup.
 4. Select the display's COM port and click **Firmware installeren**. This replaces any existing firmware on that display.
