@@ -4,7 +4,7 @@
 #define AppName "Qprints esp installer"
 #define PreviewFrameCount 40
 #ifndef AppVersion
-  #define AppVersion "1.3.1"
+  #define AppVersion "1.4.0"
 #endif
 
 [Setup]
@@ -48,15 +48,25 @@ Source: "flash-firmware.ps1"; DestDir: "{app}"; Flags: ignoreversion
 Source: "layout-previews\layout-classic.bmp"; Flags: dontcopy solidbreak
 Source: "layout-previews\layout-gauges.bmp"; Flags: dontcopy solidbreak
 Source: "layout-previews\layout-minimal.bmp"; Flags: dontcopy solidbreak
+Source: "layout-previews\layout-tactical-steel.bmp"; Flags: dontcopy solidbreak
+Source: "layout-previews\layout-ammo-vault.bmp"; Flags: dontcopy solidbreak
+Source: "layout-previews\layout-samurai-crest.bmp"; Flags: dontcopy solidbreak
+Source: "layout-previews\layout-retro-arcade.bmp"; Flags: dontcopy solidbreak
+Source: "layout-previews\layout-stealth-map.bmp"; Flags: dontcopy solidbreak
+Source: "layout-previews\*.png"; DestDir: "{app}\previews"; Flags: ignoreversion
+Source: "preview-animation\*.bmp"; DestDir: "{app}\previews"; Flags: ignoreversion
 Source: "preview-animation\*.bmp"; Flags: dontcopy solidbreak
 Source: "branding\qprints-footer.bmp"; Flags: dontcopy
 Source: "branding\qprints-wordmark.png"; DestDir: "{app}\branding"; Flags: ignoreversion
 Source: "branding\qprints.ico"; DestDir: "{app}\branding"; Flags: ignoreversion
 
 [Icons]
+Name: "{autoprograms}\Qprints esp installer"; Filename: "{app}\TempMonitor.exe"; Parameters: "--settings"; IconFilename: "{app}\branding\qprints.ico"
+Name: "{autodesktop}\Qprints esp installer"; Filename: "{app}\TempMonitor.exe"; Parameters: "--settings"; IconFilename: "{app}\branding\qprints.ico"
 Name: "{autoprograms}\TempMonitor\Firmware installeren"; Filename: "{sys}\WindowsPowerShell\v1.0\powershell.exe"; Parameters: "-NoProfile -STA -ExecutionPolicy Bypass -WindowStyle Hidden -File ""{app}\flash-firmware.ps1"""; WorkingDir: "{app}"
 
 [Run]
+Filename: "{app}\TempMonitor.exe"; Parameters: "--settings"; Description: "Qprints openen: layouts bekijken en kiezen"; Flags: postinstall nowait skipifsilent
 Filename: "{sys}\WindowsPowerShell\v1.0\powershell.exe"; \
   Parameters: "-NoProfile -STA -ExecutionPolicy Bypass -WindowStyle Hidden -File ""{app}\flash-firmware.ps1"""; \
   Description: "Firmware op het aangesloten Waveshare-scherm installeren"; Flags: postinstall skipifsilent waituntilterminated runhidden
@@ -111,7 +121,7 @@ procedure LoadPreviewFrame;
 var
   Name, Path: String;
 begin
-  if LayoutChoice.ItemIndex < 3 then
+  if (LayoutChoice.ItemIndex < 3) or (LayoutChoice.ItemIndex >= 26) then
     Name := 'layout-' + SelectedLayout + '.bmp'
   else
     Name := Format('%s-%.2d.bmp', [SelectedLayout, PreviewFrame]);
@@ -122,7 +132,7 @@ end;
 
 procedure AdvancePreview;
 begin
-  if LayoutChoice.ItemIndex < 3 then Exit;
+  if (LayoutChoice.ItemIndex < 3) or (LayoutChoice.ItemIndex >= 26) then Exit;
   PreviewFrame := (PreviewFrame + 1) mod PreviewFrameCount;
   LoadPreviewFrame;
   Inc(PreviewTickCount);
@@ -132,7 +142,7 @@ procedure PreviewTick(Arg1: HWND; Arg2, Arg3, Arg4: LongWord);
 begin
   if PreviewClosing or PreviewBusy or not PreviewPageActive or PreviewPaused then Exit;
   if (PreviewTimer = 0) or (Arg3 <> PreviewTimer) then Exit;
-  if (LayoutChoice = nil) or (LayoutChoice.ItemIndex < 3) then Exit;
+  if (LayoutChoice = nil) or ((LayoutChoice.ItemIndex < 3) or (LayoutChoice.ItemIndex >= 26)) then Exit;
   PreviewBusy := True;
   try
     try
@@ -151,7 +161,7 @@ end;
 procedure StartPreview;
 begin
   if PreviewClosing or not PreviewPageActive or PreviewPaused then Exit;
-  if LayoutChoice.ItemIndex < 3 then Exit;
+  if (LayoutChoice.ItemIndex < 3) or (LayoutChoice.ItemIndex >= 26) then Exit;
   if PreviewCallback = 0 then PreviewCallback := CreateCallback(@PreviewTick);
   if PreviewTimer = 0 then PreviewTimer := SetTimer(0, 0, 100, PreviewCallback);
 end;
@@ -177,7 +187,7 @@ begin
   PreviewFrame := 0;
   PreviewPaused := False;
   LoadPreviewFrame;
-  PreviewButton.Enabled := LayoutChoice.ItemIndex >= 3;
+  PreviewButton.Enabled := (LayoutChoice.ItemIndex >= 3) and (LayoutChoice.ItemIndex < 26);
   if PreviewButton.Enabled then PreviewButton.Caption := 'Pauzeren'
   else PreviewButton.Caption := 'Statisch';
   if LayoutChoice.ItemIndex >= 0 then
@@ -222,7 +232,7 @@ begin
   LayoutIds := TStringList.Create;
   LayoutDescriptions := TStringList.Create;
   LayoutPage := CreateCustomPage(wpSelectTasks, 'Kies je schermlayout',
-    '21 layouts, waarvan 18 bewegend. Nieuwe thema''s vereisen de meegeleverde firmware.');
+    '31 layouts, waarvan 23 bewegend. Nieuwe thema''s vereisen de meegeleverde firmware.');
   LayoutChoice := TNewComboBox.Create(LayoutPage);
   LayoutChoice.Parent := LayoutPage.Surface;
   LayoutChoice.SetBounds(0, ScaleY(12), ScaleX(205), ScaleY(28));
@@ -248,6 +258,16 @@ begin
   AddLayout('cyber-ops', 'Cyber Ops (gaming)', 'Neoncircuits, reizende datapulsen en een cyberpunk-HUD.');
   AddLayout('plasma-core', 'Plasma Core (gaming)', 'Een pulserende energiekern met elektrische bogen en een futuristische wapen-HUD.');
   AddLayout('boss-fight', 'Boss Fight (gaming)', 'Een bewegende pixelbaas met laseraccenten en echte CPU- en GPU-hittebalken.');
+  AddLayout('drone-swarm', 'Drone Swarm (bewegend)', 'Gamingthema: Drone Swarm. CPU, GPU en FPS blijven live.');
+  AddLayout('lightning-strike', 'Lightning Strike (bewegend)', 'Gamingthema: Lightning Strike. CPU, GPU en FPS blijven live.');
+  AddLayout('space-fleet', 'Space Fleet (bewegend)', 'Gamingthema: Space Fleet. CPU, GPU en FPS blijven live.');
+  AddLayout('race-grid', 'Race Grid (bewegend)', 'Gamingthema: Race Grid. CPU, GPU en FPS blijven live.');
+  AddLayout('portal-rift', 'Portal Rift (bewegend)', 'Gamingthema: Portal Rift. CPU, GPU en FPS blijven live.');
+  AddLayout('tactical-steel', 'Tactical Steel (statisch)', 'Gamingthema: Tactical Steel. CPU, GPU en FPS blijven live.');
+  AddLayout('ammo-vault', 'Ammo Vault (statisch)', 'Gamingthema: Ammo Vault. CPU, GPU en FPS blijven live.');
+  AddLayout('samurai-crest', 'Samurai Crest (statisch)', 'Gamingthema: Samurai Crest. CPU, GPU en FPS blijven live.');
+  AddLayout('retro-arcade', 'Retro Arcade (statisch)', 'Gamingthema: Retro Arcade. CPU, GPU en FPS blijven live.');
+  AddLayout('stealth-map', 'Stealth Map (statisch)', 'Gamingthema: Stealth Map. CPU, GPU en FPS blijven live.');
   // Alleen de drie statische voorbeelden vooraf laden; animatiebeelden volgen op aanvraag.
   for Index := 0 to 2 do
     ExtractTemporaryFile('layout-' + LayoutIds[Index] + '.bmp');
@@ -260,7 +280,7 @@ begin
   for Index := 0 to LayoutIds.Count - 1 do
     if InitialLayout = LayoutIds[Index] then LayoutChoice.ItemIndex := Index;
   if LayoutChoice.ItemIndex < 0 then
-    RaiseException('Onbekende layout. Kies een van de eenentwintig ondersteunde layouts.');
+    RaiseException('Onbekende layout. Kies een van de eenendertig ondersteunde layouts.');
   LayoutDescription := TNewStaticText.Create(LayoutPage);
   LayoutDescription.Parent := LayoutPage.Surface;
   LayoutDescription.AutoSize := False;

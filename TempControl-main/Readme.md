@@ -18,7 +18,7 @@ pc-app/installer/  Inno Setup-installer
 
 Download het installatiebestand via [GitHub Releases](https://github.com/quiandrosegier2/TempControl-main/releases/latest).
 
-1. Start `Qprints esp installer-1.3.1.exe`, geef toestemming voor beheerdersrechten en kies een schermlayout. Het bewegende demovoorbeeld speelt op de layoutpagina; met **Pauzeren/Afspelen** stop of start je de animatie.
+1. Start `Qprints esp installer-1.4.0.exe`, geef toestemming voor beheerdersrechten en kies een schermlayout. Het bewegende demovoorbeeld speelt op de layoutpagina; met **Pauzeren/Afspelen** stop of start je de animatie.
 2. Sluit een **Waveshare ESP32-S3-Touch-LCD-1.46 (16 MB)** met een USB-C-datakabel aan.
 3. Laat aan het einde van Setup de optie om firmware te installeren aangevinkt.
 4. Kies de COM-poort van het scherm en klik op **Firmware installeren**. Dit vervangt de bestaande firmware.
@@ -29,6 +29,10 @@ Geen poort of geen verbinding? Houd BOOT ingedrukt, druk op RESET, laat BOOT los
 Opnieuw installeren kan via **Start > TempMonitor > Firmware installeren**. De monitor-app wordt tijdens de upload gepauzeerd en daarna hervat. Uploadlogs staan in `C:\ProgramData\TempMonitor`.
 
 De app, .NET, firmware, het uploadprogramma en de optionele PawnIO-driver zitten in de installer. Gebruikers hoeven geen VS Code, Python, PlatformIO, internetverbinding of winget te hebben. Windows kan na de driverinstallatie om een herstart vragen.
+
+### Blijvend programma: Layout Studio
+
+Na installatie kun je **Qprints esp installer** altijd opnieuw openen via Start of het bureaublad. Het donkere Layout Studio-venster toont alle 31 ontwerpen, inclusief bewegende offline voorbeelden en Pauzeren/Afspelen. Je kunt een layout toepassen, firmware uploaden, de achtergrondmeting starten en het logboek openen. Het venster sluiten laat de achtergrondmeting doorwerken. Je kunt het venster ook starten met `TempMonitor.exe --settings`.
 
 ### Schermlayouts
 
@@ -52,17 +56,27 @@ De app, .NET, firmware, het uploadprogramma en de optionele PawnIO-driver zitten
 - **Sniper Scope**: groene viziermarkeringen en een bewegend doelkader.
 - **Cyber Ops**: neoncircuits met reizende datapulsen.
 - **Plasma Core**: pulserende energiekern met elektrische bogen.
+- **Drone Swarm**: bewegende droneformaties.
+- **Lightning Strike**: geanimeerde rode bliksem.
+- **Space Fleet**: bewegende ruimteschepen met motorsporen.
+- **Race Grid**: rollend perspectiefraster.
+- **Portal Rift**: draaiende, golvende portaalfragmenten.
+- **Tactical Steel** (statisch): stalen paneel met klinknagels.
+- **Ammo Vault** (statisch): patronenrek.
+- **Samurai Crest** (statisch): helm-embleem en gekruiste zwaarden.
+- **Retro Arcade** (statisch): pixeltegels en arcadeframe.
+- **Stealth Map** (statisch): tactische kaart en vizier.
 - **Boss Fight**: bewegende pixelbaas, laseraccenten en echte temperatuur-hittebalken.
 
-Setup toont schematische demo's met testwaarden en bewaart de keuze in `layout.txt` naast de Windows-app. De achttien bewegende layouts hebben een automatisch afspelend voorbeeld in een lus van vier seconden, met een knop **Pauzeren/Afspelen**. Classic, Gauges en Minimal tonen een stilstaand voorbeeld. Een scherm of internetverbinding is niet nodig om de voorbeelden vooraf te bekijken. De app stuurt de gekozen layout via USB; het scherm onthoudt die keuze. Installeer de meegeleverde firmware eenmaal om alle eenentwintig layouts en de actuele Speedometer-indeling te krijgen. Om later te wisselen voer je Setup opnieuw uit en vink je de firmwarestap aan het einde uit: opnieuw flashen is dan niet nodig.
+Setup toont schematische demo's met testwaarden en bewaart de keuze in `layout.txt` naast de Windows-app. De 23 bewegende layouts hebben een automatisch afspelend voorbeeld in een lus van vier seconden, met een knop **Pauzeren/Afspelen**. Classic, Gauges, Minimal en de vijf nieuwe statische gamingthema's tonen een stilstaand voorbeeld. Hun echte meetwaarden blijven wel bijwerken. Een scherm of internetverbinding is niet nodig om de voorbeelden vooraf te bekijken. De app stuurt de gekozen layout via USB; het scherm onthoudt die keuze. Installeer de meegeleverde firmware eenmaal om alle eenendertig layouts en de actuele Speedometer-indeling te krijgen. Werk de firmware eenmaal bij naar 1.4.0. Daarna open je **Qprints esp installer** via het bureaublad of Start, kies je een ontwerp en klik je op **Layout toepassen**. De achtergrondmeting leest de keuze binnen een seconde opnieuw in, zonder herstart of opnieuw flashen.
 
-De achttien bewegende layouts blijven bewegen tussen USB-updates, met maximaal 20 animatiebeelden per seconde. Dit staat los van de getoonde game-FPS. Waveform bewaart de laatste 60 echte CPU- en GPU-samples in RAM; ontbrekende sensoren leveren gaten op, geen verzonnen meetwaarden. Na een herstart begint deze historie opnieuw. Alle layouts tonen ontbrekende meetwaarden als `--` en temperaturen boven 50 graden in rood.
+De 23 bewegende layouts blijven bewegen tussen USB-updates, met maximaal 20 animatiebeelden per seconde. Dit staat los van de getoonde game-FPS. Waveform bewaart de laatste 60 echte CPU- en GPU-samples in RAM; ontbrekende sensoren leveren gaten op, geen verzonnen meetwaarden. Na een herstart begint deze historie opnieuw. Alle layouts tonen ontbrekende meetwaarden als `--` en temperaturen boven 50 graden in rood.
 
-[Bekijk alle layouts](https://github.com/quiandrosegier2/TempControl-main/releases/download/v1.3.0/Layout-Overview-1.3.0.png) of [de acht gamingthema's](https://github.com/quiandrosegier2/TempControl-main/releases/download/v1.3.0/Gaming-Layouts-1.3.0.png).
+[Bekijk alle layouts](https://github.com/quiandrosegier2/TempControl-main/releases/download/v1.4.0/Layout-Overview-1.4.0.png) of [de acht gamingthema's](https://github.com/quiandrosegier2/TempControl-main/releases/download/v1.3.0/Gaming-Layouts-1.3.0.png).
 
 De gaming-art wordt in code getekend. Geweren, patronen, vuur en de pixelbaas zijn decoratieve animaties; CPU, GPU, FPS en de hittebalken gebruiken echte meetgegevens. Werk de firmware eenmaal bij naar 1.3.0 voor deze acht thema's.
 
-Voor stille installaties kan `/LAYOUT=` worden gevolgd door `classic`, `gauges`, `minimal`, `orbit`, `radar`, `neon-pulse`, `reactor`, `waveform`, `matrix`, `starfield`, `speedometer`, `aurora`, `hex-grid`, `arsenal`, `bullet-storm`, `inferno`, `warzone-city`, `sniper-scope`, `cyber-ops`, `plasma-core` of `boss-fight`. Zonder deze parameter blijft een bestaande keuze behouden.
+Voor stille installaties kan `/LAYOUT=` worden gevolgd door `classic`, `gauges`, `minimal`, `orbit`, `radar`, `neon-pulse`, `reactor`, `waveform`, `matrix`, `starfield`, `speedometer`, `aurora`, `hex-grid`, `arsenal`, `bullet-storm`, `inferno`, `warzone-city`, `sniper-scope`, `cyber-ops`, `plasma-core` `boss-fight`, `drone-swarm`, `lightning-strike`, `space-fleet`, `race-grid`, `portal-rift`, `tactical-steel`, `ammo-vault`, `samurai-crest`, `retro-arcade` of `stealth-map`. Zonder deze parameter blijft een bestaande keuze behouden.
 
 ### Firmware zelf bouwen met VS Code
 
@@ -76,7 +90,7 @@ Voor stille installaties kan `/LAYOUT=` worden gevolgd door `classic`, `gauges`,
 
 ## 2. Windows-app installeren
 
-Voer `Qprints esp installer-1.3.1.exe` uit. De donkere installer en het firmwarevenster tonen het QPRINTS //-beeldmerk. De installer:
+Voer `Qprints esp installer-1.4.0.exe` uit. De donkere installer en het firmwarevenster tonen het QPRINTS //-beeldmerk. De installer:
 
 - installeert de app in `C:\Program Files\TempMonitor`; .NET zit erin, dus dat hoef je niet apart te installeren
 - installeert desgewenst de **PawnIO**-driver (vinkje). Die is nodig om de CPU-temperatuur van een Ryzen te lezen.
@@ -102,13 +116,13 @@ cd pc-app
 powershell -ExecutionPolicy Bypass -File .\build-installer.ps1
 ```
 
-Het resultaat komt in `dist\Qprints esp installer-<versie>.exe`. De versie haalt het script uit `TempMonitor.csproj`. Met `-OutputDir E:\` komt de setup op een andere plek terecht, bijvoorbeeld rechtstreeks op een USB-stick. `build-branding.ps1` genereert het woordmerk, pictogram en de welkomstafbeelding; `build-layout-previews.ps1` genereert de eenentwintig donkere layoutvoorbeelden. `build-animated-previews.ps1` genereert daarnaast 40 beelden voor elk van de achttien bewegende layouts. De installer speelt deze lokaal af op de layoutpagina en stopt de timer bij pauzeren, verlaten van de pagina en afsluiten.
+Het resultaat komt in `dist\Qprints esp installer-<versie>.exe`. De versie haalt het script uit `TempMonitor.csproj`. Met `-OutputDir E:\` komt de setup op een andere plek terecht, bijvoorbeeld rechtstreeks op een USB-stick. `build-branding.ps1` genereert het woordmerk, pictogram en de welkomstafbeelding; `build-layout-previews.ps1` genereert de 31 donkere layoutvoorbeelden. `build-animated-previews.ps1` genereert daarnaast 40 beelden voor elk van de 23 bewegende layouts. De installer speelt deze lokaal af op de layoutpagina en stopt de timer bij pauzeren, verlaten van de pagina en afsluiten.
 
 > **Verkenner loopt vast of de setup is "geblokkeerd"?** Op beheerde pc's met Microsoft Defender for Endpoint blokkeert de ASR-regel *"Block executable files from running unless they meet a prevalence, age, or trusted list criterion"* (`01443614-cd74-433a-b99e-2ecdc07bfc25`) zelfgebouwde, niet-ondertekende exe-bestanden. Installeer dan op een pc zonder die regel, of voeg een ASR-uitzondering of een code-signing-certificaat toe.
 
 ### Ontwikkelen / testen zonder installer
 
-De installer-opstarttest draait zonder software of drivers te installeren en controleert de drie layoutvoorbeelden, de standaardkeuze, een bestaande keuze en een expliciete override:
+De installer-opstarttest draait zonder software of drivers te installeren en controleert alle 31 layoutvoorbeelden, de standaardkeuze, een bestaande keuze en een expliciete override:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File tests\Test-InstallerStartup.ps1 -InnoCompiler "C:\Program Files (x86)\Inno Setup 6\ISCC.exe"
@@ -158,3 +172,5 @@ Bovenaan `firmware/src/main.cpp`:
 | `HOT_THRESHOLD` | `50.0` | grens tussen blauw en rood |
 | `ROTATION` | `0` | beeld draaien (0–3) als de USB-C-poort anders ligt |
 | `DATA_TIMEOUT_MS` | `3000` | na zoveel ms zonder data toont het scherm "verbinding verloren" |
+
+Windows-venster testen: `dotnet run --project tests/SettingsWindow.Tests -c Release -- pc-app/installer` (eerst voorbeelden en branding genereren). Dit controleert selectie, opslaan, timer, pauzeren en hervatten zonder echte hardware of installatie te wijzigen.

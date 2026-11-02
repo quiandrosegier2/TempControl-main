@@ -2,6 +2,13 @@
 param([switch]$ValidateOnly)
 
 $ErrorActionPreference = 'Stop'
+function Stop-MonitoringProcesses {
+    # Layout Studio uses the same executable and must stay open during uploads.
+    Get-CimInstance Win32_Process -Filter "Name='TempMonitor.exe'" | Where-Object {
+        $_.CommandLine -notmatch '(?i)(?:^|\s)--settings(?:\s|$)'
+    } | ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }
+    Get-Process -Name PresentMon -ErrorAction SilentlyContinue | Stop-Process -Force
+}
 $image = Join-Path $PSScriptRoot 'firmware\TempControl.factory.bin'
 $tool = Join-Path $PSScriptRoot 'firmware\esptool\esptool.exe'
 if ($ValidateOnly) {
@@ -150,7 +157,7 @@ $flash.Add_Click({
         $task = Get-ScheduledTask -TaskName TempMonitor -ErrorAction SilentlyContinue
         $resumeMonitor = $null -ne $task -and $task.State -eq 'Running'
         if ($resumeMonitor) { Stop-ScheduledTask -TaskName TempMonitor }
-        Get-Process -Name TempMonitor, PresentMon -ErrorAction SilentlyContinue | Stop-Process -Force
+        Stop-MonitoringProcesses
         $logDir = Join-Path $env:ProgramData 'TempMonitor'
         New-Item -ItemType Directory -Path $logDir -Force | Out-Null
         $stdout = Join-Path $logDir 'firmware-upload.log'

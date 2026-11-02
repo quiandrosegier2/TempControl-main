@@ -11,6 +11,13 @@ using System.Management;
 using System.Text.RegularExpressions;
 using LibreHardwareMonitor.Hardware;
 
+if (args.Contains("--settings"))
+{
+    var ui = new Thread(() => { System.Windows.Forms.Application.EnableVisualStyles(); System.Windows.Forms.Application.Run(new SettingsWindow()); });
+    ui.SetApartmentState(ApartmentState.STA);
+    ui.Start(); ui.Join(); return;
+}
+
 const int IntervalMs = 1000;
 const string EspressifVid = "VID_303A";
 
@@ -51,6 +58,7 @@ string? lastStatus = null;
 
 while (true)
 {
+    layout = LayoutSettings.Read(AppContext.BaseDirectory);
     UpdateAll(computer);
     float? cpu = ReadCpuTemp(computer);
     float? gpu = ReadGpuTemp(computer);

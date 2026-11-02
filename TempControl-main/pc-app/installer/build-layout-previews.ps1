@@ -1,7 +1,7 @@
 # Schematische voorbeelden in dezelfde 412x412-coordinaten als de firmware.
 param(
     [string]$OutputDirectory,
-    [string[]]$Layouts = @('classic', 'gauges', 'minimal', 'orbit', 'radar', 'neon-pulse', 'reactor', 'waveform', 'matrix', 'starfield', 'speedometer', 'aurora', 'hex-grid', 'arsenal', 'bullet-storm', 'inferno', 'warzone-city', 'sniper-scope', 'cyber-ops', 'plasma-core', 'boss-fight'),
+    [string[]]$Layouts = @('classic', 'gauges', 'minimal', 'orbit', 'radar', 'neon-pulse', 'reactor', 'waveform', 'matrix', 'starfield', 'speedometer', 'aurora', 'hex-grid', 'arsenal', 'bullet-storm', 'inferno', 'warzone-city', 'sniper-scope', 'cyber-ops', 'plasma-core', 'boss-fight', 'drone-swarm', 'lightning-strike', 'space-fleet', 'race-grid', 'portal-rift', 'tactical-steel', 'ammo-vault', 'samurai-crest', 'retro-arcade', 'stealth-map'),
     [float]$FrameTime = 1.6,
     [int]$FrameIndex = -1,
     [int]$RenderSize = 412
@@ -112,6 +112,47 @@ foreach ($layout in $Layouts) {
     }
     if ($layout -notin @('classic','gauges','minimal')) {
         switch($layout) {
+            'drone-swarm' {
+                for($i=0;$i -lt 8;$i++){ $a=$i*[Math]::PI/4+$phase*.6; $x=206+[Math]::Cos($a)*142;$y=236+[Math]::Sin($a)*80; Line ($x-14) ($y-9) ($x+14) ($y+9) $blue; Line ($x-14) ($y+9) ($x+14) ($y-9) $blue; foreach($k in @(-1,1)){foreach($j in @(-1,1)){Circle ($x+$k*14) ($y+$j*9) 7 (Dim $blue .6)}} }
+                CombatHud $blue
+            }
+            'lightning-strike' {
+                for($i=0;$i -lt 7;$i++){ $x=60+$i*48;$prev=$x;for($y=110;$y -lt 323;$y+=18){$next=$x+18*[Math]::Sin($phase*8+$i+$y);Line $prev $y $next ($y+18) (Dim $red .65);$prev=$next}}
+                CombatHud $red
+            }
+            'space-fleet' {
+                for($i=0;$i -lt 14;$i++){ $t=($phase*.15+$i*.137)%1;$x=38+($i*61)%336;$y=390-$t*360;Triangle $x ($y-14) ($x-9) ($y+9) ($x+9) ($y+9) (Dim $purple .7);Line $x ($y+10) $x ($y+24) (Dim $orange .8)}
+                CombatHud $purple
+            }
+            'race-grid' {
+                for($i=-7;$i -le 7;$i++){Line (206+$i*9) 210 (206+$i*48) 385 (Dim $gold .4)};for($i=0;$i -lt 11;$i++){$t=($phase*.4+$i*.1)%1;$y=210+$t*$t*175;Line 35 $y 377 $y (Dim $gold (.2+$t*.4))}
+                CombatHud $gold
+            }
+            'portal-rift' {
+                for($i=0;$i -lt 44;$i++){ $a=$i*[Math]::PI/22+$phase;$r=108+16*[Math]::Sin($i*.7+$phase*3);Line (206+[Math]::Cos($a)*$r) (247+[Math]::Sin($a)*$r*.55) (206+[Math]::Cos($a+.15)*($r+9)) (247+[Math]::Sin($a+.15)*($r+9)*.55) (Dim $tactical .8)}
+                CombatHud $tactical
+            }
+            'tactical-steel' {
+                for($i=0;$i -lt 6;$i++){Line (40+$i*5) (100+$i*5) (372-$i*5) (100+$i*5) (Dim $blue (.12+$i*.06));Line (40+$i*5) (327-$i*5) (372-$i*5) (327-$i*5) (Dim $blue (.12+$i*.06))};for($x=66;$x -lt 355;$x+=28){Dot $x 302 3 $gold}
+                CombatHud $blue
+            }
+            'ammo-vault' {
+                for($i=0;$i -lt 11;$i++){$x=58+$i*28;Triangle $x 261 ($x+6) 248 ($x+12) 261 $gold;Fill $x 261 12 43 (Dim $gold .6);Line $x 296 ($x+12) 296 $red}
+                CombatHud $red
+            }
+            'samurai-crest' {
+                Circle 206 253 71 (Dim $purple .5);Triangle 140 292 206 241 272 292 (Dim $purple .6);Triangle 150 275 127 219 189 259 $gold;Triangle 262 275 285 219 223 259 $gold;Line 155 310 257 237 $purple;Line 155 237 257 310 $purple
+                CombatHud $purple
+            }
+            'retro-arcade' {
+                for($i=0;$i -lt 8;$i++){$x=75+$i*34;$a=if($i%2){$gold}else{$purple};$b=if($i%2){$purple}else{$gold};Fill $x 276 15 15 $a;Fill ($x+16) 292 15 15 $b};Line 57 111 355 111 (Dim $gold .6);Line 57 322 355 322 (Dim $gold .6)
+                CombatHud $gold
+            }
+            'stealth-map' {
+                for($i=0;$i -lt 10;$i++){$x=53+($i*73)%310;$y=117+($i*47)%205;Line $x $y ($x+22+($i%3)*12) $y (Dim $tactical .35);Line $x $y $x ($y+25) (Dim $tactical .35)};Circle 206 263 42 $tactical;Line 145 263 267 263 $tactical;Line 206 202 206 324 $tactical
+                CombatHud $tactical
+            }
+
             'arsenal' {
                 for($y=115;$y -lt 320;$y+=20){Line 75 $y 337 $y (Dim $tactical .08)}
                 $flash=($phase%1.6) -lt .13

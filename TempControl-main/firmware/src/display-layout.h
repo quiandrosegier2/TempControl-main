@@ -4,11 +4,11 @@
 enum class DisplayLayout {
   Classic, Gauges, Minimal, Orbit, Radar, NeonPulse, Reactor,
   Waveform, Matrix, Starfield, Speedometer, Aurora, HexGrid,
-  Arsenal, BulletStorm, Inferno, WarzoneCity, SniperScope, CyberOps, PlasmaCore, BossFight
+  Arsenal, BulletStorm, Inferno, WarzoneCity, SniperScope, CyberOps, PlasmaCore, BossFight, DroneSwarm, LightningStrike, SpaceFleet, RaceGrid, PortalRift, TacticalSteel, AmmoVault, SamuraiCrest, RetroArcade, StealthMap
 };
 
 inline bool isAnimatedLayout(DisplayLayout layout) {
-  return layout >= DisplayLayout::Orbit;
+  return layout >= DisplayLayout::Orbit && layout < DisplayLayout::TacticalSteel;
 }
 
 inline bool parseLayout(const char *name, DisplayLayout &layout) {
@@ -33,6 +33,16 @@ inline bool parseLayout(const char *name, DisplayLayout &layout) {
   else if (strcmp(name, "cyber-ops") == 0) layout = DisplayLayout::CyberOps;
   else if (strcmp(name, "plasma-core") == 0) layout = DisplayLayout::PlasmaCore;
   else if (strcmp(name, "boss-fight") == 0) layout = DisplayLayout::BossFight;
+  else if (strcmp(name, "drone-swarm") == 0) layout = DisplayLayout::DroneSwarm;
+  else if (strcmp(name, "lightning-strike") == 0) layout = DisplayLayout::LightningStrike;
+  else if (strcmp(name, "space-fleet") == 0) layout = DisplayLayout::SpaceFleet;
+  else if (strcmp(name, "race-grid") == 0) layout = DisplayLayout::RaceGrid;
+  else if (strcmp(name, "portal-rift") == 0) layout = DisplayLayout::PortalRift;
+  else if (strcmp(name, "tactical-steel") == 0) layout = DisplayLayout::TacticalSteel;
+  else if (strcmp(name, "ammo-vault") == 0) layout = DisplayLayout::AmmoVault;
+  else if (strcmp(name, "samurai-crest") == 0) layout = DisplayLayout::SamuraiCrest;
+  else if (strcmp(name, "retro-arcade") == 0) layout = DisplayLayout::RetroArcade;
+  else if (strcmp(name, "stealth-map") == 0) layout = DisplayLayout::StealthMap;
   else return false;
   return true;
 }

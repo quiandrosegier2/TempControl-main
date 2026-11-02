@@ -9,7 +9,8 @@ A compact PC system monitor featuring a round Waveshare ESP32-S3-Touch-LCD-1.46 
 - Blue values and rings at or below 50 °C, turning red above 50 °C.
 - Windows companion app that sends monitoring data to the display.
 - Waiting indicator when no PC data is received.
-- Choose from 21 layouts in Setup, including eighteen animated themes and eight gaming HUDs. Moving offline previews with Play/Pause let you try the animated layouts before installing. The display remembers the selection.
+- Choose from 31 layouts: 23 animated and 8 static designs. Moving offline previews with Play/Pause are available in Setup and the installed **Layout Studio**. The display remembers the selection.
+- Open **Qprints esp installer** from the desktop or Start menu at any time to preview and apply layouts, upload firmware or open monitoring logs. Closing Layout Studio keeps background monitoring running.
 
 ### Project structure
 - `TempControl-main/firmware/`: firmware for the ESP32-S3 display.
@@ -20,7 +21,7 @@ A compact PC system monitor featuring a round Waveshare ESP32-S3-Touch-LCD-1.46 
 
 Download the setup executable from [GitHub Releases](https://github.com/quiandrosegier2/TempControl-main/releases/latest).
 
-1. Run `Qprints esp installer-1.3.1.exe` on a Windows x64 PC and allow administrator access. Choose a layout and watch its demo on the layout page; use **Pauzeren/Afspelen** to pause or play.
+1. Run `Qprints esp installer-1.4.0.exe` on a Windows x64 PC and allow administrator access. Choose a layout and watch its demo on the layout page; use **Pauzeren/Afspelen** to pause or play.
 2. Connect a **Waveshare ESP32-S3-Touch-LCD-1.46 (16 MB)** using a USB-C data cable.
 3. Leave the firmware installation option selected at the end of Setup.
 4. Select the display's COM port and click **Firmware installeren**. This replaces any existing firmware on that display.
@@ -32,7 +33,7 @@ You can repeat the upload from **Start > TempMonitor > Firmware installeren**. T
 
 The app, .NET runtime, firmware, uploader and optional PawnIO driver are included. No internet connection or winget is needed during installation. Windows may request a restart after installing the driver. Developer build instructions are in [the project guide](TempControl-main/Readme.md).
 
-To change layouts later, run Setup again and choose another layout. Upload the bundled firmware once to get all twenty-one layouts and the current Speedometer design. After that, leave the final firmware installation option unchecked when changing layouts: no new flash is needed. Updates preserve the current layout selection.
+To change layouts later, open **Qprints esp installer** from the desktop or Start menu, select a layout and click **Layout toepassen**. The monitor picks up the selection within its next one-second update; no restart is needed. Upload the bundled **1.4.0 firmware** once to enable all 31 designs. Further layout changes require no flashing. Updates preserve the current layout selection. Layout Studio can also be opened directly with `TempMonitor.exe --settings`.
 
 ### Layouts
 
@@ -59,10 +60,20 @@ To change layouts later, run Setup again and choose another layout. Upload the b
 | Cyber Ops | Neon circuitry with travelling data pulses |
 | Plasma Core | A pulsing energy orb and electrical arcs |
 | Boss Fight | An animated pixel boss, lasers and live temperature bars |
+| Drone Swarm | Moving quadcopter formations |
+| Lightning Strike | Animated red lightning bolts |
+| Space Fleet | Moving spaceships with engine trails |
+| Race Grid | Scrolling perspective racing grid |
+| Portal Rift | Rotating, rippling portal fragments |
+| Tactical Steel | Static steel panel with rivets |
+| Ammo Vault | Static ammunition display |
+| Samurai Crest | Static helmet crest and crossed blades |
+| Retro Arcade | Static pixel tiles and arcade frame |
+| Stealth Map | Static tactical map and crosshair |
 
-Animations run independently of incoming readings. Waveform retains up to 60 actual temperature samples in memory; unavailable readings remain gaps. Setup includes four-second looping, schematic demos with sample values for all eighteen moving themes; Classic, Gauges and Minimal have static previews. No screen or internet connection is needed to view the previews. Temperature values turn red above 50 °C in every layout.
+Animations run independently of incoming readings. Waveform retains up to 60 actual temperature samples in memory; unavailable readings remain gaps. Setup and Layout Studio include four-second looping, schematic demos with sample values for all 23 moving themes. Eight static designs have still previews; their real sensor readings continue to update. No screen or internet connection is needed to view the previews. Temperature values turn red above 50 °C in every layout.
 
-[View all layouts](https://github.com/quiandrosegier2/TempControl-main/releases/download/v1.3.0/Layout-Overview-1.3.0.png) or [the eight gaming themes](https://github.com/quiandrosegier2/TempControl-main/releases/download/v1.3.0/Gaming-Layouts-1.3.0.png).
+[View all layouts](https://github.com/quiandrosegier2/TempControl-main/releases/download/v1.4.0/Layout-Overview-1.4.0.png) or [the eight gaming themes](https://github.com/quiandrosegier2/TempControl-main/releases/download/v1.3.0/Gaming-Layouts-1.3.0.png).
 
 Gaming artwork is original and generated in code. Weapons, bullets, fire and enemy sprites are decorative animations; FPS, CPU/GPU temperatures and temperature bars use real incoming measurements. Upload the 1.3.0 firmware once to enable the new gaming themes.
 

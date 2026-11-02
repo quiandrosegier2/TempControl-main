@@ -2,7 +2,7 @@ $ErrorActionPreference='Stop'
 $source=Get-Content (Join-Path $PSScriptRoot 'TempMonitor.iss') -Raw
 $frameCount=[int][regex]::Match($source,'#define PreviewFrameCount (\d+)').Groups[1].Value
 if($frameCount -lt 2){throw 'PreviewFrameCount ontbreekt'}
-$layouts=@([regex]::Matches($source,"AddLayout\('([^']+)'")|ForEach-Object {$_.Groups[1].Value}|Select-Object -Skip 3)
+$layouts=@([regex]::Matches($source,"AddLayout\('([^']+)'")|ForEach-Object {$_.Groups[1].Value}|Select-Object -Skip 3 -First 23)
 $output=Join-Path $PSScriptRoot 'preview-animation'
 New-Item -ItemType Directory -Path $output -Force|Out-Null
 Get-ChildItem -LiteralPath $output -Filter '*.bmp' -File|ForEach-Object {Remove-Item -LiteralPath $_.FullName}

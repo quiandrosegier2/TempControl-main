@@ -2,8 +2,8 @@ $ErrorActionPreference='Stop'
 $installer=Join-Path $PSScriptRoot '..\pc-app\installer'
 $source=Get-Content (Join-Path $installer 'TempMonitor.iss') -Raw
 $count=[int][regex]::Match($source,'#define PreviewFrameCount (\d+)').Groups[1].Value
-$layouts=@([regex]::Matches($source,"AddLayout\('([^']+)'")|ForEach-Object {$_.Groups[1].Value}|Select-Object -Skip 3)
-if($layouts.Count -ne 18 -or $count -lt 2){throw 'Onvolledige animatiecatalogus'}
+$layouts=@([regex]::Matches($source,"AddLayout\('([^']+)'")|ForEach-Object {$_.Groups[1].Value}|Select-Object -Skip 3 -First 23)
+if($layouts.Count -ne 23 -or $count -lt 2){throw 'Onvolledige animatiecatalogus'}
 foreach($layout in $layouts){
     $hashes=@()
     for($frame=0;$frame -lt $count;$frame++){

@@ -164,6 +164,46 @@ static void renderGaming(bool live, float phase) {
       combatHud("BOSS FIGHT",VALUE_HOT,live);
       break;
     }
+    case DisplayLayout::DroneSwarm: {
+      for(int i=0;i<8;i++){float a=i*PI/4+phase*.6f; int x=206+cosf(a)*142,y=236+sinf(a)*80; gfx->drawLine(x-14,y-9,x+14,y+9,to565(VALUE_COOL)); gfx->drawLine(x-14,y+9,x+14,y-9,to565(VALUE_COOL)); for(int k=-1;k<=1;k+=2) for(int j=-1;j<=1;j+=2) gfx->drawCircle(x+k*14,y+j*9,7,to565(VALUE_COOL,.6f));}
+      combatHud("DRONE SWARM",VALUE_COOL,live); break;
+    }
+    case DisplayLayout::LightningStrike: {
+      for(int i=0;i<7;i++){int x=60+i*48,prev=x;for(int y=110;y<323;y+=18){int next=x+18*sinf(phase*8+i+y);gfx->drawLine(prev,y,next,y+18,to565(VALUE_HOT,.65f));prev=next;}}
+      combatHud("LIGHTNING STRIKE",VALUE_HOT,live); break;
+    }
+    case DisplayLayout::SpaceFleet: {
+      for(int i=0;i<14;i++){float t=fmodf(phase*.15f+i*.137f,1.0f);int x=38+(i*61)%336,y=390-t*360;gfx->fillTriangle(x,y-14,x-9,y+9,x+9,y+9,to565(PURPLE,.7f));gfx->drawLine(x,y+10,x,y+24,to565(ORANGE,.8f));}
+      combatHud("SPACE FLEET",PURPLE,live); break;
+    }
+    case DisplayLayout::RaceGrid: {
+      for(int i=-7;i<=7;i++)gfx->drawLine(206+i*9,210,206+i*48,385,to565(GOLD,.4f));for(int i=0;i<11;i++){float t=fmodf(phase*.4f+i*.1f,1.0f);int y=210+t*t*175;gfx->drawFastHLine(35,y,342,to565(GOLD,.2f+t*.4f));}
+      combatHud("RACE GRID",GOLD,live); break;
+    }
+    case DisplayLayout::PortalRift: {
+      for(int i=0;i<44;i++){float a=i*PI/22+phase;int r=108+16*sinf(i*.7f+phase*3);gfx->drawLine(206+cosf(a)*r,247+sinf(a)*r*.55f,206+cosf(a+.15f)*(r+9),247+sinf(a+.15f)*(r+9)*.55f,to565(TACTICAL,.8f));}
+      combatHud("PORTAL RIFT",TACTICAL,live); break;
+    }
+    case DisplayLayout::TacticalSteel: {
+      for(int i=0;i<6;i++){gfx->drawRoundRect(40+i*5,100+i*5,332-i*10,227-i*10,12,to565(VALUE_COOL,.12f+i*.06f));}for(int x=66;x<355;x+=28)gfx->fillCircle(x,302,3,to565(GOLD));
+      combatHud("TACTICAL STEEL",VALUE_COOL,live); break;
+    }
+    case DisplayLayout::AmmoVault: {
+      for(int i=0;i<11;i++){int x=58+i*28;gfx->fillTriangle(x,261,x+6,248,x+12,261,to565(GOLD));gfx->fillRect(x,261,12,43,to565(GOLD,.6f));gfx->drawFastHLine(x,296,12,to565(VALUE_HOT));}
+      combatHud("AMMO VAULT",VALUE_HOT,live); break;
+    }
+    case DisplayLayout::SamuraiCrest: {
+      gfx->drawCircle(206,253,71,to565(PURPLE,.5f));gfx->fillTriangle(140,292,206,241,272,292,to565(PURPLE,.6f));gfx->fillTriangle(150,275,127,219,189,259,to565(GOLD));gfx->fillTriangle(262,275,285,219,223,259,to565(GOLD));gfx->drawLine(155,310,257,237,to565(PURPLE));gfx->drawLine(155,237,257,310,to565(PURPLE));
+      combatHud("SAMURAI CREST",PURPLE,live); break;
+    }
+    case DisplayLayout::RetroArcade: {
+      for(int i=0;i<8;i++){int x=75+i*34;gfx->fillRect(x,276,15,15,to565(i%2?GOLD:PURPLE));gfx->fillRect(x+16,292,15,15,to565(i%2?PURPLE:GOLD));}gfx->drawRect(57,111,298,211,to565(GOLD,.6f));
+      combatHud("RETRO ARCADE",GOLD,live); break;
+    }
+    case DisplayLayout::StealthMap: {
+      for(int i=0;i<10;i++){int x=53+(i*73)%310,y=117+(i*47)%205;gfx->drawRect(x,y,22+(i%3)*12,25,to565(TACTICAL,.35f));}gfx->drawCircle(206,263,42,to565(TACTICAL));gfx->drawLine(145,263,267,263,to565(TACTICAL));gfx->drawLine(206,202,206,324,to565(TACTICAL));
+      combatHud("STEALTH MAP",TACTICAL,live); break;
+    }
     default: break;
   }
 }

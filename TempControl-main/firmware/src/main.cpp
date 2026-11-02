@@ -349,6 +349,12 @@ static void render(bool live) {
     renderAnimated(live);
     return;
   }
+  if (displayLayout >= DisplayLayout::TacticalSteel) {
+    gfx->fillScreen(RGB565_BLACK);
+    renderGaming(live, 0);
+    gfx->flush();
+    return;
+  }
   switch (displayLayout) {
     case DisplayLayout::Gauges: renderGauges(live); break;
     case DisplayLayout::Minimal: renderMinimal(live); break;
