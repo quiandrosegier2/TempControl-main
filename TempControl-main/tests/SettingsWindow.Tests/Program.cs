@@ -65,6 +65,15 @@ internal static class Program
         window.DrawToBitmap(screenshot, new Rectangle(Point.Empty, window.Size));
         screenshot.Save(Path.Combine(root, "layout-studio.png"));
         window.Close();
+        DesignFiles.Apply(root,ScreenDesign.CreateDefault());
+        using(var customWindow=new SettingsWindow(root))
+        {
+            bool custom=(bool)typeof(SettingsWindow).GetField("showingCustom",BindingFlags.Instance|BindingFlags.NonPublic)!.GetValue(customWindow)!;
+            if(!custom)throw new Exception("Active custom design not restored in main window");
+            typeof(SettingsWindow).GetMethod("Apply",BindingFlags.Instance|BindingFlags.NonPublic)!.Invoke(customWindow,null);
+            if(File.Exists(Path.Combine(root,"custom-active.txt")))throw new Exception("Preset did not deactivate custom mode");
+            if((bool)typeof(SettingsWindow).GetField("showingCustom",BindingFlags.Instance|BindingFlags.NonPublic)!.GetValue(customWindow)!)throw new Exception("Main preview did not return to preset");
+        }
         Console.WriteLine("PASS: 31 previews, 23 animations, 8 static layouts, saved choice, configuration writes, real timer playback/pause/resume; UI rendered.");
     }
 }

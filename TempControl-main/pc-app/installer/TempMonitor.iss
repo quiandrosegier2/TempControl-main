@@ -1,10 +1,10 @@
-; Inno Setup-script voor TempMonitor.
+; Inno Setup-script voor Qscreen.
 ; Bouwen: voer ..\build-installer.ps1 uit (publiceert de app, haalt PresentMon op en compileert dit script).
 
-#define AppName "Qprints esp installer"
+#define AppName "Qscreen"
 #define PreviewFrameCount 40
 #ifndef AppVersion
-  #define AppVersion "1.4.0"
+  #define AppVersion "1.5.0"
 #endif
 
 [Setup]
@@ -20,7 +20,7 @@ PrivilegesRequired=admin
 ArchitecturesAllowed=x64compatible
 ArchitecturesInstallIn64BitMode=x64compatible
 OutputDir=..\..\dist
-OutputBaseFilename=Qprints esp installer-{#AppVersion}
+OutputBaseFilename=Qscreen-{#AppVersion}
 Compression=lzma2/max
 SolidCompression=yes
 WizardStyle=modern dark includetitlebar
@@ -60,13 +60,22 @@ Source: "branding\qprints-footer.bmp"; Flags: dontcopy
 Source: "branding\qprints-wordmark.png"; DestDir: "{app}\branding"; Flags: ignoreversion
 Source: "branding\qprints.ico"; DestDir: "{app}\branding"; Flags: ignoreversion
 
+[InstallDelete]
+Type: files; Name: "{autoprograms}\Qprints esp installer.lnk"
+Type: files; Name: "{autodesktop}\Qprints esp installer.lnk"
+Type: files; Name: "{autoprograms}\TempMonitor\Firmware installeren.lnk"
+Type: files; Name: "{app}\TempMonitor.exe"
+Type: files; Name: "{app}\TempMonitor.dll"
+Type: files; Name: "{app}\TempMonitor.deps.json"
+Type: files; Name: "{app}\TempMonitor.runtimeconfig.json"
+
 [Icons]
-Name: "{autoprograms}\Qprints esp installer"; Filename: "{app}\TempMonitor.exe"; Parameters: "--settings"; IconFilename: "{app}\branding\qprints.ico"
-Name: "{autodesktop}\Qprints esp installer"; Filename: "{app}\TempMonitor.exe"; Parameters: "--settings"; IconFilename: "{app}\branding\qprints.ico"
-Name: "{autoprograms}\TempMonitor\Firmware installeren"; Filename: "{sys}\WindowsPowerShell\v1.0\powershell.exe"; Parameters: "-NoProfile -STA -ExecutionPolicy Bypass -WindowStyle Hidden -File ""{app}\flash-firmware.ps1"""; WorkingDir: "{app}"
+Name: "{autoprograms}\Qscreen"; Filename: "{app}\Qscreen.exe"; Parameters: "--settings"; IconFilename: "{app}\branding\qprints.ico"
+Name: "{autodesktop}\Qscreen"; Filename: "{app}\Qscreen.exe"; Parameters: "--settings"; IconFilename: "{app}\branding\qprints.ico"
+Name: "{autoprograms}\Qscreen tools\Firmware installeren"; Filename: "{sys}\WindowsPowerShell\v1.0\powershell.exe"; Parameters: "-NoProfile -STA -ExecutionPolicy Bypass -WindowStyle Hidden -File ""{app}\flash-firmware.ps1"""; WorkingDir: "{app}"
 
 [Run]
-Filename: "{app}\TempMonitor.exe"; Parameters: "--settings"; Description: "Qprints openen: layouts bekijken en kiezen"; Flags: postinstall nowait skipifsilent
+Filename: "{app}\Qscreen.exe"; Parameters: "--settings"; Description: "Qscreen openen: layouts bekijken en kiezen"; Flags: postinstall nowait skipifsilent
 Filename: "{sys}\WindowsPowerShell\v1.0\powershell.exe"; \
   Parameters: "-NoProfile -STA -ExecutionPolicy Bypass -WindowStyle Hidden -File ""{app}\flash-firmware.ps1"""; \
   Description: "Firmware op het aangesloten Waveshare-scherm installeren"; Flags: postinstall skipifsilent waituntilterminated runhidden
@@ -237,7 +246,7 @@ begin
   LayoutChoice.Parent := LayoutPage.Surface;
   LayoutChoice.SetBounds(0, ScaleY(12), ScaleX(205), ScaleY(28));
   LayoutChoice.Style := csDropDownList;
-  AddLayout('classic', 'Classic', 'De originele QPRINTS-weergave met CPU, GPU en FPS in drie rijen.');
+  AddLayout('classic', 'Classic', 'De originele Qscreen-weergave met CPU, GPU en FPS in drie rijen.');
   AddLayout('gauges', 'Gauges', 'Twee ronde temperatuurmeters met FPS eronder.');
   AddLayout('minimal', 'Minimal', 'Grote FPS-weergave met compacte CPU- en GPU-temperaturen.');
   AddLayout('orbit', 'Orbit (bewegend)', 'Lichtpunten draaien in drie banen rond de FPS-weergave. Temperaturen staan onderaan.');
@@ -337,7 +346,7 @@ begin
     WizardForm.StatusLabel.Caption := 'Automatisch starten instellen...';
     if not Exec(ExpandConstant('{sys}\WindowsPowerShell\v1.0\powershell.exe'),
       '-NoProfile -ExecutionPolicy Bypass -File "' + ExpandConstant('{app}\task.ps1') +
-      '" -Action Install -ExePath "' + ExpandConstant('{app}\TempMonitor.exe') + '"',
+      '" -Action Install -ExePath "' + ExpandConstant('{app}\Qscreen.exe') + '"',
       '', SW_HIDE, ewWaitUntilTerminated, ResultCode) then
       RaiseException('Automatisch starten kon niet worden ingesteld.');
     if ResultCode <> 0 then
@@ -356,7 +365,7 @@ var
   ResultCode: Integer;
 begin
   Exec(ExpandConstant('{sys}\WindowsPowerShell\v1.0\powershell.exe'),
-    '-NoProfile -Command "Stop-ScheduledTask -TaskName TempMonitor -EA SilentlyContinue; Stop-Process -Name TempMonitor,PresentMon -Force -EA SilentlyContinue"',
+    '-NoProfile -Command "Stop-ScheduledTask -TaskName TempMonitor -EA SilentlyContinue; Stop-Process -Name Qscreen,TempMonitor,PresentMon -Force -EA SilentlyContinue"',
     '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
   Result := '';
 end;

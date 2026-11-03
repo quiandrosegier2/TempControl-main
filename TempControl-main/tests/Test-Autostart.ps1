@@ -9,8 +9,8 @@ function Get-Process { }
 function Stop-Process { }
 function Unregister-ScheduledTask { $script:removed = $true }
 function New-ScheduledTaskAction {
-    param($Execute, $WorkingDirectory)
-    [pscustomobject]@{ Execute=$Execute; WorkingDirectory=$WorkingDirectory }
+    param($Execute, $WorkingDirectory, $Argument)
+    [pscustomobject]@{ Execute=$Execute; WorkingDirectory=$WorkingDirectory; Argument=$Argument }
 }
 function New-ScheduledTaskTrigger { param([switch]$AtLogOn) [pscustomobject]@{ AtLogOn=$AtLogOn } }
 function New-ScheduledTaskPrincipal { param($GroupId,$RunLevel) [pscustomobject]@{ GroupId=$GroupId; RunLevel=$RunLevel } }
@@ -21,7 +21,7 @@ function New-ScheduledTaskSettingsSet {
 function Register-ScheduledTask {
     param($TaskName,$Action,$Trigger,$Principal,$Settings,$Description,[switch]$Force)
     if ($FailureChild) { throw 'SIMULATED_REGISTER_FAILURE' }
-    if ($TaskName -ne 'TempMonitor' -or $Action.Execute -ne 'C:\Program Files\TempMonitor\TempMonitor.exe') {
+    if ($TaskName -ne 'TempMonitor' -or $Action.Execute -ne 'C:\Program Files\TempMonitor\Qscreen.exe' -or $Action.Argument -ne '--monitor') {
         throw 'De taak kreeg geen geldige executable-actie'
     }
     $script:registered = $Action
@@ -30,7 +30,7 @@ function Start-ScheduledTask { $script:started = $true }
 $taskScript = Join-Path $PSScriptRoot '..\pc-app\installer\task.ps1'
 $testData = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..\pc-app\installer\tool-cache\autostart-tests'))
 if ($FailureChild) { $env:ProgramData = $testData }
-. $taskScript -Action Install -ExePath 'C:\Program Files\TempMonitor\TempMonitor.exe'
+. $taskScript -Action Install -ExePath 'C:\Program Files\TempMonitor\Qscreen.exe'
 if (-not $script:registered -or -not $script:started -or $Action -ne 'Install') { throw 'Registreren/starten mislukt' }
 'PASS: installatie registreert de executable en start de taak zonder de Action-parameter te overschrijven.'
 $script:started = $false

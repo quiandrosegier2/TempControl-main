@@ -1,4 +1,4 @@
-# Bestaand QPRINTS //-beeldmerk, gerenderd voor Setup en het firmwarevenster.
+﻿# Bestaand QSCREEN //-beeldmerk, gerenderd voor Setup en het firmwarevenster.
 $ErrorActionPreference = 'Stop'
 Add-Type -AssemblyName System.Drawing
 $output = Join-Path $PSScriptRoot 'branding'
@@ -25,10 +25,10 @@ $g.Clear([Drawing.Color]::Transparent)
 $font = New-Object Drawing.Font('Segoe UI',98,[Drawing.FontStyle]::Bold,[Drawing.GraphicsUnit]::Pixel)
 $whiteBrush = New-Object Drawing.SolidBrush([Drawing.Color]::White)
 $redBrush = New-Object Drawing.SolidBrush($red)
-$brandWidth=$g.MeasureString('QPRINTS',$font).Width
+$brandWidth=$g.MeasureString('QSCREEN',$font).Width
 $slashWidth=$g.MeasureString('//',$font).Width
 $left=(640-$brandWidth-$slashWidth)/2
-$g.DrawString('QPRINTS',$font,$whiteBrush,[float]$left,[float]7)
+$g.DrawString('QSCREEN',$font,$whiteBrush,[float]$left,[float]7)
 $g.DrawString('//',$font,$redBrush,[float]($left+$brandWidth-6),[float]7)
 $wordmark.Save((Join-Path $output 'qprints-wordmark.png'),[Drawing.Imaging.ImageFormat]::Png)
 $footer,$footerG = Surface 640 144
@@ -76,6 +76,6 @@ CenterText $g 'Q' 151 296 133 ([Drawing.Color]::White)
 CenterText $g '//' 216 338 64 $red
 CenterText $g 'ESP DISPLAY' 164 455 27 ([Drawing.Color]::White)
 CenterText $g 'CPU  /  GPU  /  FPS' 164 493 18 ([Drawing.Color]::FromArgb(160,163,177))
-CenterText $g 'Qprints esp installer' 164 578 20 ([Drawing.Color]::FromArgb(204,206,215))
+CenterText $g 'Qscreen' 164 578 20 ([Drawing.Color]::FromArgb(204,206,215))
 $banner.Save((Join-Path $output 'qprints-banner.png'),[Drawing.Imaging.ImageFormat]::Png)
 $g.Dispose(); $banner.Dispose(); $wordmark.Dispose()

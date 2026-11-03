@@ -16,14 +16,17 @@ sealed class SettingsWindow : Form
     int frame;
     bool paused;
     readonly string appDirectory;
+    readonly DesignRenderer ownPreviewRenderer = new();
+    ScreenDesign? ownPreview;
+    bool showingCustom;
     string Selected => layouts.SelectedItem as string ?? "classic";
     bool Animated => layouts.SelectedIndex >= 3 && layouts.SelectedIndex < 26;
 
     public SettingsWindow(string? directory = null)
     {
         appDirectory = directory ?? AppContext.BaseDirectory;
-        Text = "Qprints esp installer — Layout Studio";
-        Size = new Size(850, 650); MinimumSize = new Size(650, 500);
+        Text = "Qscreen — Layout Studio";
+        Size = new Size(1000, 760); MinimumSize = new Size(850, 700);
         StartPosition = FormStartPosition.CenterScreen;
         BackColor = Color.FromArgb(24, 25, 31); ForeColor = Color.White;
         Font = new Font("Segoe UI", 11);
@@ -45,7 +48,7 @@ sealed class SettingsWindow : Form
         string logoPath = Path.Combine(appDirectory, "branding", "qprints-wordmark.png");
         if (File.Exists(logoPath)) logo.Image = ReadImage(logoPath);
         var title = new Label { Text = "LAYOUT STUDIO\n31 layouts · 23 bewegend", Dock = DockStyle.Top, Height = 70 };
-        var help = new Label { Text = "Voorbeeld met testwaarden.\nDe CPU, GPU en FPS op je scherm blijven live.\n\nNieuwe layouts vereisen firmware 1.4.0. Gebruik de firmwareknop om je scherm bij te werken.", Dock = DockStyle.Top, Height = 170 };
+        var help = new Label { Text = "Kies een thema of maak je eigen ontwerp met een eigen achtergrond, lettertypen, kleuren, datum en klok.\n\nEigen ontwerpen vereisen firmware 1.5.0 en een actieve USB-verbinding.", Dock = DockStyle.Top, Height = 170 };
         var actions = new FlowLayoutPanel { Dock = DockStyle.Top, AutoSize = true, FlowDirection = FlowDirection.TopDown, WrapContents = false };
         Button Action(string label, Action handler)
         {
@@ -54,6 +57,7 @@ sealed class SettingsWindow : Form
             actions.Controls.Add(button); return button;
         }
         Action("Layout toepassen", Apply).BackColor = Color.FromArgb(165, 35, 43);
+        Action("Eigen ontwerp maken…", () => { using var designer = new DesignWindow(appDirectory); designer.ShowDialog(this); LoadCustomPreview(); });
         Action("Firmware installeren", () => LaunchPowerShell("-NoProfile -STA -ExecutionPolicy Bypass -WindowStyle Hidden -File \"" + Path.Combine(AppContext.BaseDirectory, "flash-firmware.ps1") + "\""));
         Action("Achtergrondmeting starten", () => LaunchPowerShell("-NoProfile -Command \"Start-ScheduledTask -TaskName TempMonitor\""));
         Action("Logboek openen", () => Process.Start(new ProcessStartInfo("explorer.exe", Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData), "TempMonitor")) { UseShellExecute = true }));
@@ -64,12 +68,13 @@ sealed class SettingsWindow : Form
         right.Controls.Add(preview); right.Controls.Add(footer); right.Controls.Add(status); right.Controls.Add(layouts);
         Controls.Add(right); Controls.Add(left);
         layouts.Items.AddRange(LayoutSettings.Names);
-        layouts.SelectedIndexChanged += (_, _) => { frame = 0; paused = false; play.Enabled = Animated; play.Text = Animated ? "Pauzeren" : "Statisch"; status.Text = $"Voorbeeld: {Selected} · testwaarden"; ShowFrame(); };
+        layouts.SelectedIndexChanged += (_, _) => { showingCustom = false; frame = 0; paused = false; play.Enabled = Animated; play.Text = Animated ? "Pauzeren" : "Statisch"; status.Text = $"Voorbeeld: {Selected} · testwaarden"; timer.Start(); ShowFrame(); };
         play.Click += (_, _) => { paused = !paused; play.Text = paused ? "Afspelen" : "Pauzeren"; };
         layouts.SelectedItem = LayoutSettings.Read(appDirectory);
-        timer.Tick += (_, _) => { if (Animated && !paused) { frame = (frame + 1) % 40; ShowFrame(); } };
+        timer.Tick += (_, _) => { if (showingCustom || (Animated && !paused)) { frame = (frame + 1) % 40; ShowFrame(); } };
         timer.Start();
-        FormClosed += (_, _) => { timer.Stop(); timer.Dispose(); preview.Image?.Dispose(); logo.Image?.Dispose(); Icon?.Dispose(); };
+        LoadCustomPreview();
+        FormClosed += (_, _) => { timer.Stop(); timer.Dispose(); ownPreviewRenderer.Dispose(); preview.Image?.Dispose(); logo.Image?.Dispose(); Icon?.Dispose(); };
     }
 
     protected override void OnHandleCreated(EventArgs e)
@@ -87,6 +92,11 @@ sealed class SettingsWindow : Form
 
     void ShowFrame()
     {
+        if (showingCustom && ownPreview != null)
+        {
+            var next = ownPreviewRenderer.Render(ownPreview, ScreenReadings.Demo);
+            var previous = preview.Image; preview.Image = next; previous?.Dispose(); return;
+        }
         string name = Animated ? $"{Selected}-{frame:D2}.bmp" : $"layout-{Selected}.png";
         string path = Path.Combine(appDirectory, "previews", name);
         try
@@ -96,8 +106,21 @@ sealed class SettingsWindow : Form
         }
         catch (Exception ex) when (ex is IOException or ArgumentException or OutOfMemoryException)
         {
-            timer.Stop(); status.Text = "Voorbeeld ontbreekt of kan niet worden geladen. Installeer Qprints opnieuw.";
+            timer.Stop(); status.Text = "Voorbeeld ontbreekt of kan niet worden geladen. Installeer Qscreen opnieuw.";
         }
+    }
+
+    void LoadCustomPreview()
+    {
+        if (!File.Exists(Path.Combine(appDirectory, "custom-active.txt"))) return;
+        try
+        {
+            ownPreview = DesignFiles.Load(Path.Combine(appDirectory, "custom-design.json")); showingCustom = true;
+            play.Enabled = false; play.Text = "Eigen ontwerp";
+            status.Text = $"Eigen ontwerp actief: {ownPreview.Name}. Voorbeeld met testwaarden; open de ontwerper om aan te passen.";
+            ShowFrame(); timer.Start();
+        }
+        catch (Exception ex) { status.Text = "Eigen ontwerp kon niet worden geopend: " + ex.Message; }
     }
 
     void Apply()
@@ -106,6 +129,11 @@ sealed class SettingsWindow : Form
         string temporary = path + ".new";
         File.WriteAllText(temporary, Selected + Environment.NewLine);
         File.Move(temporary, path, true);
+        File.Delete(Path.Combine(appDirectory, "custom-active.txt"));
+        showingCustom = false;
+        play.Enabled = Animated;
+        play.Text = Animated ? "Pauzeren" : "Statisch";
+        ShowFrame();
         status.Text = $"Opgeslagen: {Selected}. De achtergrondmeting past dit binnen een seconde toe zodra het scherm verbonden is.";
     }
 

@@ -1,11 +1,12 @@
-# Standalone firmwarevenster; wordt door Setup en de startmenusnelkoppeling geopend.
+﻿# Standalone firmwarevenster; wordt door Setup en de startmenusnelkoppeling geopend.
 param([switch]$ValidateOnly)
 
 $ErrorActionPreference = 'Stop'
 function Stop-MonitoringProcesses {
     # Layout Studio uses the same executable and must stay open during uploads.
-    Get-CimInstance Win32_Process -Filter "Name='TempMonitor.exe'" | Where-Object {
-        $_.CommandLine -notmatch '(?i)(?:^|\s)--settings(?:\s|$)'
+    Get-CimInstance Win32_Process -Filter "Name='Qscreen.exe' OR Name='TempMonitor.exe'" | Where-Object {
+        $_.CommandLine -notmatch '(?i)(?:^|\s)--settings(?:\s|$)' -and
+        ($_.Name -eq 'TempMonitor.exe' -or $_.CommandLine -match '(?i)(?:^|\s)--(?:monitor|port)(?:\s|$)')
     } | ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }
     Get-Process -Name PresentMon -ErrorAction SilentlyContinue | Stop-Process -Force
 }
@@ -26,16 +27,16 @@ if (-not $identity.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrat
         Start-Process -FilePath "$PSHOME\powershell.exe" -Verb RunAs `
             -ArgumentList ('-NoProfile -STA -ExecutionPolicy Bypass -WindowStyle Hidden -File "' + $PSCommandPath + '"') | Out-Null
     } catch {
-        [void][Windows.Forms.MessageBox]::Show('Beheerdersrechten zijn nodig om TempMonitor tijdelijk te stoppen en de firmware te installeren.', 'Qprints esp installer')
+        [void][Windows.Forms.MessageBox]::Show('Beheerdersrechten zijn nodig om Qscreen tijdelijk te stoppen en de firmware te installeren.', 'Qscreen')
     }
     return
 }
 [Windows.Forms.Application]::EnableVisualStyles()
-if (-not ('QprintsWindowStyle' -as [type])) {
+if (-not ('QscreenWindowStyle' -as [type])) {
     Add-Type @'
 using System;
 using System.Runtime.InteropServices;
-public static class QprintsWindowStyle {
+public static class QscreenWindowStyle {
     [DllImport("dwmapi.dll")]
     public static extern int DwmSetWindowAttribute(IntPtr hwnd, int attribute, ref int value, int size);
     [DllImport("uxtheme.dll", CharSet=CharSet.Unicode)]
@@ -44,14 +45,14 @@ public static class QprintsWindowStyle {
 '@
 }
 $form = New-Object Windows.Forms.Form
-$form.Text = 'Qprints esp installer - Firmware'
+$form.Text = 'Qscreen - Firmware'
 $form.ClientSize = New-Object Drawing.Size(660, 530)
 $form.BackColor = [Drawing.Color]::FromArgb(24,25,31)
 $form.ForeColor = [Drawing.Color]::FromArgb(238,239,244)
 $form.Font = [Drawing.Font]::new('Segoe UI',9)
 $form.Add_HandleCreated({
     $dark = 1
-    [void][QprintsWindowStyle]::DwmSetWindowAttribute($form.Handle,20,[ref]$dark,4)
+    [void][QscreenWindowStyle]::DwmSetWindowAttribute($form.Handle,20,[ref]$dark,4)
 })
 $form.StartPosition = 'CenterScreen'
 $form.FormBorderStyle = 'FixedDialog'
@@ -113,8 +114,8 @@ $log.Multiline = $true
 $log.ReadOnly = $true
 $log.ScrollBars = 'Vertical'
 $form.Controls.AddRange(@($brandLogo, $intro, $ports, $refresh, $flash, $log))
-[void][QprintsWindowStyle]::SetWindowTheme($ports.Handle,'DarkMode_CFD',$null)
-[void][QprintsWindowStyle]::SetWindowTheme($log.Handle,'DarkMode_Explorer',$null)
+[void][QscreenWindowStyle]::SetWindowTheme($ports.Handle,'DarkMode_CFD',$null)
+[void][QscreenWindowStyle]::SetWindowTheme($log.Handle,'DarkMode_Explorer',$null)
 $script:flashing = $false
 
 function Refresh-Ports {
@@ -149,10 +150,10 @@ $flash.Add_Click({
     $resumeMonitor = $false
     $process = $null
     try {
-        if (-not (Test-Path $image) -or -not (Test-Path $tool)) { throw 'Firmware of uploadprogramma ontbreekt. Installeer Qprints esp installer opnieuw.' }
+        if (-not (Test-Path $image) -or -not (Test-Path $tool)) { throw 'Firmware of uploadprogramma ontbreekt. Installeer Qscreen opnieuw.' }
         $identity = [Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()
         if (-not $identity.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
-            throw 'Start Firmware installeren opnieuw als administrator om TempMonitor tijdelijk te kunnen stoppen.'
+            throw 'Start Firmware installeren opnieuw als administrator om Qscreen tijdelijk te kunnen stoppen.'
         }
         $task = Get-ScheduledTask -TaskName TempMonitor -ErrorAction SilentlyContinue
         $resumeMonitor = $null -ne $task -and $task.State -eq 'Running'
@@ -178,12 +179,12 @@ $flash.Add_Click({
         $process.WaitForExit()
         $log.Text = (Get-Content $stdout -Raw) + "`r`n" + (Get-Content $stderr -Raw)
         if ($process.ExitCode -ne 0) { throw "Upload mislukt (code $($process.ExitCode)). Gebruik BOOT/RESET, klik op Vernieuwen en probeer opnieuw. Logs: $logDir" }
-        $log.AppendText("`r`nKlaar! Druk zo nodig op RESET of sluit het scherm opnieuw aan. TempMonitor maakt automatisch verbinding.")
+        $log.AppendText("`r`nKlaar! Druk zo nodig op RESET of sluit het scherm opnieuw aan. Qscreen maakt automatisch verbinding.")
     } catch {
         $log.AppendText("`r`n$($_.Exception.Message)")
     } finally {
         if ($resumeMonitor) {
-            try { Start-ScheduledTask -TaskName TempMonitor } catch { $log.AppendText("`r`nTempMonitor herstarten mislukt. Meld je opnieuw aan bij Windows.") }
+            try { Start-ScheduledTask -TaskName TempMonitor } catch { $log.AppendText("`r`nQscreen herstarten mislukt. Meld je opnieuw aan bij Windows.") }
         }
         if ($process) { $process.Dispose() }
         $script:flashing = $false

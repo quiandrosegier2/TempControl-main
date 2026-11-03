@@ -1,9 +1,9 @@
-// TempMonitor - leest CPU/GPU-temperatuur en FPS en stuurt die via USB naar het ronde ESP32-scherm.
+// Qscreen - leest CPU/GPU-temperatuur en FPS en stuurt die via USB naar het ronde ESP32-scherm.
 //
 // Gebruik:
-//   TempMonitor.exe                 automatisch de ESP32 zoeken (USB VID 303A)
-//   TempMonitor.exe --port COM5     vaste COM-poort gebruiken
-//   TempMonitor.exe --list          alle gevonden temperatuursensoren tonen
+//   Qscreen.exe                 Qscreen openen (met --monitor de achtergrondmeting starten) (USB VID 303A)
+//   Qscreen.exe --port COM5     vaste COM-poort gebruiken
+//   Qscreen.exe --list          alle gevonden temperatuursensoren tonen
 
 using System.Globalization;
 using System.IO.Ports;
@@ -11,7 +11,7 @@ using System.Management;
 using System.Text.RegularExpressions;
 using LibreHardwareMonitor.Hardware;
 
-if (args.Contains("--settings"))
+if (args.Length == 0 || args.Contains("--settings"))
 {
     var ui = new Thread(() => { System.Windows.Forms.Application.EnableVisualStyles(); System.Windows.Forms.Application.Run(new SettingsWindow()); });
     ui.SetApartmentState(ApartmentState.STA);
@@ -32,10 +32,10 @@ for (int i = 0; i < args.Length; i++)
 if (!listOnly)
 {
     Log.Start();
-    Log.Write("TempMonitor wordt gestart.");
+    Log.Write("Qscreen-achtergrondmeting wordt gestart.");
     AppDomain.CurrentDomain.UnhandledException += (_, e) => Log.Write($"Onverwachte fout: {e.ExceptionObject}");
 }
-var computer = new Computer { IsCpuEnabled = true, IsGpuEnabled = true };
+var computer = new Computer { IsCpuEnabled = true, IsGpuEnabled = true, IsMemoryEnabled = true };
 computer.Open();
 AppDomain.CurrentDomain.ProcessExit += (_, _) => computer.Close();
 
@@ -48,12 +48,18 @@ if (listOnly)
     return;
 }
 
-Log.Write("TempMonitor gestart.");
+Log.Write("Qscreen-achtergrondmeting gestart.");
 string layout = LayoutSettings.Read(AppContext.BaseDirectory);
 Log.Write($"Layout: {layout}");
 var fpsMonitor = new FpsMonitor();
 AppDomain.CurrentDomain.ProcessExit += (_, _) => fpsMonitor.Dispose();
 SerialPort? port = null;
+CustomScreenSender? customSender = null;
+using var customRenderer = new DesignRenderer();
+ScreenDesign? customDesign = null;
+DateTime designModified = DateTime.MinValue;
+string? designError = null;
+bool customFirmwareWarning = false;
 string? lastStatus = null;
 
 while (true)
@@ -67,10 +73,45 @@ while (true)
 
     try
     {
-        port ??= OpenDisplayPort(fixedPort);
+        if (port == null)
+        {
+            port = OpenDisplayPort(fixedPort);
+            customSender = port == null ? null : new CustomScreenSender(new SerialFrameConnection(port));
+            customFirmwareWarning = false;
+        }
         if (port != null)
         {
-            port.Write(line + "\n");
+            bool sentCustom = false;
+            if (File.Exists(Path.Combine(AppContext.BaseDirectory, "custom-active.txt")))
+            {
+                try
+                {
+                    string path = Path.Combine(AppContext.BaseDirectory, "custom-design.json");
+                    DateTime modified = File.GetLastWriteTimeUtc(path);
+                    if (customDesign == null || modified != designModified)
+                    {
+                        customDesign = DesignFiles.Load(path); designModified = modified;
+                    }
+                    var readings = new ScreenReadings(cpu, gpu, fps,
+                        ReadLoad(computer, HardwareType.Cpu),
+                        ReadLoad(computer, HardwareType.GpuNvidia, HardwareType.GpuAmd, HardwareType.GpuIntel),
+                        ReadLoad(computer, HardwareType.Memory), DateTime.Now);
+                    using var frame = customRenderer.Render(customDesign, readings);
+                    sentCustom = customSender!.Send(DesignRenderer.Rgb565(frame));
+                    if (!sentCustom && !customFirmwareWarning)
+                    {
+                        Log.Write("Eigen ontwerpen vereisen Qscreen-firmware 1.5.0. Werk het scherm bij via de app.");
+                        customFirmwareWarning = true;
+                    }
+                    designError = null;
+                }
+                catch (Exception ex) when (ex is System.Text.Json.JsonException or InvalidDataException or UnauthorizedAccessException or ArgumentException or FileNotFoundException or DirectoryNotFoundException)
+                {
+                    if (designError != ex.Message) Log.Write("Eigen ontwerp: " + ex.Message);
+                    designError = ex.Message;
+                }
+            }
+            if (!sentCustom) port.Write(line + "\n");
             Console.Write($"\r{port.PortName} -> {line}      ");
         }
         else if (lastStatus != "notfound")
@@ -101,6 +142,12 @@ while (true)
 }
 
 static string Fmt(float? v) => v.HasValue ? v.Value.ToString("0.0", CultureInfo.InvariantCulture) : "nan";
+
+static float? ReadLoad(Computer computer, params HardwareType[] types) => AllHardware(computer)
+    .Where(h => types.Contains(h.HardwareType)).SelectMany(h => h.Sensors)
+    .Where(s => s.SensorType == SensorType.Load && (s.Name.Contains("Total", StringComparison.OrdinalIgnoreCase) || s.Name.Contains("Core", StringComparison.OrdinalIgnoreCase) || s.Name.Contains("Memory", StringComparison.OrdinalIgnoreCase)))
+    .OrderBy(s => s.Name.Contains("Total", StringComparison.OrdinalIgnoreCase) ? 0 : s.Name.Equals("GPU Core", StringComparison.OrdinalIgnoreCase) ? 1 : 2)
+    .Select(s => s.Value).FirstOrDefault(v => v.HasValue);
 
 static IEnumerable<IHardware> AllHardware(Computer c) =>
     c.Hardware.SelectMany(h => h.SubHardware.Prepend(h));
@@ -152,7 +199,8 @@ static SerialPort? OpenDisplayPort(string? fixedPort)
     var port = new SerialPort(name, 115200)
     {
         NewLine = "\n",
-        WriteTimeout = 500,
+        WriteTimeout = 5000,
+        ReadTimeout = 12000,
         // DTR/RTS uit laten: anders kan de ESP32-S3 resetten bij openen
         DtrEnable = false,
         RtsEnable = false,

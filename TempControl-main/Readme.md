@@ -1,10 +1,10 @@
-# TempControl
+# Qscreen
 
 Rond systeemmonitor-scherm voor de pc. Een **Waveshare ESP32-S3-Touch-LCD-1.46** toont **CPU-temperatuur, GPU-temperatuur en FPS**, die via **USB-C** van Windows binnenkomen.
 
 - **Boven 50 °C kleuren de waarde en de gloeiende ring rood**
 - **Op of onder 50 °C blijven ze blauw**
-- Bovenaan staan `QPRINTS //` en `SYSTEM MONITOR`. Krijgt het scherm geen data, dan staat daar `WACHTEN OP PC`.
+- Bovenaan staan `QSCREEN //` en `SYSTEM MONITOR`. Krijgt het scherm geen data, dan staat daar `WACHTEN OP PC`.
 
 ```
 firmware/          ESP32-S3 firmware (PlatformIO + Arduino_GFX)
@@ -18,7 +18,7 @@ pc-app/installer/  Inno Setup-installer
 
 Download het installatiebestand via [GitHub Releases](https://github.com/quiandrosegier2/TempControl-main/releases/latest).
 
-1. Start `Qprints esp installer-1.4.0.exe`, geef toestemming voor beheerdersrechten en kies een schermlayout. Het bewegende demovoorbeeld speelt op de layoutpagina; met **Pauzeren/Afspelen** stop of start je de animatie.
+1. Start `Qscreen-1.5.0.exe`, geef toestemming voor beheerdersrechten en kies een schermlayout. Het bewegende demovoorbeeld speelt op de layoutpagina; met **Pauzeren/Afspelen** stop of start je de animatie.
 2. Sluit een **Waveshare ESP32-S3-Touch-LCD-1.46 (16 MB)** met een USB-C-datakabel aan.
 3. Laat aan het einde van Setup de optie om firmware te installeren aangevinkt.
 4. Kies de COM-poort van het scherm en klik op **Firmware installeren**. Dit vervangt de bestaande firmware.
@@ -26,13 +26,29 @@ Download het installatiebestand via [GitHub Releases](https://github.com/quiandr
 
 Geen poort of geen verbinding? Houd BOOT ingedrukt, druk op RESET, laat BOOT los en klik op **Vernieuwen**. Kies daarna de nieuwe COM-poort en probeer opnieuw.
 
-Opnieuw installeren kan via **Start > TempMonitor > Firmware installeren**. De monitor-app wordt tijdens de upload gepauzeerd en daarna hervat. Uploadlogs staan in `C:\ProgramData\TempMonitor`.
+Opnieuw installeren kan via **Start > Qscreen tools > Firmware installeren**. De monitor-app wordt tijdens de upload gepauzeerd en daarna hervat. Uploadlogs staan in `C:\ProgramData\TempMonitor`.
 
 De app, .NET, firmware, het uploadprogramma en de optionele PawnIO-driver zitten in de installer. Gebruikers hoeven geen VS Code, Python, PlatformIO, internetverbinding of winget te hebben. Windows kan na de driverinstallatie om een herstart vragen.
 
 ### Blijvend programma: Layout Studio
 
-Na installatie kun je **Qprints esp installer** altijd opnieuw openen via Start of het bureaublad. Het donkere Layout Studio-venster toont alle 31 ontwerpen, inclusief bewegende offline voorbeelden en Pauzeren/Afspelen. Je kunt een layout toepassen, firmware uploaden, de achtergrondmeting starten en het logboek openen. Het venster sluiten laat de achtergrondmeting doorwerken. Je kunt het venster ook starten met `TempMonitor.exe --settings`.
+Na installatie kun je **Qscreen** altijd opnieuw openen via Start of het bureaublad. Het donkere Layout Studio-venster toont alle 31 ontwerpen, inclusief bewegende offline voorbeelden en Pauzeren/Afspelen. Je kunt een layout toepassen, firmware uploaden, de achtergrondmeting starten en het logboek openen. Het venster sluiten laat de achtergrondmeting doorwerken. Je kunt het venster ook starten met `Qscreen.exe --settings`.
+
+### Eigen ontwerp maken in Qscreen 1.5.0
+
+Open **Eigen ontwerp maken…** voor de nieuwe ontwerper. Importeer een PNG-, JPG- of BMP-achtergrond, of sleep een afbeelding op het ronde voorbeeld. Kies Cover (vullend), Contain (volledig zichtbaar) of Stretch en stel verdonkering en achtergrondkleur in.
+
+Voeg eigen tekst, CPU/GPU-temperaturen, FPS, klok, datum, CPU/GPU-belasting, geheugengebruik, rechthoeken, cirkels en voortgangsbalken toe. Klik op een element om het te selecteren en versleep het. Rechts wijzig je positie, breedte, hoogte, kleur, lettertype, lettergrootte, vet, cursief en uitlijning. Met **Lettertype…** kies je een geïnstalleerd Windows-lettertype. Zet **Temperatuurkleuren** uit als je bij temperaturen zelf een kleur wilt gebruiken.
+
+Gebruik `{value}` voor meetwaarden, `HH:mm:ss` voor een klok en `dd-MM-yyyy` voor een datum. Ontbrekende sensoren tonen `--`. Voor balken kies je de meetwaarde en het maximum, bijvoorbeeld 100 voor belasting of 240 voor FPS. De elementenlijst bepaalt de tekenvolgorde; **Naar voren / Naar achter** verandert de laagvolgorde. Je kunt elementen kopiëren en verwijderen. **Ongedaan / Opnieuw** werkt ook voor verslepen; Ctrl+S bewaart een concept en Ctrl+Z/Ctrl+Y maakt wijzigingen ongedaan of opnieuw.
+
+**Opslaan** bewaart een concept. **Exporteren…** maakt een zelfstandig `.qscreen`-bestand inclusief achtergrond; bewaar zo meerdere ontwerpen of deel ze. **Openen…** importeert een ontwerp. Lettertypen worden niet meegestuurd: op een andere pc moeten ze geïnstalleerd zijn, anders wordt een vervangend lettertype gebruikt. Maximaal 64 elementen per ontwerp; achtergronden worden verkleind tot maximaal 1024 pixels aan de langste zijde.
+
+Klik **Toepassen op scherm** om je ontwerp te activeren. Hiervoor is de meegeleverde **firmware 1.5.0** nodig. Windows tekent het volledige beeld en stuurt dat met lengte- en checksumcontrole via USB naar het scherm. De pc en USB-verbinding moeten actief blijven. De verversing is bedoeld voor meetwaarden en klokupdates; de overdrachtstijd telt mee, dus dit is geen videospeler. Zonder pc-data valt het scherm terug op de ingebouwde offline-weergave. Ontwerpen staan op de pc en worden niet elke seconde in de flash van het scherm geschreven. Je kunt wel zonder aangesloten scherm ontwerpen en voorbeelden bekijken.
+
+Een vaste layout toepassen in het hoofdvenster schakelt je eigen ontwerp uit. Het concept blijft bewaard. Dubbelklikken op **Qscreen.exe** opent voortaan de app; de achtergrondtaak gebruikt `Qscreen.exe --monitor`. Bestaande installatiemap en taaknaam blijven behouden voor upgrades. Het bureaublad en Start krijgen Qscreen-snelkoppelingen.
+
+De ontwerper en USB-overdracht zijn getest met model-, UI- en transportsimulaties. De firmware is gebouwd; de nieuwe volledige beeldoverdracht is nog niet op een fysiek scherm getest.
 
 ### Schermlayouts
 
@@ -68,11 +84,11 @@ Na installatie kun je **Qprints esp installer** altijd opnieuw openen via Start 
 - **Stealth Map** (statisch): tactische kaart en vizier.
 - **Boss Fight**: bewegende pixelbaas, laseraccenten en echte temperatuur-hittebalken.
 
-Setup toont schematische demo's met testwaarden en bewaart de keuze in `layout.txt` naast de Windows-app. De 23 bewegende layouts hebben een automatisch afspelend voorbeeld in een lus van vier seconden, met een knop **Pauzeren/Afspelen**. Classic, Gauges, Minimal en de vijf nieuwe statische gamingthema's tonen een stilstaand voorbeeld. Hun echte meetwaarden blijven wel bijwerken. Een scherm of internetverbinding is niet nodig om de voorbeelden vooraf te bekijken. De app stuurt de gekozen layout via USB; het scherm onthoudt die keuze. Installeer de meegeleverde firmware eenmaal om alle eenendertig layouts en de actuele Speedometer-indeling te krijgen. Werk de firmware eenmaal bij naar 1.4.0. Daarna open je **Qprints esp installer** via het bureaublad of Start, kies je een ontwerp en klik je op **Layout toepassen**. De achtergrondmeting leest de keuze binnen een seconde opnieuw in, zonder herstart of opnieuw flashen.
+Setup toont schematische demo's met testwaarden en bewaart de keuze in `layout.txt` naast de Windows-app. De 23 bewegende layouts hebben een automatisch afspelend voorbeeld in een lus van vier seconden, met een knop **Pauzeren/Afspelen**. Classic, Gauges, Minimal en de vijf nieuwe statische gamingthema's tonen een stilstaand voorbeeld. Hun echte meetwaarden blijven wel bijwerken. Een scherm of internetverbinding is niet nodig om de voorbeelden vooraf te bekijken. De app stuurt de gekozen layout via USB; het scherm onthoudt die keuze. Installeer de meegeleverde firmware eenmaal om alle eenendertig layouts en de actuele Speedometer-indeling te krijgen. Werk de firmware eenmaal bij naar 1.5.0. Daarna open je **Qscreen** via het bureaublad of Start, kies je een ontwerp en klik je op **Layout toepassen**. De achtergrondmeting leest de keuze binnen een seconde opnieuw in, zonder herstart of opnieuw flashen.
 
 De 23 bewegende layouts blijven bewegen tussen USB-updates, met maximaal 20 animatiebeelden per seconde. Dit staat los van de getoonde game-FPS. Waveform bewaart de laatste 60 echte CPU- en GPU-samples in RAM; ontbrekende sensoren leveren gaten op, geen verzonnen meetwaarden. Na een herstart begint deze historie opnieuw. Alle layouts tonen ontbrekende meetwaarden als `--` en temperaturen boven 50 graden in rood.
 
-[Bekijk alle layouts](https://github.com/quiandrosegier2/TempControl-main/releases/download/v1.4.0/Layout-Overview-1.4.0.png) of [de acht gamingthema's](https://github.com/quiandrosegier2/TempControl-main/releases/download/v1.3.0/Gaming-Layouts-1.3.0.png).
+[Bekijk alle layouts](https://github.com/quiandrosegier2/TempControl-main/releases/download/v1.5.0/Layout-Overview-1.5.0.png) of [de acht gamingthema's](https://github.com/quiandrosegier2/TempControl-main/releases/download/v1.3.0/Gaming-Layouts-1.3.0.png).
 
 De gaming-art wordt in code getekend. Geweren, patronen, vuur en de pixelbaas zijn decoratieve animaties; CPU, GPU, FPS en de hittebalken gebruiken echte meetgegevens. Werk de firmware eenmaal bij naar 1.3.0 voor deze acht thema's.
 
@@ -90,14 +106,14 @@ Voor stille installaties kan `/LAYOUT=` worden gevolgd door `classic`, `gauges`,
 
 ## 2. Windows-app installeren
 
-Voer `Qprints esp installer-1.4.0.exe` uit. De donkere installer en het firmwarevenster tonen het QPRINTS //-beeldmerk. De installer:
+Voer `Qscreen-1.5.0.exe` uit. De donkere installer en het firmwarevenster tonen het QSCREEN //-beeldmerk. De installer:
 
 - installeert de app in `C:\Program Files\TempMonitor`; .NET zit erin, dus dat hoef je niet apart te installeren
 - installeert desgewenst de **PawnIO**-driver (vinkje). Die is nodig om de CPU-temperatuur van een Ryzen te lezen.
 - zorgt dat de app onzichtbaar en met beheerdersrechten start bij elke aanmelding
 - start de app meteen
 
-Verwijderen gaat via *Instellingen → Apps → Qprints esp installer*.
+Verwijderen gaat via *Instellingen → Apps → Qscreen*.
 
 **Werkt er iets niet?** Kijk in het logbestand `C:\ProgramData\TempMonitor\TempMonitor.log`. Daar staat of het scherm gevonden is en welke sensoren ontbreken.
 
@@ -116,7 +132,7 @@ cd pc-app
 powershell -ExecutionPolicy Bypass -File .\build-installer.ps1
 ```
 
-Het resultaat komt in `dist\Qprints esp installer-<versie>.exe`. De versie haalt het script uit `TempMonitor.csproj`. Met `-OutputDir E:\` komt de setup op een andere plek terecht, bijvoorbeeld rechtstreeks op een USB-stick. `build-branding.ps1` genereert het woordmerk, pictogram en de welkomstafbeelding; `build-layout-previews.ps1` genereert de 31 donkere layoutvoorbeelden. `build-animated-previews.ps1` genereert daarnaast 40 beelden voor elk van de 23 bewegende layouts. De installer speelt deze lokaal af op de layoutpagina en stopt de timer bij pauzeren, verlaten van de pagina en afsluiten.
+Het resultaat komt in `dist\Qscreen-<versie>.exe`. De versie haalt het script uit `TempMonitor.csproj`. Met `-OutputDir E:\` komt de setup op een andere plek terecht, bijvoorbeeld rechtstreeks op een USB-stick. `build-branding.ps1` genereert het woordmerk, pictogram en de welkomstafbeelding; `build-layout-previews.ps1` genereert de 31 donkere layoutvoorbeelden. `build-animated-previews.ps1` genereert daarnaast 40 beelden voor elk van de 23 bewegende layouts. De installer speelt deze lokaal af op de layoutpagina en stopt de timer bij pauzeren, verlaten van de pagina en afsluiten.
 
 > **Verkenner loopt vast of de setup is "geblokkeerd"?** Op beheerde pc's met Microsoft Defender for Endpoint blokkeert de ASR-regel *"Block executable files from running unless they meet a prevalence, age, or trusted list criterion"* (`01443614-cd74-433a-b99e-2ecdc07bfc25`) zelfgebouwde, niet-ondertekende exe-bestanden. Installeer dan op een pc zonder die regel, of voeg een ASR-uitzondering of een code-signing-certificaat toe.
 
@@ -134,17 +150,18 @@ Voer dit uit vanuit de projectmap met `firmware/`, `pc-app/` en `tests/`, nadat 
 
 `tests/speedometer/needle-tests.cpp` controleert met compile-time asserts de FPS- en temperatuurschalen, onafhankelijke naalden, vloeiende overgangen, ontbrekende waarden en het omslaan van de apparaattimer. Compileer dit bestand met een C++17-compiler, bijvoorbeeld `g++ -std=c++17 -fsyntax-only tests/speedometer/needle-tests.cpp`.
 
-`powershell -ExecutionPolicy Bypass -File tests\Test-PreviewFrames.ps1` controleert de 720 animatiebeelden op volledigheid, afmetingen en beeldvariatie. De installer-opstarttest controleert ook echte Windows-timerberichten, framewissels, pauzeren/hervatten en het stoppen bij het verlaten van de layoutpagina.
+`powershell -ExecutionPolicy Bypass -File tests\Test-PreviewFrames.ps1` controleert de 920 animatiebeelden op volledigheid, afmetingen en beeldvariatie. De installer-opstarttest controleert ook echte Windows-timerberichten, framewissels, pauzeren/hervatten en het stoppen bij het verlaten van de layoutpagina.
 
 In een terminal **als administrator**, in de map `pc-app/`:
 
 ```powershell
 dotnet run -- --list        # toont alle temperatuursensoren
-dotnet run                  # zoekt het scherm automatisch (USB VID 303A) en stuurt elke seconde data
+dotnet run                  # opent Qscreen
+dotnet run -- --monitor     # zoekt het scherm automatisch (USB VID 303A) en start de achtergrondmeting
 dotnet run -- --port COM5   # als automatisch zoeken niet lukt
 ```
 
-Voor FPS moet `PresentMon.exe` naast `TempMonitor.exe` staan. Zonder dat bestand toont het scherm `--` bij FPS.
+Voor FPS moet `PresentMon.exe` naast `Qscreen.exe` staan. Zonder dat bestand toont het scherm `--` bij FPS.
 
 ## Hoe de FPS gemeten wordt
 
@@ -160,7 +177,9 @@ CPU=42.5;GPU=48.0;FPS=165
 
 Een onbekende waarde wordt `nan`. Stuur je `PING`, dan antwoordt het scherm met `TEMPMON`.
 
-Optioneel kan `;LAYOUT=` met een van de eenentwintig layoutnamen worden toegevoegd, bijvoorbeeld `;LAYOUT=arsenal`. Een afzonderlijke `LAYOUT=arsenal`-regel werkt ook, zonder de meetwaarden te veranderen. Onbekende layoutnamen worden genegeerd. Het scherm schrijft de keuze alleen naar het geheugen wanneer deze verandert.
+Voor eigen ontwerpen antwoordt firmware 1.5.0 op `CAPS` met `QSCREEN_FRAME1`. De pc stuurt `FRAME=339488,<FNV1a-checksum>` en wacht op `FRAMEREADY` voordat hij 339488 bytes RGB565 (little endian, 412 × 412) verzendt. Alleen na een complete, geldige checksum wordt het canvas vervangen en volgt `FRAMEOK`; fouten leveren `FRAMEERR` op. Er worden geen binaire beelden naar oude firmware gestuurd. Onvolledige overdrachten vervallen na tien seconden zonder nieuwe bytes. De host bewaart het ontwerp; de firmware bewaart het laatst ontvangen beeld uitsluitend in RAM.
+
+Optioneel kan `;LAYOUT=` met een van de eenendertig layoutnamen worden toegevoegd, bijvoorbeeld `;LAYOUT=arsenal`. Een afzonderlijke `LAYOUT=arsenal`-regel werkt ook, zonder de meetwaarden te veranderen. Onbekende layoutnamen worden genegeerd. Het scherm schrijft de keuze alleen naar het geheugen wanneer deze verandert.
 
 ## Aanpassen
 
@@ -168,9 +187,11 @@ Bovenaan `firmware/src/main.cpp`:
 
 | Instelling | Standaard | Betekenis |
 |---|---|---|
-| `BRAND` | `"QPRINTS"` | merknaam bovenaan |
+| `BRAND` | `"QSCREEN"` | merknaam bovenaan |
 | `HOT_THRESHOLD` | `50.0` | grens tussen blauw en rood |
-| `ROTATION` | `0` | beeld draaien (0–3) als de USB-C-poort anders ligt |
+| `ROTATION` | `3` | beeld draaien (0–3) als de USB-C-poort anders ligt |
 | `DATA_TIMEOUT_MS` | `3000` | na zoveel ms zonder data toont het scherm "verbinding verloren" |
 
 Windows-venster testen: `dotnet run --project tests/SettingsWindow.Tests -c Release -- pc-app/installer` (eerst voorbeelden en branding genereren). Dit controleert selectie, opslaan, timer, pauzeren en hervatten zonder echte hardware of installatie te wijzigen.
+
+Ontwerper testen: `dotnet run --project tests/Design.Tests -c Release -- pc-app/installer/tool-cache/qscreen-tests`. Dit controleert ontwerpen/achtergronden, widgets, verslepen, undo/redo, RGB565 en gesimuleerde USB-overdracht. `tests/Test-Payload.ps1` controleert de gebouwde app en firmware. `tests/speedometer/custom-frame-tests.cpp` controleert de checksum en framegrootte aan firmwarezijde.

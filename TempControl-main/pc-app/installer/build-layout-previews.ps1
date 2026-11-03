@@ -1,4 +1,4 @@
-# Schematische voorbeelden in dezelfde 412x412-coordinaten als de firmware.
+﻿# Schematische voorbeelden in dezelfde 412x412-coordinaten als de firmware.
 param(
     [string]$OutputDirectory,
     [string[]]$Layouts = @('classic', 'gauges', 'minimal', 'orbit', 'radar', 'neon-pulse', 'reactor', 'waveform', 'matrix', 'starfield', 'speedometer', 'aurora', 'hex-grid', 'arsenal', 'bullet-storm', 'inferno', 'warzone-city', 'sniper-scope', 'cyber-ops', 'plasma-core', 'boss-fight', 'drone-swarm', 'lightning-strike', 'space-fleet', 'race-grid', 'portal-rift', 'tactical-steel', 'ammo-vault', 'samurai-crest', 'retro-arcade', 'stealth-map'),
@@ -352,15 +352,15 @@ foreach ($layout in $Layouts) {
             }
         }
         if($layout -eq 'speedometer') {
-            Text 'QPRINTS' 206 40 22 $white
+            Text 'QSCREEN' 206 40 22 $white
         } else {
             if($layout -eq 'matrix') { $g.FillRectangle([Drawing.Brushes]::Black,76,31,260,74) }
-            Text 'QPRINTS' 206 55 22 $white
+            Text 'QSCREEN' 206 55 22 $white
             $title=if($layout -eq 'waveform'){'THERMAL HISTORY'}else{$layout.Replace('-',' ').ToUpperInvariant()}
             Text $title 206 88 22 $grey
         }
     } elseif ($layout -eq 'classic') {
-        Text 'QPRINTS //' 206 90 39 $white
+        Text 'QSCREEN //' 206 90 39 $white
         Text 'SYSTEM MONITOR' 206 127 23 $grey
         $ys = @(176,250,324); $labels = @('CPU','GPU','FPS'); $values = @('42 C','58 C','165')
         for ($i=0; $i -lt 3; $i++) {
@@ -371,7 +371,7 @@ foreach ($layout in $Layouts) {
         $pen = New-Object Drawing.Pen($divider, 1)
         $g.DrawLine($pen,84,213,328,213); $g.DrawLine($pen,84,287,328,287); $pen.Dispose()
     } else {
-        Text 'QPRINTS' 206 77 39 $white
+        Text 'QSCREEN' 206 77 39 $white
         Text 'SYSTEM MONITOR' 206 116 22 $grey
         if ($layout -eq 'gauges') {
             foreach ($x in @(126,286)) {

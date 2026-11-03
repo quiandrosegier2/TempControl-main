@@ -9,5 +9,7 @@
   <ItemGroup>
     <Compile Include="../../pc-app/SettingsWindow.cs" Link="SettingsWindow.cs" />
     <Compile Include="../../pc-app/LayoutSettings.cs" Link="LayoutSettings.cs" />
+    <Compile Include="../../pc-app/ScreenDesign.cs" Link="ScreenDesign.cs" />
+    <Compile Include="../../pc-app/DesignWindow.cs" Link="DesignWindow.cs" />
   </ItemGroup>
 </Project>

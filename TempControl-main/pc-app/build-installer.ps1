@@ -1,4 +1,4 @@
-# Bouwt dist\Qprints esp installer-<versie>.exe
+﻿# Bouwt dist\Qscreen-<versie>.exe
 #   powershell -ExecutionPolicy Bypass -File .\build-installer.ps1
 #   powershell -ExecutionPolicy Bypass -File .\build-installer.ps1 -OutputDir E:\   (bv. rechtstreeks naar een USB-stick)
 # Vereist: pioarduino 6.2.0, .NET 10 SDK en Inno Setup 6.6 of nieuwer binnen 6.x.
@@ -98,7 +98,7 @@ if (-not $iscc) { $iscc = @(
 ) | Where-Object { Test-Path $_ } | Select-Object -First 1 }
 if (-not $iscc) { throw 'Inno Setup 6 niet gevonden (winget install JRSoftware.InnoSetup)' }
 
-& $iscc "/DAppVersion=$version" "/O$OutputDir" (Join-Path $installerDir 'TempMonitor.iss')
+& $iscc '/Q' "/DAppVersion=$version" "/O$OutputDir" (Join-Path $installerDir 'TempMonitor.iss')
 if ($LASTEXITCODE) { throw 'Inno Setup mislukt' }
 
-Write-Host "`nKlaar: $(Join-Path $OutputDir "Qprints esp installer-$version.exe")"
+Write-Host "`nKlaar: $(Join-Path $OutputDir "Qscreen-$version.exe")"

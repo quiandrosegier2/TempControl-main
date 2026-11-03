@@ -11,9 +11,10 @@
 #include <Arduino_GFX_Library.h>
 #include <Preferences.h>
 #include "display-layout.h"
+#include "custom-frame.h"
 
 // ---------- Instellingen ----------
-static const char *BRAND = "QPRINTS";
+static const char *BRAND = "QSCREEN";
 static const float HOT_THRESHOLD = 50.0f;      // > 50 °C = rood, anders blauw
 static const uint32_t DATA_TIMEOUT_MS = 3000;  // geen data -> "wachten op pc"
 static const uint8_t ROTATION = 3;             // 0..3, 3 = 270 graden met de klok mee
@@ -63,6 +64,10 @@ static Preferences layoutPreferences;
 static bool preferencesReady = false;
 static float cpuHistory[60], gpuHistory[60];
 static uint8_t historyCount = 0, historyNext = 0;
+static uint8_t *customPixels = nullptr;
+static size_t customReceived = 0;
+static uint32_t customExpectedHash = 0, customHash = CustomFrame::StartHash, customLastByte = 0;
+static bool customReceiving = false, customActive = false;
 
 static float parseValue(const char *s) {
   char *end;
@@ -71,6 +76,23 @@ static float parseValue(const char *s) {
 }
 
 static void handleLine(char *line) {
+  if (strcmp(line, "CAPS") == 0) {
+    Serial.println("QSCREEN_FRAME1");
+    return;
+  }
+  if (strncmp(line, "FRAME=", 6) == 0) {
+    unsigned long count, hash;
+    char extra;
+    if (sscanf(line + 6, "%lu,%lu%c", &count, &hash, &extra) != 2 || count != CustomFrame::Bytes) {
+      Serial.println("FRAMEERR length"); return;
+    }
+    if (!customPixels) customPixels = static_cast<uint8_t *>(ps_malloc(CustomFrame::Bytes));
+    if (!customPixels) { Serial.println("FRAMEERR memory"); return; }
+    customReceived = 0; customHash = CustomFrame::StartHash; customExpectedHash = hash;
+    customLastByte = millis(); customReceiving = true;
+    Serial.println("FRAMEREADY");
+    return;
+  }
   if (strcmp(line, "PING") == 0) {
     Serial.println("TEMPMON");
     return;
@@ -92,6 +114,7 @@ static void handleLine(char *line) {
     }
   }
   if (isnan(cpu) && isnan(gpu) && isnan(f)) return;
+  customActive = false;
 
   cpuTemp = cpu;
   gpuTemp = gpu;
@@ -108,7 +131,27 @@ static void handleLine(char *line) {
 static void readSerial() {
   static char buf[128];
   static size_t len = 0;
+  if (customReceiving && millis() - customLastByte > 10000u) {
+    customReceiving = false; customReceived = 0; len = 0;
+    Serial.println("FRAMEERR timeout");
+  }
   while (Serial.available()) {
+    if (customReceiving) {
+      int count = Serial.read(customPixels + customReceived,
+        min(static_cast<size_t>(Serial.available()), CustomFrame::Bytes - customReceived));
+      if (count <= 0) break;
+      for (int i = 0; i < count; ++i) customHash = CustomFrame::hashByte(customHash, customPixels[customReceived + i]);
+      customReceived += count; customLastByte = millis();
+      if (customReceived == CustomFrame::Bytes) {
+        customReceiving = false;
+        if (customHash != customExpectedHash) { Serial.println("FRAMEERR checksum"); continue; }
+        gfx->draw16bitRGBBitmap(0, 0, reinterpret_cast<uint16_t *>(customPixels), 412, 412);
+        gfx->flush();
+        customActive = true; everReceived = true; lastRx = millis(); dirty = false;
+        Serial.println("FRAMEOK");
+      }
+      continue;
+    }
     char c = Serial.read();
     if (c == '\n' || c == '\r') {
       if (len) {
@@ -232,7 +275,7 @@ static void drawTemp(void (*icon)(int, int, uint16_t), const char *label, float 
 static void renderClassic(bool live) {
   gfx->fillScreen(RGB565_BLACK);
 
-  // Merk: "QPRINTS //"
+  // Merk: "QSCREEN //"
   gfx->setFont(u8g2_font_fub30_tr);
   const char *slashes = " //";
   int wBrand = textWidth(BRAND), wSlash = textWidth(slashes);
@@ -397,6 +440,11 @@ void setup() {
 
 void loop() {
   readSerial();
+  if (customReceiving) return;
+  if (customActive) {
+    if (millis() - lastRx < DATA_TIMEOUT_MS) return;
+    customActive = false; dirty = true;
+  }
 
   static uint32_t lastFrame = 0;
   static bool wasLive = false;

@@ -1,16 +1,16 @@
-# TempControl
+# Qscreen
 
 A compact PC system monitor featuring a round Waveshare ESP32-S3-Touch-LCD-1.46 display. View your CPU temperature, GPU temperature, and FPS on a dedicated screen connected via USB-C.
 
 ### Features
 - One Windows installer for the companion app and USB display firmware; no VS Code, Python, PlatformIO or .NET installation needed by end users.
-- **Qprints esp installer** features a dark wizard and firmware window, with the QPRINTS // logo visible throughout setup.
+- **Qscreen** features a dark wizard and firmware window, with the QSCREEN // logo visible throughout setup.
 - Live CPU temperature, GPU temperature, and FPS readings.
 - Blue values and rings at or below 50 °C, turning red above 50 °C.
 - Windows companion app that sends monitoring data to the display.
 - Waiting indicator when no PC data is received.
 - Choose from 31 layouts: 23 animated and 8 static designs. Moving offline previews with Play/Pause are available in Setup and the installed **Layout Studio**. The display remembers the selection.
-- Open **Qprints esp installer** from the desktop or Start menu at any time to preview and apply layouts, upload firmware or open monitoring logs. Closing Layout Studio keeps background monitoring running.
+- Open **Qscreen** from the desktop or Start menu at any time to preview and apply layouts, upload firmware or open monitoring logs. Closing Layout Studio keeps background monitoring running.
 
 ### Project structure
 - `TempControl-main/firmware/`: firmware for the ESP32-S3 display.
@@ -21,7 +21,7 @@ A compact PC system monitor featuring a round Waveshare ESP32-S3-Touch-LCD-1.46 
 
 Download the setup executable from [GitHub Releases](https://github.com/quiandrosegier2/TempControl-main/releases/latest).
 
-1. Run `Qprints esp installer-1.4.0.exe` on a Windows x64 PC and allow administrator access. Choose a layout and watch its demo on the layout page; use **Pauzeren/Afspelen** to pause or play.
+1. Run `Qscreen-1.5.0.exe` on a Windows x64 PC and allow administrator access. Choose a layout and watch its demo on the layout page; use **Pauzeren/Afspelen** to pause or play.
 2. Connect a **Waveshare ESP32-S3-Touch-LCD-1.46 (16 MB)** using a USB-C data cable.
 3. Leave the firmware installation option selected at the end of Setup.
 4. Select the display's COM port and click **Firmware installeren**. This replaces any existing firmware on that display.
@@ -29,13 +29,31 @@ Download the setup executable from [GitHub Releases](https://github.com/quiandro
 
 If no port appears or connecting fails, hold BOOT, press RESET, release BOOT and click **Vernieuwen**. Select the new COM port and retry. Only Espressif USB devices are listed; verify you selected the supported Waveshare display.
 
-You can repeat the upload from **Start > TempMonitor > Firmware installeren**. The monitoring app pauses during the upload and resumes afterwards. Upload logs are saved in `C:\ProgramData\TempMonitor`.
+You can repeat the upload from **Start > Qscreen tools > Firmware installeren**. The monitoring app pauses during the upload and resumes afterwards. Upload logs are saved in `C:\ProgramData\TempMonitor`.
 
 The app, .NET runtime, firmware, uploader and optional PawnIO driver are included. No internet connection or winget is needed during installation. Windows may request a restart after installing the driver. Developer build instructions are in [the project guide](TempControl-main/Readme.md).
 
-To change layouts later, open **Qprints esp installer** from the desktop or Start menu, select a layout and click **Layout toepassen**. The monitor picks up the selection within its next one-second update; no restart is needed. Upload the bundled **1.4.0 firmware** once to enable all 31 designs. Further layout changes require no flashing. Updates preserve the current layout selection. Layout Studio can also be opened directly with `TempMonitor.exe --settings`.
+To change layouts later, open **Qscreen** from the desktop or Start menu, select a layout and click **Layout toepassen**. The monitor picks up the selection within its next one-second update; no restart is needed. Upload the bundled **1.5.0 firmware** once to enable all 31 designs. Further layout changes require no flashing. Updates preserve the current layout selection. Layout Studio can also be opened directly with `Qscreen.exe --settings`.
 
-### Layouts
+### Qscreen Design Studio — version 1.5.0
+
+Open **Eigen ontwerp maken…** in Qscreen to create a custom design for the round 412 × 412 display:
+
+- Import a PNG, JPG or BMP background, or drag it onto the canvas. Choose Cover, Contain or Stretch and adjust darkening or the background color.
+- Add and drag text, CPU/GPU temperatures, FPS, clock, date, CPU/GPU load, memory usage, rectangles, ellipses and progress bars.
+- Change each element's position, width, height, color, font, font size, bold, italic and alignment. **Lettertype…** opens the Windows font picker. Turn off **Temperatuurkleuren** to use your own temperature text color.
+- Use `{value}` in sensor text, `HH:mm:ss` for a clock or `dd-MM-yyyy` for a date. Missing sensor readings display `--`.
+- Duplicate, remove and reorder elements. Undo/redo supports edits and dragging; Ctrl+S saves a draft, Ctrl+Z/Ctrl+Y undo and redo.
+- Save drafts, export portable `.qscreen` files including their background, and import them later. Export files to keep multiple designs or share them; fonts must be installed on the receiving Windows PC or a fallback font is used.
+- Click **Toepassen op scherm** to activate the design. Applying a preset switches back to the existing firmware themes.
+
+Custom designs require the bundled **1.5.0 firmware**. Windows renders the chosen fonts and images and sends complete, checksum-verified frames over USB. The PC app and USB connection must remain active; the refresh interval includes image transfer time and is intended for sensor/clock updates, not video playback. After loss of PC data the display returns to its built-in offline view. Designs and backgrounds are stored on the PC, rather than written to the screen's flash every second. Editing and previewing designs works without a connected display.
+
+Double-clicking **Qscreen.exe** opens the app. The scheduled background task uses `Qscreen.exe --monitor`; `--settings`, `--port COM5` and `--list` remain available. Upgrading keeps the existing installation directory and task identity, and replaces the old launcher shortcuts with Qscreen shortcuts.
+
+Validation includes schema and image validation, all twelve widget renderers, RGB565 byte order and checksum vectors, chunked transfer, old-firmware compatibility, designer dragging/undo/redo and configuration writes. The new USB frame path has been built and tested with a simulated connection; it has not yet been validated on a physical display.
+
+### Preset layouts
 
 | Layout | Appearance |
 | --- | --- |
@@ -73,7 +91,7 @@ To change layouts later, open **Qprints esp installer** from the desktop or Star
 
 Animations run independently of incoming readings. Waveform retains up to 60 actual temperature samples in memory; unavailable readings remain gaps. Setup and Layout Studio include four-second looping, schematic demos with sample values for all 23 moving themes. Eight static designs have still previews; their real sensor readings continue to update. No screen or internet connection is needed to view the previews. Temperature values turn red above 50 °C in every layout.
 
-[View all layouts](https://github.com/quiandrosegier2/TempControl-main/releases/download/v1.4.0/Layout-Overview-1.4.0.png) or [the eight gaming themes](https://github.com/quiandrosegier2/TempControl-main/releases/download/v1.3.0/Gaming-Layouts-1.3.0.png).
+[View all layouts](https://github.com/quiandrosegier2/TempControl-main/releases/download/v1.5.0/Layout-Overview-1.5.0.png) or [the eight gaming themes](https://github.com/quiandrosegier2/TempControl-main/releases/download/v1.3.0/Gaming-Layouts-1.3.0.png).
 
 Gaming artwork is original and generated in code. Weapons, bullets, fire and enemy sprites are decorative animations; FPS, CPU/GPU temperatures and temperature bars use real incoming measurements. Upload the 1.3.0 firmware once to enable the new gaming themes.
 
