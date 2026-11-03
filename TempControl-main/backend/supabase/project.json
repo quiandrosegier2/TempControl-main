@@ -2,7 +2,7 @@
   "projectRef": "ybmesonqfclarqigwxfe",
   "dashboardUrl": "https://supabase.com/dashboard/project/ybmesonqfclarqigwxfe",
   "expectedApiOrigin": "https://ybmesonqfclarqigwxfe.supabase.co",
-  "connectionVerified": false,
+  "connectionVerified": true,
   "schemaApplied": false,
   "administratorProvisioned": false
 }

@@ -2,7 +2,7 @@
 
 Doelproject: `ybmesonqfclarqigwxfe`.
 
-De eigenaar heeft de [dashboardlink](https://supabase.com/dashboard/project/ybmesonqfclarqigwxfe) aangeleverd. Dit bewijst nog niet dat deze ontwikkelsessie projecttoegang heeft. De verwachte standaard-API-origin in `project.json` is afgeleid van de projectreferentie en moet via de gekoppelde projectgegevens worden bevestigd. Het bestand bevat geen API-key of geheim en activeert geen login in de Windows-app.
+De eigenaar heeft de [dashboardlink](https://supabase.com/dashboard/project/ybmesonqfclarqigwxfe) aangeleverd. Inmiddels is de aangemelde, projectgebonden alleen-lezen MCP-verbinding daadwerkelijk getest. De API-origin in `project.json` is via het project bevestigd. Het bestand bevat geen API-key of geheim en activeert geen login in de Windows-app. Zie [de eerste voorbereide migratie](migrations/0001_account_foundation.sql). Inspectieresultaten en opgehaalde clientkeys worden niet als openbaar database-exportbestand gepubliceerd.
 
 ## Volgende uitvoering na koppeling
 
@@ -14,6 +14,6 @@ De eigenaar heeft de [dashboardlink](https://supabase.com/dashboard/project/ybme
 6. Laat de eigenaar `Qprints@outlook.be` bevestigen en MFA instellen. Koppel daarna gecontroleerd de geverifieerde Auth-UUID aan de singleton-beheeridentiteit. Publieke registratie blijft altijd een gebruikersaccount opleveren.
 7. Sluit pas de desktop-accountschermen en werkruimtemigratie aan op de geverifieerde configuratie; de bestaande hardwaremonitoring blijft functioneren tijdens de overgang.
 
-Status op moment van voorbereiding: geen geverifieerde projectverbinding, geen toegepaste migratie, geen aangemaakte beheerder en geen verzonden verificatiemail. Een openbare project-URL of publishable key geeft geen databasebeheerrechten.
+Huidige status: verbinding geverifieerd; eerste accountmigratie voorbereid maar nog niet toegepast. Er is geen beheerder aangemaakt of verificatiemail verzonden. Een openbare project-URL of publishable key geeft geen databasebeheerrechten.
 
 Referenties: [accountarchitectuur](../../ACCOUNTS-ARCHITECTURE.md), [beveiligingstests](../../ACCOUNTS-SECURITY-TESTS.md), [officiële Supabase API-keydocumentatie](https://supabase.com/docs/guides/getting-started/api-keys).
