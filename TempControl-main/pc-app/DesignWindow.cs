@@ -19,6 +19,8 @@ sealed class DesignWindow : Form
     readonly ComboBox fit = new() { DropDownStyle = ComboBoxStyle.DropDownList, Width = 265 };
     readonly NumericUpDown darken = new() { Minimum=0, Maximum=100, Width=80 };
     readonly ComboBox animation=new(){DropDownStyle=ComboBoxStyle.DropDownList,Dock=DockStyle.Top};
+    readonly NumericUpDown animationSpeed=new(){Minimum=.1m,Maximum=5,DecimalPlaces=1,Increment=.1m,Width=80};
+    readonly CheckBox animationsEnabled=new(){Text="Animaties inschakelen",AutoSize=true};
     readonly System.Windows.Forms.Timer clock = new() { Interval = 33 };
     bool renderQueued;
     long lastClockUpdate;
@@ -66,6 +68,8 @@ sealed class DesignWindow : Form
         tools.Controls.Add(ActionButton("Afbeelding wissen",()=>Change(()=>design.BackgroundPng=null),false,150));
         tools.Controls.Add(ActionButton("Achtergrondkleur",()=>{using var d=new ColorDialog{Color=Color.FromArgb(design.BackgroundArgb)};if(d.ShowDialog(this)==DialogResult.OK)Change(()=>design.BackgroundArgb=d.Color.ToArgb());},false,150));
         tools.Controls.Add(ActionButton("Lettertype",ChooseFont,false,110));
+        tools.Controls.Add(ActionButton("Kleurregels",()=>{if(Selected==null)throw new InvalidOperationException("Selecteer een element.");using var rules=new ColorRulesWindow(Selected);if(rules.ShowDialog(this)==DialogResult.OK)Change(()=>Selected.ColorRules=rules.Rules);},false,105));
+        tools.Controls.Add(ActionButton("Als template",()=>{using var dialog=new SaveFileDialog{Filter="Qscreen templatepakket|*.qscreenpack",FileName="Mijn-template.qscreenpack"};if(dialog.ShowDialog(this)!=DialogResult.OK)return;var manifest=new TemplateManifest{Name=design.Name,Author="Lokaal",TemplateId=Guid.NewGuid().ToString("N"),MinimumAppVersion="2.1.0",Animated=DesignRenderer.IsAnimated(design),Description="Aangepast ontwerp"};QscreenPackage.Export(dialog.FileName,design,manifest);new LocalTemplateLibrary(directory).Add(design,TemplateCategory.Gaming,manifest);status.Text="Nieuw template geëxporteerd en in je lokale bibliotheek bewaard.";},false,110));
         tools.Controls.Add(ActionButton("Pagina's",()=>{using var manager=new PagesWindow(directory,design);if(manager.ShowDialog(this)==DialogResult.OK)Change(()=>design=manager.Project);},false,92));
         tools.Controls.Add(ActionButton("Aanraakzones",()=>{using var zones=new TouchZonesWindow(design.TouchZones);if(zones.ShowDialog(this)==DialogResult.OK)Change(()=>design.TouchZones=zones.Zones);},false,120));
         tools.Controls.Add(ActionButton("Firmware bijwerken",()=>Process.Start(new ProcessStartInfo("powershell.exe","-NoProfile -STA -ExecutionPolicy Bypass -WindowStyle Hidden -File \""+Path.Combine(directory,"flash-firmware.ps1")+"\""){UseShellExecute=true,WindowStyle=ProcessWindowStyle.Hidden}),false,165));
@@ -106,6 +110,9 @@ sealed class DesignWindow : Form
         darken.ValueChanged+=(_,_)=>Change(()=>design.Darken=(int)darken.Value);
         StudioTheme.Input(animation);animation.Items.AddRange(Enum.GetNames<PageAnimation>());animation.SelectedItem=design.Animation.ToString();animation.SelectedIndexChanged+=(_,_)=>Change(()=>design.Animation=Enum.Parse<PageAnimation>((string)animation.SelectedItem!));
         var animationLabel=StudioTheme.Label("Animatie",9,false,26);
+        animationSpeed.Value=(decimal)design.AnimationSpeed;animationSpeed.ValueChanged+=(_,_)=>Change(()=>design.AnimationSpeed=(float)animationSpeed.Value);
+        animationsEnabled.Checked=design.AnimationsEnabled;animationsEnabled.CheckedChanged+=(_,_)=>Change(()=>design.AnimationsEnabled=animationsEnabled.Checked);
+        var animationControls=new FlowLayoutPanel{Dock=DockStyle.Bottom,Height=56};animationControls.Controls.AddRange([animationsEnabled,animationSpeed]);backgroundOptions.Controls.Add(animationControls);backgroundOptions.Height+=56;
         backgroundOptions.Controls.Add(animation);backgroundOptions.Controls.Add(animationLabel);backgroundOptions.Controls.Add(darken);backgroundOptions.Controls.Add(darkLabel);backgroundOptions.Controls.Add(fit);backgroundOptions.Controls.Add(fitLabel);backgroundOptions.Controls.Add(backgroundLabel);
         right.Controls.Add(properties);right.Controls.Add(backgroundOptions);right.Controls.Add(hint);
         var center=new Panel{Dock=DockStyle.Fill,Padding=new Padding(14,0,14,0)};
@@ -127,7 +134,7 @@ sealed class DesignWindow : Form
         {
             bool second=Environment.TickCount64-lastClockUpdate>=1000;
             if(second)lastClockUpdate=Environment.TickCount64;
-            if(WindowState!=FormWindowState.Minimized&&Visible&&(renderQueued||design.Animation!=PageAnimation.None||renderer.HasAnimatedBackground||(second&&design.Widgets.Any(w=>w.Visible&&w.Kind is WidgetKind.Time or WidgetKind.Date))))Render();
+            if(WindowState!=FormWindowState.Minimized&&Visible&&(renderQueued||renderer.HasPendingMotion||DesignRenderer.IsAnimated(design)||design.AnimationsEnabled&&renderer.HasAnimatedBackground||(second&&design.Widgets.Any(w=>w.Visible&&w.Kind is WidgetKind.Time or WidgetKind.Date))))Render();
             if(second&&pendingRevision!=null){var delivery=ScreenDelivery.Read(directory);status.Text=ScreenDelivery.Describe(delivery,pendingRevision,requestedUtc,DateTime.UtcNow);status.ForeColor=status.Text.StartsWith("Ontwerp ontvangen",StringComparison.Ordinal)?StudioTheme.Green:Color.Orange;}
         };clock.Start();
         FormClosing += (_,e) => { if(changed){var answer=MessageBox.Show(this,"Wijzigingen opslaan als concept?","Qscreen",MessageBoxButtons.YesNoCancel,MessageBoxIcon.Question);if(answer==DialogResult.Cancel)e.Cancel=true;else if(answer==DialogResult.Yes){try{SaveDraft();}catch(Exception ex){MessageBox.Show(this,ex.Message);e.Cancel=true;}}} };
@@ -157,7 +164,7 @@ sealed class DesignWindow : Form
         elements.Items.Clear(); elements.Items.AddRange(design.Widgets.Cast<object>().ToArray());
         if(elements.Items.Count>0)elements.SelectedIndex=Math.Clamp(index,0,elements.Items.Count-1);
         else properties.SelectedObject=null;
-        name.Text=design.Name;fit.SelectedItem=design.Fit.ToString();darken.Value=design.Darken;animation.SelectedItem=design.Animation.ToString(); refreshing=false; Render();
+        name.Text=design.Name;fit.SelectedItem=design.Fit.ToString();darken.Value=design.Darken;animation.SelectedItem=design.Animation.ToString();animationSpeed.Value=(decimal)design.AnimationSpeed;animationsEnabled.Checked=design.AnimationsEnabled; refreshing=false; Render();
     }
     void Render()
     {
@@ -173,6 +180,8 @@ sealed class DesignWindow : Form
         if(kind is WidgetKind.Rectangle or WidgetKind.Ellipse){w.Width=120;w.Height=80;w.Foreground=Color.FromArgb(60,190,255);}
         if(kind==WidgetKind.ProgressBar){w.Height=12;w.Foreground=Color.FromArgb(60,190,255);}
         if(kind==WidgetKind.HistoryGraph){w.Height=90;w.Width=280;w.X=66;w.Y=230;w.Foreground=Color.Cyan;}
+        if(kind is WidgetKind.CircularGauge or WidgetKind.AnalogClock){w.X=106;w.Y=106;w.Width=200;w.Height=200;w.Foreground=Color.DeepSkyBlue;}
+        if(kind==WidgetKind.Panel){w.Width=180;w.Height=90;w.StrokeWidth=1;w.Foreground=Color.DeepSkyBlue;}
         design.Widgets.Add(w);Commit();RefreshList(null,design.Widgets.Count-1);
     }
     void Delete(){if(Selected is {} w){Remember();design.Widgets.Remove(w);Commit();RefreshList();}}

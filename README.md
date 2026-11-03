@@ -1,5 +1,7 @@
 # Qscreen
 
+**Qscreen Studio 2.1 preview:** a [library of 21 editable premium templates](TempControl-main/PREMIUM-TEMPLATES.md), circular gauges, analog clocks, per-widget color rules, opacity, animation controls, favorites and an opt-in real weather provider. See the [2.1 prerelease](https://github.com/quiandrosegier2/TempControl-main/releases/tag/v2.1.0-rc.1). New template rendering has software tests; physical display validation is pending.
+
 **New public test version: Qscreen Studio 2.0.0-rc.3.** Adds automatic profiles, multipage designs, touchscreen navigation, sensor history and graph widgets, a local DesignHub, brightness schedules, configurable alerts and independent multiple displays. See the [2.0 guide and hardware test limits](TempControl-main/QSCREEN-2.0-GUIDE.md). The [stable 1.6.0 release](https://github.com/quiandrosegier2/TempControl-main/releases/tag/v1.6.0) remains available; [2.0 release candidate](https://github.com/quiandrosegier2/TempControl-main/releases/tag/v2.0.0-rc.3) is a prerelease. Touch and brightness require the bundled 2.0 firmware; upload it only to the explicitly selected compatible display.
 
 A compact PC system monitor featuring a round Waveshare ESP32-S3-Touch-LCD-1.46 display. View your CPU temperature, GPU temperature, and FPS on a dedicated screen connected via USB-C.

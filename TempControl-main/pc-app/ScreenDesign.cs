@@ -9,7 +9,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 
 [TypeConverter(typeof(WidgetKindConverter))]
-enum WidgetKind { Text, CpuTemperature, GpuTemperature, Fps, Time, Date, CpuLoad, GpuLoad, MemoryLoad, Rectangle, Ellipse, ProgressBar, CpuClock, GpuClock, HistoryGraph }
+enum WidgetKind { Text, CpuTemperature, GpuTemperature, Fps, Time, Date, CpuLoad, GpuLoad, MemoryLoad, Rectangle, Ellipse, ProgressBar, CpuClock, GpuClock, HistoryGraph, CircularGauge, AnalogClock, Panel, WeatherTemperature, WeatherIcon }
 enum BackgroundFit { Cover, Contain, Stretch }
 
 static class WidgetLabels
@@ -17,7 +17,7 @@ static class WidgetLabels
     public static string Title(WidgetKind kind) => kind switch {
         WidgetKind.Text=>"Eigen tekst",WidgetKind.CpuTemperature=>"CPU-temperatuur",WidgetKind.GpuTemperature=>"GPU-temperatuur",WidgetKind.Fps=>"FPS",
         WidgetKind.Time=>"Klok",WidgetKind.Date=>"Datum",WidgetKind.CpuLoad=>"CPU-belasting (%)",WidgetKind.GpuLoad=>"GPU-belasting (%)",WidgetKind.MemoryLoad=>"Geheugengebruik (%)",
-        WidgetKind.Rectangle=>"Rechthoek",WidgetKind.Ellipse=>"Cirkel / ovaal",WidgetKind.ProgressBar=>"Voortgangsbalk",WidgetKind.CpuClock=>"CPU-kloksnelheid (MHz)",WidgetKind.GpuClock=>"GPU-kloksnelheid (MHz)",WidgetKind.HistoryGraph=>"Historiegrafiek",_=>kind.ToString()
+        WidgetKind.Rectangle=>"Rechthoek",WidgetKind.Ellipse=>"Cirkel / ovaal",WidgetKind.ProgressBar=>"Voortgangsbalk",WidgetKind.CpuClock=>"CPU-kloksnelheid (MHz)",WidgetKind.GpuClock=>"GPU-kloksnelheid (MHz)",WidgetKind.HistoryGraph=>"Historiegrafiek",WidgetKind.CircularGauge=>"Ronde meter",WidgetKind.AnalogClock=>"Analoge klok",WidgetKind.Panel=>"Paneel",WidgetKind.WeatherTemperature=>"Weertemperatuur",WidgetKind.WeatherIcon=>"Weerpictogram",_=>kind.ToString()
     };
 }
 sealed class WidgetKindConverter() : EnumConverter(typeof(WidgetKind))
@@ -57,6 +57,19 @@ sealed class ScreenWidget
     [Category("Grafiek"),DisplayName("Geschiedenis (min)")]public int HistoryMinutes { get; set; }=5;
     [Category("Balk"),DisplayName("Maximum")] public float Maximum { get; set; } = 100;
     [Category("Weergave"),DisplayName("Zichtbaar")] public bool Visible { get; set; } = true;
+    [Category("Weergave"),DisplayName("Dekking (%)")]public int Opacity { get; set; }=100;
+    [Category("Meter"),DisplayName("Lijndikte")]public float StrokeWidth { get; set; }=8;
+    [Category("Meter"),DisplayName("Beginhoek")]public float StartAngle { get; set; }=-90;
+    [Category("Meter"),DisplayName("Boog (graden)")]public float SweepAngle { get; set; }=360;
+    [Category("Meter"),DisplayName("Segmenten (0 = continu)")]public int Segments { get; set; }
+    [Category("Meter"),DisplayName("Wijzer")]public bool Needle { get; set; }
+    [Category("Weergave"),DisplayName("Paneelvorm")]public PanelShape PanelShape { get; set; }
+    [Category("Animatie"),DisplayName("Beweging")]public WidgetMotion Motion { get; set; }
+    [Category("Animatie"),DisplayName("Snelheid")]public float MotionSpeed { get; set; }=1;
+    [Category("Animatie"),DisplayName("Tweede kleur")] [JsonIgnore]public Color Accent {get=>Color.FromArgb(AccentArgb);set=>AccentArgb=value.ToArgb();}
+    [Browsable(false)]public int AccentArgb { get; set; }=Color.DeepPink.ToArgb();
+    [Browsable(false)]public List<WidgetColorRule> ColorRules { get; set; }=[];
+    [Category("Weer"),DisplayName("Dag/nachtachtergrond")]public bool WeatherDayNight { get; set; }=true;
     public override string ToString() => Name;
 }
 
@@ -76,6 +89,8 @@ sealed class ScreenDesign
     public int RotationSeconds { get; set; }=15;
     public PageTransition Transition { get; set; }
     public PageAnimation Animation { get; set; }
+    public float AnimationSpeed { get; set; }=1;
+    public bool AnimationsEnabled { get; set; }=true;
 
     public static ScreenDesign CreateDefault() => new()
     {
@@ -90,14 +105,14 @@ sealed class ScreenDesign
     };
 }
 
-sealed record ScreenReadings(float? Cpu, float? Gpu, float? Fps, float? CpuLoad, float? GpuLoad, float? MemoryLoad, DateTime Now,float? CpuClock=null,float? GpuClock=null,SensorHistory? History=null,IReadOnlyList<AlertNotice>? Alerts=null)
+sealed record ScreenReadings(float? Cpu, float? Gpu, float? Fps, float? CpuLoad, float? GpuLoad, float? MemoryLoad, DateTime Now,float? CpuClock=null,float? GpuClock=null,SensorHistory? History=null,IReadOnlyList<AlertNotice>? Alerts=null,WeatherReading? Weather=null)
 {
     public static ScreenReadings Demo => new(42, 58, 165, 35, 76, 52, DateTime.Now);
     public float? Value(WidgetKind kind)
     {
         float? value=kind switch{
         WidgetKind.CpuTemperature => Cpu, WidgetKind.GpuTemperature => Gpu, WidgetKind.Fps => Fps,
-        WidgetKind.CpuLoad => CpuLoad, WidgetKind.GpuLoad => GpuLoad, WidgetKind.MemoryLoad => MemoryLoad,WidgetKind.CpuClock=>CpuClock,WidgetKind.GpuClock=>GpuClock, _ => null
+        WidgetKind.CpuLoad => CpuLoad, WidgetKind.GpuLoad => GpuLoad, WidgetKind.MemoryLoad => MemoryLoad,WidgetKind.CpuClock=>CpuClock,WidgetKind.GpuClock=>GpuClock,WidgetKind.WeatherTemperature=>Weather?.Temperature, _ => null
         };return value.HasValue&&float.IsFinite(value.Value)?value:null;
     }
 }
@@ -124,6 +139,7 @@ static class DesignFiles
         design.Darken = Math.Clamp(design.Darken, 0, 100);
         if(design.Pages==null||design.TouchZones==null||design.Pages.Count>1024||design.TouchZones.Count>64||!Enum.IsDefined(design.Transition)||!Enum.IsDefined(design.Animation))throw new InvalidDataException("Ongeldige pagina's of aanraakzones.");
         design.RotationSeconds=Math.Clamp(design.RotationSeconds,2,3600);
+        if(!float.IsFinite(design.AnimationSpeed)||design.AnimationSpeed is <0.1f or >5)throw new InvalidDataException("Animatiesnelheid: 0,1 tot 5.");
         foreach(var zone in design.TouchZones)if(zone==null||zone.Name==null||zone.Name.Length>120||!Enum.IsDefined(zone.Action)||zone.Width<1||zone.Height<1||zone.Width>824||zone.Height>824||zone.X is < -412 or >412||zone.Y is < -412 or >412)throw new InvalidDataException("Ongeldige aanraakzone.");
         foreach(var page in design.Pages)
         {
@@ -133,6 +149,7 @@ static class DesignFiles
         }
         foreach (var w in design.Widgets)
         {
+            PremiumDrawing.Validate(w);
             if (!Enum.IsDefined(w.Kind) || !Enum.IsDefined(w.Alignment) || !Enum.IsDefined(w.BarSource)) throw new InvalidDataException("Onbekend elementtype.");
             w.X = Math.Clamp(w.X, -412, 412); w.Y = Math.Clamp(w.Y, -412, 412);
             w.Width = Math.Clamp(w.Width, 1, 824); w.Height = Math.Clamp(w.Height, 1, 824);
@@ -184,6 +201,8 @@ static class DesignFiles
 
 sealed class DesignRenderer : IDisposable
 {
+    readonly Dictionary<ScreenWidget,(float From,float Target,DateTime Changed)> meters=new();
+    public bool HasPendingMotion {get;private set;}
     readonly Dictionary<(string Family,float Size,FontStyle Style),Font> fonts=new();
     public int CachedFontCount=>fonts.Count;
     Image? background;
@@ -193,6 +212,7 @@ sealed class DesignRenderer : IDisposable
     string? cachedBackground;
     public Bitmap Render(ScreenDesign design, ScreenReadings readings)
     {
+        HasPendingMotion=false;
         var bitmap = new Bitmap(412, 412, PixelFormat.Format24bppRgb);
         using var g = Graphics.FromImage(bitmap);
         g.Clear(Color.FromArgb(design.BackgroundArgb));
@@ -214,32 +234,46 @@ sealed class DesignRenderer : IDisposable
         using var circle = new GraphicsPath(); circle.AddEllipse(0, 0, 412, 412); g.SetClip(circle);
         if (background != null)
         {
-            if(frameDelays.Length>1){int phase=(int)(readings.Now.TimeOfDay.TotalMilliseconds%frameDelays.Sum()),index=0;while(index<frameDelays.Length-1&&phase>=frameDelays[index]){phase-=frameDelays[index];index++;}background.SelectActiveFrame(FrameDimension.Time,index);}
+            if(frameDelays.Length>1){int phase=design.AnimationsEnabled?(int)(readings.Now.TimeOfDay.TotalMilliseconds*design.AnimationSpeed%frameDelays.Sum()):0,index=0;while(index<frameDelays.Length-1&&phase>=frameDelays[index]){phase-=frameDelays[index];index++;}background.SelectActiveFrame(FrameDimension.Time,index);}
             float scale = design.Fit == BackgroundFit.Cover ? Math.Max(412f / background.Width, 412f / background.Height) : Math.Min(412f / background.Width, 412f / background.Height);
             float width = design.Fit == BackgroundFit.Stretch ? 412 : background.Width * scale;
             float height = design.Fit == BackgroundFit.Stretch ? 412 : background.Height * scale;
             g.InterpolationMode = InterpolationMode.HighQualityBicubic;
             g.DrawImage(background, (412 - width) / 2, (412 - height) / 2, width, height);
         }
+        if(readings.Weather!=null&&design.Widgets.Any(w=>w.Visible&&w.Kind==WidgetKind.WeatherIcon&&w.WeatherDayNight)){using var mode=new SolidBrush(readings.Weather.Day?Color.FromArgb(55,100,180,240):Color.FromArgb(35,0,0,25));g.FillRectangle(mode,0,0,412,412);}
         using (var shade = new SolidBrush(Color.FromArgb((int)(Math.Clamp(design.Darken, 0, 100) * 2.55), Color.Black))) g.FillRectangle(shade, 0, 0, 412, 412);
-        DrawAnimation(g,design.Animation,readings.Now);
+        if(design.AnimationsEnabled)DrawAnimation(g,design.Animation,readings.Now,design.AnimationSpeed);
         foreach (var w in design.Widgets.Where(w => w.Visible))
         {
             var bounds = new RectangleF(w.X, w.Y, Math.Clamp(w.Width, 1, 824), Math.Clamp(w.Height, 1, 824));
             var value = readings.Value(w.Kind);
             var color = w.TemperatureColors && w.Kind is WidgetKind.CpuTemperature or WidgetKind.GpuTemperature
                 ? value is null ? Color.Gray : value > 50 ? Color.FromArgb(255,70,60) : Color.FromArgb(60,190,255) : w.Foreground;
-            var alert=readings.Alerts?.FirstOrDefault(a=>a.Sensor==w.Kind||w.Kind is WidgetKind.ProgressBar or WidgetKind.HistoryGraph&&a.Sensor==w.BarSource);
+            var source=w.Kind is WidgetKind.ProgressBar or WidgetKind.HistoryGraph or WidgetKind.CircularGauge?w.BarSource:w.Kind;
+            color=PremiumDrawing.ColorFor(w,readings.Value(source),color,readings.Now,design.AnimationsEnabled);
+            var alert=readings.Alerts?.FirstOrDefault(a=>a.Sensor==source);
             if(alert!=null)color=Color.FromArgb(alert.ColorArgb);
             if(alert?.Pulse==true&&readings.Now.Second%2==0)color=Color.FromArgb(color.R/2,color.G/2,color.B/2);
             using var brush = new SolidBrush(color);
-            using var fill = new SolidBrush(w.Fill);
+            using var fill = new SolidBrush(PremiumDrawing.Alpha(w.Fill,w.Opacity));
+            float? meter=null;
+            if(w.Kind is WidgetKind.CircularGauge or WidgetKind.ProgressBar)
+            {
+                float target=Math.Clamp((readings.Value(w.BarSource)??0)/Math.Max(1,w.Maximum),0,1);DateTime now=readings.Now;
+                if(!meters.TryGetValue(w,out var state)||!design.AnimationsEnabled||readings.Value(w.BarSource)==null)state=(target,target,now);
+                float Progress((float From,float Target,DateTime Changed) s){float t=Math.Clamp((float)(now-s.Changed).TotalSeconds/.5f,0,1);return s.From+(s.Target-s.From)*(1-(1-t)*(1-t));}
+                if(target!=state.Target)state=(Progress(state),target,now);
+                meter=Progress(state);if(Math.Abs(meter.Value-target)>.001f)HasPendingMotion=true;
+                if(meters.Count>=64&&!meters.ContainsKey(w))meters.Clear();meters[w]=state;
+            }
+            if(PremiumDrawing.Draw(g,w,bounds,readings,color,design.AnimationsEnabled,meter))continue;
             if (w.Kind == WidgetKind.Rectangle) { g.FillRectangle(brush, bounds); continue; }
             if (w.Kind == WidgetKind.Ellipse) { g.FillEllipse(brush, bounds); continue; }
             if (w.Kind == WidgetKind.ProgressBar)
             {
                 g.FillRectangle(fill, bounds);
-                float fraction = Math.Clamp((readings.Value(w.BarSource) ?? 0) / Math.Max(1, w.Maximum), 0, 1);
+                float fraction = meter??0;
                 g.FillRectangle(brush, bounds.X, bounds.Y, bounds.Width * fraction, bounds.Height); continue;
             }
             if(w.Kind==WidgetKind.HistoryGraph)
@@ -304,9 +338,11 @@ sealed class DesignRenderer : IDisposable
         if(fonts.Count>=64){foreach(var old in fonts.Values)old.Dispose();fonts.Clear();}
         font=CreateFont(family,size,style);fonts.Add(key,font);return font;
     }
-    static void DrawAnimation(Graphics g,PageAnimation style,DateTime now)
+    public static bool IsAnimated(ScreenDesign design)=>design.AnimationsEnabled&&(design.Animation!=PageAnimation.None||design.Widgets.Any(w=>w.Visible&&(w.Motion!=WidgetMotion.None||w.Kind==WidgetKind.AnalogClock)));
+    static void DrawAnimation(Graphics g,PageAnimation style,DateTime now,float speed)
     {
-        if(style==PageAnimation.None)return;double phase=now.TimeOfDay.TotalSeconds;
+        if(style==PageAnimation.None)return;double phase=now.TimeOfDay.TotalSeconds*speed;
+        if(PremiumDrawing.Animation(g,style,phase))return;
         using var pen=new Pen(Color.FromArgb(90,70,200,255),2);using var brush=new SolidBrush(Color.FromArgb(120,80,210,255));
         if(style==PageAnimation.Radar){g.DrawEllipse(pen,30,30,352,352);float x=206+(float)Math.Cos(phase*.7)*176,y=206+(float)Math.Sin(phase*.7)*176;g.DrawLine(pen,206,206,x,y);}
         else if(style==PageAnimation.Pulse){int radius=160+(int)(Math.Sin(phase*2)*20);g.DrawEllipse(pen,206-radius,206-radius,radius*2,radius*2);}

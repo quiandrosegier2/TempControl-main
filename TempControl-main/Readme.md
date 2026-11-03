@@ -1,5 +1,7 @@
 # Qscreen
 
+**Nieuw: Qscreen Studio 2.1-testversie.** Open **Templates** voor 21 bewerkbare ontwerpen, ronde meters, analoge klokken, kleurregels, transparantie en animatie-instellingen. Zie de [templatehandleiding](PREMIUM-TEMPLATES.md) en [2.1-prerelease](https://github.com/quiandrosegier2/TempControl-main/releases/tag/v2.1.0-rc.1). De nieuwe templates zijn softwarematig getest; fysieke schermcontrole staat nog open.
+
 **Qscreen Studio 2.0.0-rc.3** is de nieuwe testversie met automatische profielen, meerdere pagina's, touchbediening, sensorgrafieken, lokale DesignHub, helderheidsplanning, waarschuwingen en meerdere schermen. Lees de [handleiding en teststatus](QSCREEN-2.0-GUIDE.md). [Versie 1.6.0](https://github.com/quiandrosegier2/TempControl-main/releases/tag/v1.6.0) blijft stabiel; [2.0.0-rc.3](https://github.com/quiandrosegier2/TempControl-main/releases/tag/v2.0.0-rc.3) is een prerelease. De onderstaande basisinstructies blijven gelden; touch en helderheid vereisen de nieuwe firmware.
 
 Rond systeemmonitor-scherm voor de pc. Een **Waveshare ESP32-S3-Touch-LCD-1.46** toont **CPU-temperatuur, GPU-temperatuur en FPS**, die via **USB-C** van Windows binnenkomen.

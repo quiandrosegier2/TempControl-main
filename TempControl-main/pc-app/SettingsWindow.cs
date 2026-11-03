@@ -35,13 +35,14 @@ sealed class SettingsWindow : Form
         var nav=StudioTheme.Label("WORKSPACE",8,true,38);
         var studio=StudioTheme.Button("Profielen & apparaten");studio.Dock=DockStyle.Top;studio.Height=46;studio.Click+=(_,_)=>Safe(()=>{using var manager=new AdvancedStudioWindow(appDirectory);manager.ShowDialog(this);LoadCustomPreview();});
         var create=StudioTheme.Button("+   Eigen ontwerp maken");create.Dock=DockStyle.Top;create.Height=48;create.Click+=(_,_)=>OpenDesigner();
+        var templates=StudioTheme.Button("Templates · 21 ontwerpen");templates.Dock=DockStyle.Top;templates.Height=48;templates.Click+=(_,_)=>Safe(()=>{using var gallery=new TemplatesWindow(appDirectory);gallery.ShowDialog(this);LoadCustomPreview();});
         var spacer=new Panel{Dock=DockStyle.Top,Height=30};
         var tools=StudioTheme.Label("APPARAAT & BEHEER",8,true,38);
         var firmware=SideAction("Firmware bijwerken",()=>LaunchPowerShell("-NoProfile -STA -ExecutionPolicy Bypass -WindowStyle Hidden -File \""+Path.Combine(appDirectory,"flash-firmware.ps1")+"\""));
         var monitor=SideAction("Metingen starten",()=>LaunchPowerShell("-NoProfile -Command \"Start-ScheduledTask -TaskName TempMonitor\""));
         var logs=SideAction("Logboek openen",()=>Process.Start(new ProcessStartInfo("explorer.exe",Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData),"TempMonitor")){UseShellExecute=true}));
-        var version=StudioTheme.Label("Qscreen 2.0\nQPRINTS desktop companion",9,false,64);version.Dock=DockStyle.Bottom;
-        sidebar.Controls.Add(logs);sidebar.Controls.Add(monitor);sidebar.Controls.Add(firmware);sidebar.Controls.Add(tools);sidebar.Controls.Add(spacer);sidebar.Controls.Add(create);sidebar.Controls.Add(studio);sidebar.Controls.Add(nav);sidebar.Controls.Add(tagline);sidebar.Controls.Add(brand);sidebar.Controls.Add(version);
+        var version=StudioTheme.Label("Qscreen 2.1\nQPRINTS desktop companion",9,false,64);version.Dock=DockStyle.Bottom;
+        sidebar.Controls.Add(logs);sidebar.Controls.Add(monitor);sidebar.Controls.Add(firmware);sidebar.Controls.Add(tools);sidebar.Controls.Add(spacer);sidebar.Controls.Add(create);sidebar.Controls.Add(templates);sidebar.Controls.Add(studio);sidebar.Controls.Add(nav);sidebar.Controls.Add(tagline);sidebar.Controls.Add(brand);sidebar.Controls.Add(version);
         var workspace=new Panel{Dock=DockStyle.Fill,Padding=new Padding(28)};
         var header=new Panel{Dock=DockStyle.Top,Height=114};
         var eyebrow=StudioTheme.Label("LAYOUT STUDIO",9,true,25);eyebrow.ForeColor=StudioTheme.Accent;
@@ -87,7 +88,7 @@ sealed class SettingsWindow : Form
     }
     StudioButton SideAction(string title,Action action){var button=StudioTheme.Button(title);button.Dock=DockStyle.Top;button.Height=44;button.Click+=(_,_)=>Safe(action);return button;}
     void Safe(Action action){try{action();}catch(Exception ex){status.Text=ex.Message;status.ForeColor=StudioTheme.Accent;}}
-    void OpenDesigner()=>Safe(()=>{using var designer=new DesignWindow(appDirectory);designer.ShowDialog(this);LoadCustomPreview();});
+    void OpenDesigner()=>Safe(()=>{var config=StudioConfiguration.Load(appDirectory);var profiles=new ProfileRepository(appDirectory);string id=config.ManualProfileId;using var designer=id!="legacy"&&profiles.Exists(id)?new DesignWindow(appDirectory,null,DesignFiles.Load(profiles.PathFor(id)),saved=>profiles.Save(id,saved)):new DesignWindow(appDirectory);designer.ShowDialog(this);LoadCustomPreview();});
     protected override void OnHandleCreated(EventArgs e){base.OnHandleCreated(e);StudioTheme.DarkTitle(this);}
     void ResetPreview(){preview.Image=null;ownImage?.Dispose();ownImage=null;cache.Clear();}
     void ShowFrame()
@@ -102,8 +103,9 @@ sealed class SettingsWindow : Form
     }
     void LoadCustomPreview()
     {
-        if(!File.Exists(Path.Combine(appDirectory,"custom-active.txt")))return;
-        Safe(()=>{ownPreview=DesignFiles.Load(Path.Combine(appDirectory,"custom-design.json"));ResetPreview();showingCustom=true;play.Enabled=false;play.Text="Eigen ontwerp";previewTitle.Text=ownPreview.Name;detail.Text="EIGEN ONTWERP\n\nJe persoonlijke ontwerp is actief. Open de ontwerpstudio om verder te bewerken.";status.Text="Eigen ontwerp: "+ownPreview.Name+" · voorbeeld met testwaarden.";ShowFrame();timer.Start();});
+        Safe(()=>{var config=StudioConfiguration.Load(appDirectory);var profiles=new ProfileRepository(appDirectory);string id=config.ManualProfileId;bool profile=id!="legacy"&&profiles.Exists(id);
+            if(!profile&&!File.Exists(Path.Combine(appDirectory,"custom-active.txt"))){if(showingCustom){showingCustom=false;ResetPreview();ShowFrame();}return;}
+            ownPreview=DesignFiles.Load(profiles.PathFor(profile?id:"legacy"));ResetPreview();showingCustom=true;play.Enabled=false;play.Text=profile?"Profielvoorbeeld":"Eigen ontwerp";previewTitle.Text=ownPreview.Name;detail.Text=profile?"PROFIELVOORBEELD\n\nDit handmatig gekozen profiel is bewerkbaar. Controleer Profielen & apparaten voor de actuele levering per scherm.":"EIGEN ONTWERP\n\nJe persoonlijke ontwerp is actief. Open de ontwerpstudio om verder te bewerken.";status.Text="Ontwerp: "+ownPreview.Name+" · voorbeeld met testwaarden.";ShowFrame();timer.Start();});
     }
     void UpdateConnection()
     {

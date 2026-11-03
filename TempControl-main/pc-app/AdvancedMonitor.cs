@@ -74,7 +74,7 @@ sealed class DeviceWorker : IDisposable
                     {
                         pages.Tick(renderProject,DateTime.UtcNow);int renderedPage=pages.Index;var page=DisplayPages.At(renderProject,renderedPage);
                         using var image=renderer.Render(page,readings);
-                        repeatAnimation=page.Animation!=PageAnimation.None||renderer.HasAnimatedBackground;
+                        repeatAnimation=DesignRenderer.IsAnimated(page)||renderer.HasPendingMotion||page.AnimationsEnabled&&renderer.HasAnimatedBackground;
                         if(DateTime.UtcNow<quickMenuUntil)DrawQuickMenu(image);
                         byte[] bytes=DesignRenderer.Rgb565(image);uint hash=CustomScreenSender.Hash(bytes);
                         bool changedPage=lastPage>=0&&lastPage!=renderedPage;
@@ -156,7 +156,7 @@ static class AdvancedMonitor
 {
     public static async Task RunAsync(string directory,Func<ScreenReadings> readSensors,string? fixedPort=null,CancellationToken cancellation=default)
     {
-        var profiles=new ProfileRepository(directory);var selector=new ProfileEngine();var history=new SensorHistory();var sampler=new SensorSampler(readSensors,Log.Write);
+        var profiles=new ProfileRepository(directory);var selector=new ProfileEngine();var history=new SensorHistory();var sampler=new SensorSampler(readSensors,Log.Write);using var weather=new WeatherService(directory);
         var workers=new Dictionary<string,DeviceWorker>();var states=new ConcurrentDictionary<string,DeviceRuntimeStatus>();
         var config=new StudioConfiguration();DateTime configTime=DateTime.MinValue,nextDiscovery=DateTime.MinValue,nextHistory=DateTime.MinValue,nextStatus=DateTime.MinValue,lastSample=DateTime.MinValue;
         var designs=new Dictionary<string,(DateTime Time,ScreenDesign Design,string Revision)>();using var notifications=new DesktopAlerts();
@@ -167,7 +167,7 @@ static class AdvancedMonitor
                 DateTime now=DateTime.UtcNow;
                 try{var modified=File.GetLastWriteTimeUtc(StudioConfiguration.PathIn(directory));if(modified!=configTime){config=StudioConfiguration.Load(directory);configTime=modified;}}
                 catch(Exception ex)when(ex is IOException or InvalidDataException or JsonException or ArgumentException){Log.Write("Studio-instellingen: "+ex.Message);}
-                var activity=ActivitySnapshot.Capture();var readings=sampler.Read(DateTime.Now) with{History=history};
+                var activity=ActivitySnapshot.Capture();var readings=sampler.Read(DateTime.Now) with{History=history,Weather=weather.Poll(now)};
                 if(now-lastSample>=TimeSpan.FromSeconds(config.SamplingSeconds)){history.Add(readings);lastSample=now;}
                 string automatic=selector.Select(config,activity,now,profiles.Exists);
                 if(now>=nextDiscovery)

@@ -11,6 +11,12 @@ sealed class TemplateManifest
     public TemplateCategory Category { get; set; }
     public string Author { get; set; }="Lokaal";
     public DateTime CreatedUtc { get; set; }=DateTime.UtcNow;
+    public string TemplateId { get; set; }="";
+    public string Description { get; set; }="";
+    public int CanvasWidth { get; set; }=412;
+    public int CanvasHeight { get; set; }=412;
+    public bool Animated { get; set; }
+    public string[] RequiredAssets { get; set; }=[];
 }
 sealed record DesignTemplate(string Id,TemplateManifest Manifest,ScreenDesign Design);
 interface ICommunityDesignSource
@@ -29,7 +35,15 @@ static class QscreenPackage
     }
     public static void Export(string path,ScreenDesign design,TemplateManifest manifest)
     {
-        string json=DesignFiles.Serialize(design);DesignFiles.Parse(json);string metadata=JsonSerializer.Serialize(manifest,DesignFiles.Json);
+        string json=DesignFiles.Serialize(design);DesignFiles.Parse(json);
+        manifest=JsonSerializer.Deserialize<TemplateManifest>(JsonSerializer.Serialize(manifest,DesignFiles.Json),DesignFiles.Json)!;
+        bool advanced=new[]{DisplayPage.From(design)}.Concat(design.Pages).Any(p=>p.Animation>PageAnimation.Pulse||p.AnimationSpeed!=1||!p.AnimationsEnabled||p.Widgets.Any(w=>w.Kind>=WidgetKind.CircularGauge||w.Motion!=WidgetMotion.None||w.ColorRules.Count>0||w.Opacity!=100));
+        if(advanced)manifest.MinimumAppVersion="2.1.0";
+        manifest.Animated=DesignRenderer.IsAnimated(design)||design.Pages.Any(p=>DesignRenderer.IsAnimated(p.Design()));
+        manifest.RequiredAssets=new[]{DisplayPage.From(design)}.Concat(design.Pages).Any(p=>!string.IsNullOrEmpty(p.BackgroundPng))?["embedded:background"]:[];
+        if(string.IsNullOrEmpty(manifest.TemplateId))manifest.TemplateId=Guid.NewGuid().ToString("N");
+        if(manifest.Name==null||manifest.Name.Length>120||manifest.Description==null||manifest.Description.Length>2000||manifest.Author==null||manifest.Author.Length>120||!Enum.IsDefined(manifest.Category))throw new InvalidDataException("Ongeldige templategegevens.");
+        string metadata=JsonSerializer.Serialize(manifest,DesignFiles.Json);
         using var renderer=new DesignRenderer();using var image=renderer.Render(design,ScreenReadings.Demo);using var png=new MemoryStream();image.Save(png,System.Drawing.Imaging.ImageFormat.Png);
         if(System.Text.Encoding.UTF8.GetByteCount(json)+System.Text.Encoding.UTF8.GetByteCount(metadata)+png.Length>Limit)throw new InvalidDataException("Het complete pakket is groter dan 64 MB.");
         string temp=path+"."+Guid.NewGuid().ToString("N")+".tmp";
@@ -58,7 +72,7 @@ static class QscreenPackage
             return ReadBounded(entry.Open(),max);
         }
         var manifest=JsonSerializer.Deserialize<TemplateManifest>(Read("manifest.json",16384),DesignFiles.Json)??throw new InvalidDataException("Manifest ontbreekt.");
-        if(manifest.Format!="QscreenPackage"||manifest.Version!=1||manifest.Target!="WS146"||string.IsNullOrWhiteSpace(manifest.Name)||manifest.Name.Length>120||manifest.Author==null||manifest.Author.Length>120||!Enum.IsDefined(manifest.Category)||!Version.TryParse(manifest.MinimumAppVersion,out var minimum)||minimum>new Version(2,0,0))throw new InvalidDataException("Pakket is niet compatibel met deze versie of dit scherm.");
+        if(manifest.RequiredAssets==null||manifest.RequiredAssets.Length>16||manifest.RequiredAssets.Any(a=>a!="embedded:background")||manifest.CanvasWidth!=412||manifest.CanvasHeight!=412||manifest.Description==null||manifest.Description.Length>2000||manifest.TemplateId==null||manifest.TemplateId.Length>120||manifest.Format!="QscreenPackage"||manifest.Version!=1||manifest.Target!="WS146"||string.IsNullOrWhiteSpace(manifest.Name)||manifest.Name.Length>120||manifest.Author==null||manifest.Author.Length>120||!Enum.IsDefined(manifest.Category)||!Version.TryParse(manifest.MinimumAppVersion,out var minimum)||minimum>new Version(2,1,0))throw new InvalidDataException("Pakket is niet compatibel met deze versie of dit scherm.");
         var design=DesignFiles.Parse(Read("design.qscreen",(int)Limit));
         return new(Guid.NewGuid().ToString("N"),manifest,design);
     }
@@ -69,7 +83,7 @@ static class QscreenPackage
         if(zip.Entries.Count is <2 or >3||zip.Entries.Any(e=>!names.Contains(e.FullName))||zip.Entries.Sum(e=>e.Length)>Limit||zip.Entries.Select(e=>e.FullName).Distinct().Count()!=zip.Entries.Count)throw new InvalidDataException("Onveilig pakket.");
         var entry=zip.GetEntry("manifest.json")??throw new InvalidDataException("Manifest ontbreekt.");if(entry.Length>16384)throw new InvalidDataException("Manifest te groot.");
         var manifest=JsonSerializer.Deserialize<TemplateManifest>(ReadBounded(entry.Open(),16384),DesignFiles.Json)??throw new InvalidDataException("Manifest ontbreekt.");
-        if(manifest.Format!="QscreenPackage"||manifest.Version!=1||manifest.Target!="WS146"||string.IsNullOrWhiteSpace(manifest.Name)||manifest.Name.Length>120||manifest.Author==null||manifest.Author.Length>120||!Enum.IsDefined(manifest.Category)||!Version.TryParse(manifest.MinimumAppVersion,out var min)||min>new Version(2,0,0))throw new InvalidDataException("Niet compatibel.");
+        if(manifest.RequiredAssets==null||manifest.RequiredAssets.Length>16||manifest.RequiredAssets.Any(a=>a!="embedded:background")||manifest.CanvasWidth!=412||manifest.CanvasHeight!=412||manifest.Description==null||manifest.Description.Length>2000||manifest.TemplateId==null||manifest.TemplateId.Length>120||manifest.Format!="QscreenPackage"||manifest.Version!=1||manifest.Target!="WS146"||string.IsNullOrWhiteSpace(manifest.Name)||manifest.Name.Length>120||manifest.Author==null||manifest.Author.Length>120||!Enum.IsDefined(manifest.Category)||!Version.TryParse(manifest.MinimumAppVersion,out var min)||min>new Version(2,1,0))throw new InvalidDataException("Niet compatibel.");
         return manifest;
     }
 }
@@ -97,6 +111,13 @@ sealed class LocalTemplateLibrary(string directory) : ICommunityDesignSource
         return Task.Run(()=>QscreenPackage.Import(Path.Combine(Root,id+".qscreenpack")) with{Id=id},cancellation);
     }
     public Task PublishAsync(DesignTemplate template,CancellationToken cancellation=default){cancellation.ThrowIfCancellationRequested();Add(template.Design,template.Manifest.Category,template.Manifest);return Task.CompletedTask;}
+    public System.Drawing.Bitmap? Thumbnail(string id)
+    {
+        if(!Guid.TryParseExact(id,"N",out _))throw new InvalidDataException("Ongeldig sjabloon-ID.");
+        using var zip=ZipFile.OpenRead(Path.Combine(Root,id+".qscreenpack"));var entry=zip.GetEntry("preview.png");if(entry==null||entry.Length>1_000_000)return null;
+        using var stream=entry.Open();using var data=new MemoryStream();var buffer=new byte[8192];int count;while((count=stream.Read(buffer,0,buffer.Length))>0){if(data.Length+count>1_000_000)return null;data.Write(buffer,0,count);}data.Position=0;
+        using var image=System.Drawing.Image.FromStream(data);if(image.Width>1024||image.Height>1024)return null;return new System.Drawing.Bitmap(image,new System.Drawing.Size(220,220));
+    }
     public void EnsureExamples()
     {
         Directory.CreateDirectory(Root);if(Directory.EnumerateFiles(Root,"*.qscreenpack").Any())return;

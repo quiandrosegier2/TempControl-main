@@ -23,8 +23,10 @@ sealed class DisplayPage
     public List<ScreenWidget> Widgets { get; set; }=[];
     public List<TouchZone> TouchZones { get; set; }=[];
     public PageAnimation Animation { get; set; }
-    public static DisplayPage From(ScreenDesign design)=>new(){Name=string.IsNullOrWhiteSpace(design.FirstPageName)?design.Name:design.FirstPageName,BackgroundArgb=design.BackgroundArgb,BackgroundPng=design.BackgroundPng,Fit=design.Fit,Darken=design.Darken,Widgets=design.Widgets,TouchZones=design.TouchZones,Animation=design.Animation};
-    public ScreenDesign Design()=>new(){Name=Name,BackgroundArgb=BackgroundArgb,BackgroundPng=BackgroundPng,Fit=Fit,Darken=Darken,Widgets=Widgets,TouchZones=TouchZones,Animation=Animation};
+    public float AnimationSpeed { get; set; }=1;
+    public bool AnimationsEnabled { get; set; }=true;
+    public static DisplayPage From(ScreenDesign design)=>new(){Name=string.IsNullOrWhiteSpace(design.FirstPageName)?design.Name:design.FirstPageName,BackgroundArgb=design.BackgroundArgb,BackgroundPng=design.BackgroundPng,Fit=design.Fit,Darken=design.Darken,Widgets=design.Widgets,TouchZones=design.TouchZones,Animation=design.Animation,AnimationSpeed=design.AnimationSpeed,AnimationsEnabled=design.AnimationsEnabled};
+    public ScreenDesign Design()=>new(){Name=Name,BackgroundArgb=BackgroundArgb,BackgroundPng=BackgroundPng,Fit=Fit,Darken=Darken,Widgets=Widgets,TouchZones=TouchZones,Animation=Animation,AnimationSpeed=AnimationSpeed,AnimationsEnabled=AnimationsEnabled};
 }
 static class DisplayPages
 {
@@ -33,7 +35,7 @@ static class DisplayPages
     public static void Replace(ScreenDesign project,int index,ScreenDesign page)
     {
         if(index>0){project.Pages[index-1]=DisplayPage.From(page);return;}
-        project.FirstPageName=page.Name;project.BackgroundArgb=page.BackgroundArgb;project.BackgroundPng=page.BackgroundPng;project.Fit=page.Fit;project.Darken=page.Darken;project.Widgets=page.Widgets;project.TouchZones=page.TouchZones;project.Animation=page.Animation;
+        project.FirstPageName=page.Name;project.BackgroundArgb=page.BackgroundArgb;project.BackgroundPng=page.BackgroundPng;project.Fit=page.Fit;project.Darken=page.Darken;project.Widgets=page.Widgets;project.TouchZones=page.TouchZones;project.Animation=page.Animation;project.AnimationSpeed=page.AnimationSpeed;project.AnimationsEnabled=page.AnimationsEnabled;
     }
     public static void Reorder(ScreenDesign project,int from,int to)
     {
