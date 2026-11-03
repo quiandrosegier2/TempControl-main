@@ -1,5 +1,7 @@
 # Qscreen
 
+**Neon 50 preview · 2.3.0-rc.1:** de app opent direct met 50 nieuwe, bewerkbare layouts op basis van de QPRINTS-poster. De bestaande 21 Studio Originals en 31 firmwarelayouts blijven beschikbaar. Galerij, voorbeeld en ontwerper gebruiken één hoofdvenster; aanmelden is niet verplicht. [Collectie, bediening en teststatus](NEON-50.md).
+
 **Accountpreview 2.2.0-rc.1:** een apart accountvenster zonder beheerdersrechten, veilige sessieopslag en voorbereide Coolify-accountpagina. Registratie en herstel staan nog uit totdat de website en beleids-/toestemmingskoppeling gereed zijn. [Status en handleiding](ACCOUNTS-PREVIEW.md).
 
 **Nieuw: Qscreen Studio 2.1-testversie.** Open **Templates** voor 21 bewerkbare ontwerpen, ronde meters, analoge klokken, kleurregels, transparantie en animatie-instellingen. Zie de [templatehandleiding](PREMIUM-TEMPLATES.md) en [2.1-prerelease](https://github.com/quiandrosegier2/TempControl-main/releases/tag/v2.1.0-rc.2). De nieuwe templates zijn softwarematig getest; fysieke schermcontrole staat nog open.

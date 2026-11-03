@@ -28,7 +28,7 @@ sealed class SettingsWindow : Form
         appDirectory=directory??AppContext.BaseDirectory;
         Text="Qscreen — Layout Studio";Size=new Size(1220,850);MinimumSize=new Size(1040,740);
         StartPosition=FormStartPosition.CenterScreen;BackColor=StudioTheme.Background;ForeColor=StudioTheme.Text;Font=new Font("Segoe UI",10);
-        string icon=Path.Combine(appDirectory,"branding","qprints.ico");if(File.Exists(icon))Icon=new Icon(icon);
+        string icon=Path.Combine(appDirectory,"branding","qprints.ico");if(File.Exists(icon))Icon=new Icon(icon);else Icon=(Icon)SystemIcons.Application.Clone();
         var sidebar=new Panel{Dock=DockStyle.Left,Width=240,BackColor=StudioTheme.Surface,Padding=new Padding(22)};
         var brand=StudioTheme.Label("Qscreen /",27,true,66);
         var tagline=StudioTheme.Label("YOUR DISPLAY. YOUR RULES.",8,false,42);

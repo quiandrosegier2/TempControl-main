@@ -7,7 +7,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <AssemblyName>Qscreen</AssemblyName>
-    <Version>2.2.0-rc.1</Version>
+    <Version>2.3.0-rc.1</Version>
     <UseWindowsForms>true</UseWindowsForms>
     <DefaultItemExcludes>$(DefaultItemExcludes);installer\**</DefaultItemExcludes>
   </PropertyGroup>
@@ -15,6 +15,7 @@
   <ItemGroup>
     <Compile Remove="account-manager/**/*.cs" />
     <EmbeddedResource Include="assets/tactical-background.png" LogicalName="Qscreen.assets.tactical-background.png" />
+    <EmbeddedResource Include="assets/neon50/*.png" LogicalName="Qscreen.neon50.%(Filename)%(Extension)" />
     <PackageReference Include="LibreHardwareMonitorLib" Version="0.9.6" />
     <PackageReference Include="System.IO.Ports" Version="10.0.3" />
     <PackageReference Include="System.Management" Version="10.0.2" />

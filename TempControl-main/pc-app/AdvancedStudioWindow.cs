@@ -9,6 +9,13 @@ sealed class AdvancedStudioWindow : Form
     readonly ProfileRepository repository;
     readonly StudioConfiguration config;
     readonly TabControl tabs=new(){Dock=DockStyle.Fill};
+    public Action<string>? EditProfileRequested;
+    public void ShowSection(string name)
+    {
+        RefreshProfiles();
+        foreach(TabPage page in tabs.TabPages)if(page.Text==name){tabs.SelectedTab=page;break;}
+    }
+    public void SetManualProfile(string id)=>config.ManualProfileId=id;
     readonly Label status=StudioTheme.Label("Wijzig instellingen en klik op Instellingen bewaren.",10,false,50);
     readonly ListBox profiles=new(){Dock=DockStyle.Fill,DisplayMember="Name",BackColor=StudioTheme.Surface,ForeColor=StudioTheme.Text};
     readonly ComboBox defaultProfile=new(){Width=250,DropDownStyle=ComboBoxStyle.DropDownList,DisplayMember="Name",ValueMember="Id"};
@@ -56,7 +63,7 @@ sealed class AdvancedStudioWindow : Form
     {
         var page=Tab("Profielen");var actions=new FlowLayoutPanel{Dock=DockStyle.Bottom,Height=118};
         AdvancedUi.Button(actions,"+ Huidig ontwerp",()=>{string file=Path.Combine(directory,"custom-draft.json");if(!File.Exists(file))file=Path.Combine(directory,"custom-design.json");repository.Add(File.Exists(file)?DesignFiles.Load(file):ScreenDesign.CreateDefault());RefreshProfiles();},Error);
-        AdvancedUi.Button(actions,"Profiel bewerken",()=>{var item=Profile();using var editor=new DesignWindow(directory,()=>{},DesignFiles.Load(item.File),saved=>repository.Save(item.Id,saved));editor.ShowDialog(this);RefreshProfiles();},Error);
+        AdvancedUi.Button(actions,"Profiel bewerken",()=>{var item=Profile();if(EditProfileRequested!=null){EditProfileRequested(item.Id);return;}using var editor=new DesignWindow(directory,()=>{},DesignFiles.Load(item.File),saved=>repository.Save(item.Id,saved));editor.ShowDialog(this);RefreshProfiles();},Error);
         AdvancedUi.Button(actions,"Dupliceren",()=>{var design=DesignFiles.Load(Profile().File);design.Name+=" kopie";repository.Add(design);RefreshProfiles();},Error);
         AdvancedUi.Button(actions,"Verwijderen",()=>{var item=Profile();if(MessageBox.Show(this,"Profiel verwijderen? Geëxporteerde bestanden blijven bewaard.","Qscreen",MessageBoxButtons.YesNo)==DialogResult.Yes){repository.Delete(item.Id);RefreshProfiles();}},Error);
         AdvancedUi.Button(actions,"Handmatig activeren",()=>{config.ManualProfileId=Profile().Id;Save();status.Text="Handmatige override actief. Kies Automatisch hervatten om profielregels te gebruiken.";},Error,true);

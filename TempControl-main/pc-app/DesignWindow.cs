@@ -31,14 +31,19 @@ sealed class DesignWindow : Form
     bool dragging, changed, refreshing;
     readonly Action requestMonitorStart;
     readonly Action<ScreenDesign>? savePage;
+    public Action? ApplyProfile;
+    public bool HasUnsavedChanges => changed||name.Text!=design.Name;
+    public void SaveForNavigation()=>SaveDraft();
+    public void DiscardForNavigation(){changed=false;name.Text=design.Name;}
     string? pendingRevision;
     DateTime requestedUtc;
     ScreenWidget? Selected => elements.SelectedItem as ScreenWidget;
 
-    public DesignWindow(string appDirectory, Action? startMonitor = null,ScreenDesign? initialDesign=null,Action<ScreenDesign>? savePage=null)
+    public DesignWindow(string appDirectory, Action? startMonitor = null,ScreenDesign? initialDesign=null,Action<ScreenDesign>? savePage=null,Action? applyProfile=null)
     {
         directory = appDirectory;
         this.savePage=savePage;
+        ApplyProfile=applyProfile;
         requestMonitorStart = startMonitor ?? (() => Process.Start(new ProcessStartInfo("powershell.exe", "-NoProfile -Command \"Start-ScheduledTask -TaskName TempMonitor -ErrorAction Stop\"") { UseShellExecute=false,CreateNoWindow=true }));
         string draft = Path.Combine(directory, "custom-draft.json");
         string active = Path.Combine(directory, "custom-design.json");
@@ -61,7 +66,7 @@ sealed class DesignWindow : Form
         files.Controls.Add(ActionButton("Nieuw",()=>{Remember();design=ScreenDesign.CreateDefault();Commit();RefreshList();},false,65));
         files.Controls.Add(ActionButton("Openen",Open,false,72));files.Controls.Add(ActionButton("Opslaan",SaveDraft,false,78));files.Controls.Add(ActionButton("Export",Export,false,70));
         files.Controls.Add(ActionButton("↶",Undo,false,40));files.Controls.Add(ActionButton("↷",Redo,false,40));
-        var apply=ActionButton(savePage!=null?"Wijzigingen bewaren":"Toepassen op scherm",Apply,true,190);apply.Dock=DockStyle.Right;
+        var apply=ActionButton(savePage!=null&&applyProfile==null?"Wijzigingen bewaren":"Toepassen op scherm",Apply,true,190);apply.Dock=DockStyle.Right;
         top.Controls.Add(files);top.Controls.Add(apply);top.Controls.Add(brand);
         var tools=new FlowLayoutPanel{Dock=DockStyle.Top,Height=62,Padding=new Padding(20,8,20,8),BackColor=StudioTheme.Background,WrapContents=false};
         tools.Controls.Add(ActionButton("Afbeelding kiezen",ImportBackground,false,155));
@@ -137,8 +142,7 @@ sealed class DesignWindow : Form
             if(WindowState!=FormWindowState.Minimized&&Visible&&(renderQueued||renderer.HasPendingMotion||DesignRenderer.IsAnimated(design)||design.AnimationsEnabled&&renderer.HasAnimatedBackground||(second&&design.Widgets.Any(w=>w.Visible&&w.Kind is WidgetKind.Time or WidgetKind.Date))))Render();
             if(second&&pendingRevision!=null){var delivery=ScreenDelivery.Read(directory);status.Text=ScreenDelivery.Describe(delivery,pendingRevision,requestedUtc,DateTime.UtcNow);status.ForeColor=status.Text.StartsWith("Ontwerp ontvangen",StringComparison.Ordinal)?StudioTheme.Green:Color.Orange;}
         };clock.Start();
-        FormClosing += (_,e) => { if(changed){var answer=MessageBox.Show(this,"Wijzigingen opslaan als concept?","Qscreen",MessageBoxButtons.YesNoCancel,MessageBoxIcon.Question);if(answer==DialogResult.Cancel)e.Cancel=true;else if(answer==DialogResult.Yes){try{SaveDraft();}catch(Exception ex){MessageBox.Show(this,ex.Message);e.Cancel=true;}}} };
-        FormClosed += (_,_) => { clock.Dispose(); renderer.Dispose(); canvas.Image?.Dispose(); };
+        FormClosing += (_,e) => { if(HasUnsavedChanges){var answer=MessageBox.Show(this,"Wijzigingen opslaan als concept?","Qscreen",MessageBoxButtons.YesNoCancel,MessageBoxIcon.Question);if(answer==DialogResult.Cancel)e.Cancel=true;else if(answer==DialogResult.Yes){try{SaveDraft();}catch(Exception ex){MessageBox.Show(this,ex.Message);e.Cancel=true;}}} };
         RefreshList();
         StudioTheme.FitWindow(this,new Size(1360,900),new Size(1000,700));
     }
@@ -192,7 +196,7 @@ sealed class DesignWindow : Form
     void SaveDraft(){design.Name=name.Text;if(savePage!=null)savePage(design);else DesignFiles.Save(Path.Combine(directory,"custom-draft.json"),design);changed=false;status.Text=savePage!=null?"Pagina/profiel opgeslagen.":"Concept opgeslagen. Klik op Toepassen op scherm om dit ontwerp te gebruiken.";}
     void Apply()
     {
-        if(savePage!=null){SaveDraft();return;}
+        if(savePage!=null){SaveDraft();ApplyProfile?.Invoke();return;}
         design.Name=name.Text; DesignFiles.Apply(directory,design); SaveDraft();
         pendingRevision=ScreenDelivery.RevisionOf(directory); requestedUtc=DateTime.UtcNow;
         requestMonitorStart();
@@ -238,4 +242,10 @@ sealed class DesignWindow : Form
         return base.ProcessCmdKey(ref msg,keyData);
     }
     protected override void OnHandleCreated(EventArgs e){base.OnHandleCreated(e);int dark=1;DwmSetWindowAttribute(Handle,20,ref dark,sizeof(int));}
+    bool resourcesDisposed;
+    protected override void Dispose(bool disposing)
+    {
+        if(disposing&&!resourcesDisposed){resourcesDisposed=true;clock.Dispose();renderer.Dispose();canvas.Image?.Dispose();canvas.Image=null;}
+        base.Dispose(disposing);
+    }
 }

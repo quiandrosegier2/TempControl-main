@@ -16,9 +16,9 @@ foreach($name in @('Qscreen.exe','Qscreen.dll','Qscreen.runtimeconfig.json','Pre
 }
 if(Test-Path -LiteralPath (Join-Path $publish 'TempMonitor.exe')){throw 'Legacy executable remains in clean publish output'}
 $version=[Diagnostics.FileVersionInfo]::GetVersionInfo((Join-Path $publish 'Qscreen.exe')).ProductVersion
-if($version -notlike '2.2.0*'){throw ('Wrong app version: '+$version)}
+if($version -notlike '2.3.0*'){throw ('Wrong app version: '+$version)}
 foreach($name in @('accounts\Qscreen.Accounts.exe','accounts\Qscreen.Accounts.dll','accounts\account-client.json','accounts\coreclr.dll')){if(-not(Test-Path -LiteralPath (Join-Path $publish $name))){throw ('Missing account payload: '+$name)}}
 $publicConfig=Get-Content (Join-Path $publish 'accounts\account-client.json') -Raw|ConvertFrom-Json
 if($publicConfig.ProjectUrl -ne 'https://ybmesonqfclarqigwxfe.supabase.co' -or $publicConfig.PublishableKey -notlike 'sb_publishable_*'){throw 'Invalid public account configuration'}
 if($publicConfig.RegistrationEnabled){throw 'Registration must remain gated until account pages and server consent are deployed'}
-'PASS: Qscreen 2.2.0 payload, isolated self-contained account app with public configuration, firmware offsets and matching factory image, no stale launcher.'
+'PASS: Qscreen 2.3.0 payload, preserved optional self-contained account app, firmware offsets and matching factory image, no stale launcher.'

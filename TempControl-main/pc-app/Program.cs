@@ -9,7 +9,7 @@ using LibreHardwareMonitor.Hardware;
 
 if (args.Length == 0 || args.Contains("--settings"))
 {
-    var ui = new Thread(() => { System.Windows.Forms.Application.EnableVisualStyles(); System.Windows.Forms.Application.Run(new SettingsWindow()); });
+    var ui = new Thread(() => { System.Windows.Forms.Application.EnableVisualStyles(); System.Windows.Forms.Application.Run(new StudioShellWindow()); });
     ui.SetApartmentState(ApartmentState.STA);
     ui.Start(); ui.Join(); return;
 }

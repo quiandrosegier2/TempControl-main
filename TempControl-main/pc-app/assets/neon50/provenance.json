@@ -1,0 +1,254 @@
+[
+  {
+    "number": 2,
+    "file": "neon-racer.png",
+    "original": "exec-ed4f4ec9-826c-44f8-8a12-5e0a48010476.png",
+    "tool": "built-in image_gen",
+    "prompt": "Use case: stylized-concept. Production decorative background for a 412x412 circular PC monitor, square composition. Render ONE original polished detailed illustration, no collage. Main circular safe area inscribed in square; artwork fills it, black outer corners, thin dark gunmetal rim at edge. Premium luminous gaming poster aesthetic matching a miniature circular watch face. NO TEXT, NO LETTERS, NO NUMBERS, NO CLOCK, NO METRICS, NO GAUGES, NO LABELS, NO UI PANELS, NO WATERMARK. All information will be added as separate editable widgets. Preserve quiet top quarter and dark bottom quarter for live text. Scene: A futuristic original low-slung purple sports car, rear three-quarter view, centered in the upper middle (y=35%-60%), on a wet neon road with violet/pink/blue lights and distant cyberpunk towers. Night purple sky upper quarter deliberately quiet. Dark road lower third."
+  },
+  {
+    "number": 3,
+    "file": "cyberpunk-city.png",
+    "original": "exec-01860d08-d7c2-47c9-9da7-f41fb8d47773.png",
+    "tool": "built-in image_gen",
+    "prompt": "Use case: stylized-concept. Production decorative background for a 412x412 circular PC monitor, square composition. Render ONE original polished detailed illustration, no collage. Main circular safe area inscribed in square; artwork fills it, black outer corners, thin dark gunmetal rim at edge. Premium luminous gaming poster aesthetic matching a miniature circular watch face. NO TEXT, NO LETTERS, NO NUMBERS, NO CLOCK, NO METRICS, NO GAUGES, NO LABELS, NO UI PANELS, NO WATERMARK. All information will be added as separate editable widgets. Preserve quiet top quarter and dark bottom quarter for live text. Scene: A rich neon purple and magenta futuristic skyline: densely layered original skyscrapers, cyan windows, luminous pink haze, central avenue vanishing at center y=55%. Quiet deep indigo sky in top 27%, dark lower third."
+  },
+  {
+    "number": 6,
+    "file": "frost-glass.png",
+    "original": "exec-8a8e1ed5-fb4d-4064-94ee-dce3f6acec3d.png",
+    "tool": "built-in image_gen",
+    "prompt": "Use case: stylized-concept. Production decorative background for a 412x412 circular PC monitor, square composition. Render ONE original polished detailed illustration, no collage. Main circular safe area inscribed in square; artwork fills it, black outer corners, thin dark gunmetal rim at edge. Premium luminous gaming poster aesthetic matching a miniature circular watch face. NO TEXT, NO LETTERS, NO NUMBERS, NO CLOCK, NO METRICS, NO GAUGES, NO LABELS, NO UI PANELS, NO WATERMARK. All information will be added as separate editable widgets. Preserve quiet top quarter and dark bottom quarter for live text. Scene: Majestic snow-covered alpine peaks, luminous icy blue slopes and white ridges in middle y=35%-63%, beneath a deep blue starry night sky. Top quarter quiet deep navy, bottom third dark cool blue lake reflections."
+  },
+  {
+    "number": 7,
+    "file": "space-explorer.png",
+    "original": "exec-85c04afc-3bdc-4802-895d-70aae2312143.png",
+    "tool": "built-in image_gen",
+    "prompt": "Use case: stylized-concept. Production decorative background for a 412x412 circular PC monitor, square composition. Render ONE original polished detailed illustration, no collage. Main circular safe area inscribed in square; artwork fills it, black outer corners, thin dark gunmetal rim at edge. Premium luminous gaming poster aesthetic matching a miniature circular watch face. NO TEXT, NO LETTERS, NO NUMBERS, NO CLOCK, NO METRICS, NO GAUGES, NO LABELS, NO UI PANELS, NO WATERMARK. All information will be added as separate editable widgets. Preserve quiet top quarter and dark bottom quarter for live text. Scene: An original detailed astronaut sitting on a rocky distant planet, on the right side x=60%-82%, y=35%-70%, glossy round dark visor with cyan rim lighting. Large blue planet at left middle, smaller distant moons, tiny stars. Deep navy quiet upper quarter, dark lunar terrain bottom third."
+  },
+  {
+    "number": 8,
+    "file": "retro-pixel.png",
+    "original": "exec-75f07125-c343-495e-92ec-b52baf35aebd.png",
+    "tool": "built-in image_gen",
+    "prompt": "Use case: stylized-concept. Production decorative background for a 412x412 circular PC monitor, square composition. Render ONE original polished detailed illustration, no collage. Main circular safe area inscribed in square; artwork fills it, black outer corners, thin dark gunmetal rim at edge. Premium luminous gaming poster aesthetic matching a miniature circular watch face. NO TEXT, NO LETTERS, NO NUMBERS, NO CLOCK, NO METRICS, NO GAUGES, NO LABELS, NO UI PANELS, NO WATERMARK. All information will be added as separate editable widgets. Preserve quiet top quarter and dark bottom quarter for live text. Scene: Original crisp 16-bit pixel-art synthwave mountain landscape: enormous orange and pink striped sunset centered y=40%-65%, purple jagged mountains layered across lower middle, deep violet night sky with tiny pixel stars. Keep top quarter quiet navy-purple and lower 25% dark purple. True pixel art."
+  },
+  {
+    "number": 9,
+    "file": "anime-style.png",
+    "original": "exec-0578eee6-048c-4bd1-876b-c538ca8a066d.png",
+    "tool": "built-in image_gen",
+    "prompt": "Use case: stylized-concept. Production decorative background for a 412x412 circular PC monitor, square composition. Render ONE original polished detailed illustration, no collage. Main circular safe area inscribed in square; artwork fills it, black outer corners, thin dark gunmetal rim at edge. Premium luminous gaming poster aesthetic matching a miniature circular watch face. NO TEXT, NO LETTERS, NO NUMBERS, NO CLOCK, NO METRICS, NO GAUGES, NO LABELS, NO UI PANELS, NO WATERMARK. All information will be added as separate editable widgets. Preserve quiet top quarter and dark bottom quarter for live text. Scene: Original anonymous anime-inspired young adventurer side-profile silhouette with spiky hair and flowing scarf, positioned right at x=60%-80%, y=28%-76%, huge vivid orange-red sunset disc behind them, dramatic black branches at edges, drifting tiny leaves. No existing anime character, no insignia. Amber open negative space top left and dark reddish-black lower quarter."
+  },
+  {
+    "number": 12,
+    "file": "aurora.png",
+    "original": "exec-a682f83f-579f-40fa-87a8-08dfca784a64.png",
+    "tool": "built-in image_gen",
+    "prompt": "Use case: stylized-concept. Create ONE production decorative background asset for a 412x412 circular monitor, square canvas, no collage, polished detailed original premium gaming illustration. All artwork contained within a circle nearly filling the square; very thin dark gunmetal circular rim, outer corners pure black. Absolutely NO TEXT, LETTERS, NUMBERS, CLOCKS, LIVE READINGS, GAUGES, PANELS, WATERMARKS or BRANDING. We add all live information separately as editable widgets. Subject remains recognizable at 412 pixels. Scene: Luminous green, turquoise and violet curtains of northern lights over a black pine forest and a calm lake. Most luminous sky at y=32%-65%; quiet dark blue upper quarter and dark forest bottom."
+  },
+  {
+    "number": 15,
+    "file": "hardware-pro.png",
+    "original": "exec-5c1dd4d7-4471-4c7b-955e-457ff06cd586.png",
+    "tool": "built-in image_gen",
+    "prompt": "Use case: stylized-concept. Create ONE production decorative background asset for a 412x412 circular monitor, square canvas, no collage, polished detailed original premium gaming illustration. All artwork contained within a circle nearly filling the square; very thin dark gunmetal circular rim, outer corners pure black. Absolutely NO TEXT, LETTERS, NUMBERS, CLOCKS, LIVE READINGS, GAUGES, PANELS, WATERMARKS or BRANDING. We add all live information separately as editable widgets. Subject remains recognizable at 412 pixels. Scene: Close-up original premium gaming PC internals with two large RGB cooling fans at left, violet cyan reflections on dark metal GPU fins and cables, blue/purple hardware texture, darker right half reserved for information overlay."
+  },
+  {
+    "number": 17,
+    "file": "lava-monster.png",
+    "original": "exec-729e3a50-6d4f-4ffd-9446-508ced8d803b.png",
+    "tool": "built-in image_gen",
+    "prompt": "Use case: stylized-concept. Create ONE production decorative background asset for a 412x412 circular monitor, square canvas, no collage, polished detailed original premium gaming illustration. All artwork contained within a circle nearly filling the square; very thin dark gunmetal circular rim, outer corners pure black. Absolutely NO TEXT, LETTERS, NUMBERS, CLOCKS, LIVE READINGS, GAUGES, PANELS, WATERMARKS or BRANDING. We add all live information separately as editable widgets. Subject remains recognizable at 412 pixels. Scene: Original ferocious fantasy lava monster face with cracked obsidian skin, blazing orange eyes and jagged glowing teeth, filling upper and middle y=16%-66%. Orange lava veins and dark smoke. No existing game character. Bottom third mostly black with faint lava embers."
+  },
+  {
+    "number": 18,
+    "file": "ocean-depths.png",
+    "original": "exec-b50b773c-0856-4acc-b315-0e80af0e9e85.png",
+    "tool": "built-in image_gen",
+    "prompt": "Use case: stylized-concept. Create ONE production decorative background asset for a 412x412 circular monitor, square canvas, no collage, polished detailed original premium gaming illustration. All artwork contained within a circle nearly filling the square; very thin dark gunmetal circular rim, outer corners pure black. Absolutely NO TEXT, LETTERS, NUMBERS, CLOCKS, LIVE READINGS, GAUGES, PANELS, WATERMARKS or BRANDING. We add all live information separately as editable widgets. Subject remains recognizable at 412 pixels. Scene: A large bioluminescent jellyfish floating underwater, cyan violet translucent bell and luminous trailing tentacles at center y=35%-70%. Deep midnight blue ocean, subtle marine particles. Quiet upper quarter, dark blue bottom."
+  },
+  {
+    "number": 19,
+    "file": "forest-nature.png",
+    "original": "exec-81daf531-af84-4258-bb04-f0e70de477c3.png",
+    "tool": "built-in image_gen",
+    "prompt": "Use case: stylized-concept. Create ONE production decorative background asset for a 412x412 circular monitor, square canvas, no collage, polished detailed original premium gaming illustration. All artwork contained within a circle nearly filling the square; very thin dark gunmetal circular rim, outer corners pure black. Absolutely NO TEXT, LETTERS, NUMBERS, CLOCKS, LIVE READINGS, GAUGES, PANELS, WATERMARKS or BRANDING. We add all live information separately as editable widgets. Subject remains recognizable at 412 pixels. Scene: A majestic original deer silhouette in a luminous peaceful woodland clearing, moss green trees forming a natural arch, soft golden sunbeams behind antlers. Deer at center y=38%-72%. Quiet teal-green upper quarter and dark mossy lower quarter."
+  },
+  {
+    "number": 20,
+    "file": "zen-minimal.png",
+    "original": "exec-fd18eda3-acce-4fc5-9400-c9e373cd71ad.png",
+    "tool": "built-in image_gen",
+    "prompt": "Use case: stylized-concept. Create ONE production decorative background asset for a 412x412 circular monitor, square canvas, no collage, polished detailed original premium gaming illustration. All artwork contained within a circle nearly filling the square; very thin dark gunmetal circular rim, outer corners pure black. Absolutely NO TEXT, LETTERS, NUMBERS, CLOCKS, LIVE READINGS, GAUGES, PANELS, WATERMARKS or BRANDING. We add all live information separately as editable widgets. Subject remains recognizable at 412 pixels. Scene: One elegant luminous purple lotus blossom centered at y=46%-65%, fine glowing violet and lavender petal edges, soft subtle reflection below, otherwise deep pure black negative space. Very minimal zen composition."
+  },
+  {
+    "number": 21,
+    "file": "skull-fury.png",
+    "original": "exec-52cf03cb-205f-44f2-8f1e-663fb8b69824.png",
+    "tool": "built-in image_gen",
+    "prompt": "Use case: stylized-concept. Create ONE production decorative background asset for a 412x412 circular monitor, square canvas, no collage, polished detailed original premium gaming illustration. All artwork contained within a circle nearly filling the square; very thin dark gunmetal circular rim, outer corners pure black. Absolutely NO TEXT, LETTERS, NUMBERS, CLOCKS, LIVE READINGS, GAUGES, PANELS, WATERMARKS or BRANDING. We add all live information separately as editable widgets. Subject remains recognizable at 412 pixels. Scene: Original stylized fierce skull wearing large futuristic gaming headphones, centered upper middle y=18%-66%, electric blue rim light on one side and fiery red/orange on the other. Dark smoky backdrop, cinematic detail. Bottom third very dark."
+  },
+  {
+    "number": 22,
+    "file": "robot-buddy.png",
+    "original": "exec-41474ca3-0633-473f-bad7-a10ae932715a.png",
+    "tool": "built-in image_gen",
+    "prompt": "Use case: stylized-concept. Create ONE production decorative background asset for a 412x412 circular monitor, square canvas, no collage, polished detailed original premium gaming illustration. All artwork contained within a circle nearly filling the square; very thin dark gunmetal circular rim, outer corners pure black. Absolutely NO TEXT, LETTERS, NUMBERS, CLOCKS, LIVE READINGS, GAUGES, PANELS, WATERMARKS or BRANDING. We add all live information separately as editable widgets. Subject remains recognizable at 412 pixels. Scene: Cute original small futuristic silver-blue robot with a rounded rectangular black face and two friendly glowing blue eyes, round headset-like ears, stubby body, centered y=20%-68%. Deep blue sci-fi background and soft cyan glow. No existing robot character. Bottom quarter dark."
+  },
+  {
+    "number": 23,
+    "file": "cat-gamer.png",
+    "original": "exec-5b48735f-3900-47f8-bf37-18df8ab4f5c7.png",
+    "tool": "built-in image_gen",
+    "prompt": "Use case: stylized-concept. Create ONE production decorative background asset for a 412x412 circular monitor, square canvas, no collage, polished detailed original premium gaming illustration. All artwork contained within a circle nearly filling the square; very thin dark gunmetal circular rim, outer corners pure black. Absolutely NO TEXT, LETTERS, NUMBERS, CLOCKS, LIVE READINGS, GAUGES, PANELS, WATERMARKS or BRANDING. We add all live information separately as editable widgets. Subject remains recognizable at 412 pixels. Scene: Funny fluffy gray cat wearing glossy black sunglasses and large RGB gaming headphones, head and upper body centered y=17%-68%, violet pink and cyan neon rim lighting, expressive ears. Original character, premium detailed playful digital art. Lower third dark."
+  },
+  {
+    "number": 24,
+    "file": "panda-chill.png",
+    "original": "exec-de4e9413-fb2c-4cfd-9366-057c3d9f7a4a.png",
+    "tool": "built-in image_gen",
+    "prompt": "Use case: stylized-concept. Create ONE production decorative background asset for a 412x412 circular monitor, square canvas, no collage, polished detailed original premium gaming illustration. All artwork contained within a circle nearly filling the square; very thin dark gunmetal circular rim, outer corners pure black. Absolutely NO TEXT, LETTERS, NUMBERS, CLOCKS, LIVE READINGS, GAUGES, PANELS, WATERMARKS or BRANDING. We add all live information separately as editable widgets. Subject remains recognizable at 412 pixels. Scene: Cute original fluffy panda wearing glossy purple sunglasses, relaxed smile, head centered y=20%-66%, warm golden-orange rim light and soft gold bokeh against black. Bottom third dark. Charming polished detailed digital illustration."
+  },
+  {
+    "number": 25,
+    "file": "doge-vibes.png",
+    "original": "exec-f1b4d785-7bd0-40c9-8493-aeb4f6e859f1.png",
+    "tool": "built-in image_gen",
+    "prompt": "Use case: stylized-concept. Create ONE production decorative background asset for a 412x412 circular monitor, square canvas, no collage, polished detailed original premium gaming illustration. All artwork contained within a circle nearly filling the square; very thin dark gunmetal circular rim, outer corners pure black. Absolutely NO TEXT, LETTERS, NUMBERS, CLOCKS, LIVE READINGS, GAUGES, PANELS, WATERMARKS or BRANDING. We add all live information separately as editable widgets. Subject remains recognizable at 412 pixels. Scene: Original cheerful cartoon Shiba Inu dog wearing black pixel sunglasses, orange golden fur, face tilted slightly, centered y=17%-67%, orange-yellow flame-like glow and playful gold sparkles on black. No meme text or existing image reproduction. Bottom third dark."
+  },
+  {
+    "number": 26,
+    "file": "angry-cpu.png",
+    "original": "exec-1c092513-3edd-488b-961b-4d33687e06bd.png",
+    "tool": "built-in image_gen",
+    "prompt": "Use case: stylized-concept. Create ONE production decorative background asset for a 412x412 circular monitor, square canvas, no collage, polished detailed original premium gaming illustration. All artwork contained within a circle nearly filling the square; very thin dark gunmetal circular rim, outer corners pure black. Absolutely NO TEXT, LETTERS, NUMBERS, CLOCKS, LIVE READINGS, GAUGES, PANELS, WATERMARKS or BRANDING. We add all live information separately as editable widgets. Subject remains recognizable at 412 pixels. Scene: Original angry cartoon computer processor with a gold chip square body, tiny metal pins and glowing hot orange circuit center, furrowed dark brows, furious face, framed by small stylized flames. Chip face at x=35%-65% y=30%-53%, body y=20%-65%. Leave lower third dark. No letters or symbols on chip."
+  },
+  {
+    "number": 27,
+    "file": "coffee-mode.png",
+    "original": "exec-b0a749cb-034d-4650-874e-c07287f776ec.png",
+    "tool": "built-in image_gen",
+    "prompt": "Use case: stylized-concept. Create ONE production decorative background asset for a 412x412 circular monitor, square canvas, no collage, polished detailed original premium gaming illustration. All artwork contained within a circle nearly filling the square; very thin dark gunmetal circular rim, outer corners pure black. Absolutely NO TEXT, LETTERS, NUMBERS, CLOCKS, LIVE READINGS, GAUGES, PANELS, WATERMARKS or BRANDING. We add all live information separately as editable widgets. Subject remains recognizable at 412 pixels. Scene: Original funny dark brown coffee cup with an angry cartoon face, centered y=32%-69%, warm orange glowing rim, amber coffee surface and rising curling cream-colored steam in upper middle. Black warm cafe background. Bottom quarter dark."
+  },
+  {
+    "number": 28,
+    "file": "pizza-power.png",
+    "original": "exec-13fb82be-2ea6-42d7-8773-0a70a89255db.png",
+    "tool": "built-in image_gen",
+    "prompt": "Use case: stylized-concept. Create ONE production decorative background asset for a 412x412 circular monitor, square canvas, no collage, polished detailed original premium gaming illustration. All artwork contained within a circle nearly filling the square; very thin dark gunmetal circular rim, outer corners pure black. Absolutely NO TEXT, LETTERS, NUMBERS, CLOCKS, LIVE READINGS, GAUGES, PANELS, WATERMARKS or BRANDING. We add all live information separately as editable widgets. Subject remains recognizable at 412 pixels. Scene: Original funny pizza slice character wearing glossy black sunglasses, orange cheese, pepperoni, cheeky grin and golden crust, centered upper middle y=17%-68%, warm fiery orange rim lighting, playful polished detailed cartoon. Bottom third dark."
+  },
+  {
+    "number": 29,
+    "file": "sleep-mode.png",
+    "original": "exec-71b36770-295d-4ce9-91e5-05334b687ee7.png",
+    "tool": "built-in image_gen",
+    "prompt": "Use case: stylized-concept. Create ONE production decorative background asset for a 412x412 circular monitor, square canvas, no collage, polished detailed original premium gaming illustration. All artwork contained within a circle nearly filling the square; very thin dark gunmetal circular rim, outer corners pure black. Absolutely NO TEXT, LETTERS, NUMBERS, CLOCKS, LIVE READINGS, GAUGES, PANELS, WATERMARKS or BRANDING. We add all live information separately as editable widgets. Subject remains recognizable at 412 pixels. Scene: Original cute astronaut sleeping while floating horizontally curled in space, closed dark visor and relaxed arms, centered y=34%-70%, softly lit in lavender and blue, deep navy stars. No text or sleep letters; those are separate widgets. Upper quarter and bottom quarter quiet dark."
+  },
+  {
+    "number": 30,
+    "file": "toilet-break.png",
+    "original": "exec-8b86eac0-ace6-4d99-aee2-ca686e30bc5c.png",
+    "tool": "built-in image_gen",
+    "prompt": "Use case: stylized-concept. Create ONE production decorative background asset for a 412x412 circular monitor, square canvas, no collage, polished detailed original premium gaming illustration. All artwork contained within a circle nearly filling the square; very thin dark gunmetal circular rim, outer corners pure black. Absolutely NO TEXT, LETTERS, NUMBERS, CLOCKS, LIVE READINGS, GAUGES, PANELS, WATERMARKS or BRANDING. We add all live information separately as editable widgets. Subject remains recognizable at 412 pixels. Scene: Original humorous cartoon white toilet character wearing black sunglasses, raised tank and bowl forming friendly silly character, small toilet paper roll on left, warm dim bathroom lighting, centered y=19%-69%. Black and dark brown surroundings, bottom quarter dark. No text."
+  },
+  {
+    "number": 31,
+    "file": "rocket-launch.png",
+    "original": "exec-7acf6f57-5767-4b06-bb72-6f401d81c359.png",
+    "tool": "built-in image_gen",
+    "prompt": "Use case: stylized-concept. Create ONE production decorative background asset for a 412x412 circular monitor, square canvas, no collage, polished detailed original premium gaming illustration. All artwork contained within a circle nearly filling the square; very thin dark gunmetal circular rim, outer corners pure black. Absolutely NO TEXT, LETTERS, NUMBERS, CLOCKS, LIVE READINGS, GAUGES, PANELS, WATERMARKS or BRANDING. We add all live information separately as editable widgets. Subject remains recognizable at 412 pixels. Scene: An original retro-futuristic white rocket with red fins blasting diagonally upward from lower left towards upper right, bright orange exhaust, curved blue planet horizon and tiny stars. Rocket body mainly in upper middle y=20%-62%, flame toward lower left. Dark navy bottom-right for metrics."
+  },
+  {
+    "number": 32,
+    "file": "moon-base.png",
+    "original": "exec-f2760242-3848-4692-9ba7-1162cc9fa2d2.png",
+    "tool": "built-in image_gen",
+    "prompt": "Use case: stylized-concept. Create ONE production decorative background asset for a 412x412 circular monitor, square canvas, no collage, polished detailed original premium gaming illustration. All artwork contained within a circle nearly filling the square; very thin dark gunmetal circular rim, outer corners pure black. Absolutely NO TEXT, LETTERS, NUMBERS, CLOCKS, LIVE READINGS, GAUGES, PANELS, WATERMARKS or BRANDING. We add all live information separately as editable widgets. Subject remains recognizable at 412 pixels. Scene: Cozy futuristic dome habitat on a moon, blue silver metal panels, warm amber illuminated windows, cratered rocky ground, large blue planet on horizon at right and tiny stars. Habitat at center y=43%-69%. Quiet upper third dark navy, bottom quarter dark gray."
+  },
+  {
+    "number": 33,
+    "file": "mecha-core.png",
+    "original": "exec-e7ad90eb-1021-4896-a7a4-de6fad21bb26.png",
+    "tool": "built-in image_gen",
+    "prompt": "Use case: stylized-concept. Create ONE production decorative background asset for a 412x412 circular monitor, square canvas, no collage, polished detailed original premium gaming illustration. All artwork contained within a circle nearly filling the square; very thin dark gunmetal circular rim, outer corners pure black. Absolutely NO TEXT, LETTERS, NUMBERS, CLOCKS, LIVE READINGS, GAUGES, PANELS, WATERMARKS or BRANDING. We add all live information separately as editable widgets. Subject remains recognizable at 412 pixels. Scene: Original imposing futuristic armored mecha head and shoulders, layered blue gunmetal armor, narrow fierce glowing red eyes, central helmet with subtle vertical crest, centered y=17%-68%. Deep blue sci-fi smoke. No recognizable franchise character or insignia. Bottom third nearly black."
+  },
+  {
+    "number": 34,
+    "file": "hologram-ai.png",
+    "original": "exec-87f1799f-48b7-466c-b215-2d536c7c3040.png",
+    "tool": "built-in image_gen",
+    "prompt": "Use case: stylized-concept. Create ONE production decorative background asset for a 412x412 circular monitor, square canvas, no collage, polished detailed original premium gaming illustration. All artwork contained within a circle nearly filling the square; very thin dark gunmetal circular rim, outer corners pure black. Absolutely NO TEXT, LETTERS, NUMBERS, CLOCKS, LIVE READINGS, GAUGES, PANELS, WATERMARKS or BRANDING. We add all live information separately as editable widgets. Subject remains recognizable at 412 pixels. Scene: Original elegant holographic AI face in three-quarter view looking right, cyan blue translucent synthetic female android head, luminous circuit-line contours, layered holographic rings and tiny abstract points around it. Head fills y=17%-68%. Dark navy background, lower third dark."
+  },
+  {
+    "number": 35,
+    "file": "hacker-terminal.png",
+    "original": "exec-3feb3602-e12c-4ea1-bd84-bf26f2e77f19.png",
+    "tool": "built-in image_gen",
+    "prompt": "Use case: stylized-concept. Create ONE production decorative background asset for a 412x412 circular monitor, square canvas, no collage, polished detailed original premium gaming illustration. All artwork contained within a circle nearly filling the square; very thin dark gunmetal circular rim, outer corners pure black. Absolutely NO TEXT, LETTERS, NUMBERS, CLOCKS, LIVE READINGS, GAUGES, PANELS, WATERMARKS or BRANDING. We add all live information separately as editable widgets. Subject remains recognizable at 412 pixels. Scene: Original anonymous fictional hooded figure, face completely in shadow, dark green hood and green terminal glow from below, abstract green code-like light streaks without legible characters. Figure upper middle y=17%-67%. Quiet black-green lower third. No existing franchise symbols."
+  },
+  {
+    "number": 37,
+    "file": "steampunk.png",
+    "original": "exec-bd3b4a3c-9dfe-4279-b192-91744c56cdb0.png",
+    "tool": "built-in image_gen",
+    "prompt": "Use case: stylized-concept. Create ONE production decorative background asset for a 412x412 circular monitor, square canvas, no collage, polished detailed original premium gaming illustration. All artwork contained within a circle nearly filling the square; very thin dark gunmetal circular rim, outer corners pure black. Absolutely NO TEXT, LETTERS, NUMBERS, CLOCKS, LIVE READINGS, GAUGES, PANELS, WATERMARKS or BRANDING. We add all live information separately as editable widgets. Subject remains recognizable at 412 pixels. Scene: Intricate premium brass clockwork machinery, gold and copper toothed gears, small winding mechanisms, aged dark brown metal with warm amber highlights. Larger gear at upper right, interlocking gears upper and middle. Deep dark brown bottom third for information overlay. No clock hands, text, digits or dial markers."
+  },
+  {
+    "number": 38,
+    "file": "neon-skull.png",
+    "original": "exec-0881d268-b5f4-4ca2-a478-ad5367ee3a0e.png",
+    "tool": "built-in image_gen",
+    "prompt": "Use case: stylized-concept. Create ONE production decorative background asset for a 412x412 circular monitor, square canvas, no collage, polished detailed original premium gaming illustration. All artwork contained within a circle nearly filling the square; very thin dark gunmetal circular rim, outer corners pure black. Absolutely NO TEXT, LETTERS, NUMBERS, CLOCKS, LIVE READINGS, GAUGES, PANELS, WATERMARKS or BRANDING. We add all live information separately as editable widgets. Subject remains recognizable at 412 pixels. Scene: Original futuristic skull rendered in fine luminous electric blue and violet linework, hot magenta on right, crackling blue energy wisps against deep black. Skull centered upper middle y=17%-68%, lower third very dark. No headphones."
+  },
+  {
+    "number": 39,
+    "file": "liquid-rgb.png",
+    "original": "exec-61af7eb0-ffd4-48bc-bf5b-be377f343e84.png",
+    "tool": "built-in image_gen",
+    "prompt": "Use case: stylized-concept. Create ONE production decorative background asset for a 412x412 circular monitor, square canvas, no collage, polished detailed original premium gaming illustration. All artwork contained within a circle nearly filling the square; very thin dark gunmetal circular rim, outer corners pure black. Absolutely NO TEXT, LETTERS, NUMBERS, CLOCKS, LIVE READINGS, GAUGES, PANELS, WATERMARKS or BRANDING. We add all live information separately as editable widgets. Subject remains recognizable at 412 pixels. Scene: Luxurious abstract flowing liquid forms with luminous cyan, electric blue, violet, hot pink and orange, silky fluid folds curling diagonally around dark center. Vivid sculptural flowing shapes concentrated at top-right and left-middle edges; center and bottom quarter dark enough for a white clock and metrics."
+  },
+  {
+    "number": 41,
+    "file": "minecraft-vibes.png",
+    "original": "exec-6da0b9af-3541-41ea-a9da-152768f1b654.png",
+    "tool": "built-in image_gen",
+    "prompt": "Use case: stylized-concept. Create ONE production decorative background asset for a 412x412 circular monitor, square canvas, no collage, polished detailed original premium gaming illustration. All artwork contained within a circle nearly filling the square; very thin dark gunmetal circular rim, outer corners pure black. Absolutely NO TEXT, LETTERS, NUMBERS, CLOCKS, LIVE READINGS, GAUGES, PANELS, WATERMARKS or BRANDING. We add all live information separately as editable widgets. Subject remains recognizable at 412 pixels. Scene: Original charming voxel-art grassy world made of small square blocks, blocky green trees and terraced brown dirt islands, blue sky with blocky white clouds. No official Minecraft textures, characters, logos or inventory UI. Landscape centered y=35%-71%, deep blue upper quarter and dark block terrain bottom quarter."
+  },
+  {
+    "number": 42,
+    "file": "survival-camp.png",
+    "original": "exec-a305b270-e16f-4782-bf12-970012679e26.png",
+    "tool": "built-in image_gen",
+    "prompt": "Use case: stylized-concept. Create ONE production decorative background asset for a 412x412 circular monitor, square canvas, no collage, polished detailed original premium gaming illustration. All artwork contained within a circle nearly filling the square; very thin dark gunmetal circular rim, outer corners pure black. Absolutely NO TEXT, LETTERS, NUMBERS, CLOCKS, LIVE READINGS, GAUGES, PANELS, WATERMARKS or BRANDING. We add all live information separately as editable widgets. Subject remains recognizable at 412 pixels. Scene: Cozy original triangular orange tent in a dark forest campsite, warm campfire at front right, pine tree silhouettes, sparkling deep blue starry night, peaceful wilderness. Tent and campfire middle y=40%-72%. Quiet upper quarter sky, dark bottom quarter."
+  },
+  {
+    "number": 44,
+    "file": "winter-snow.png",
+    "original": "exec-d2cca8ed-4729-434c-8200-78c28561816c.png",
+    "tool": "built-in image_gen",
+    "prompt": "Use case: stylized-concept. Create ONE production decorative background asset for a 412x412 circular monitor, square canvas, no collage, polished detailed original premium gaming illustration. All artwork contained within a circle nearly filling the square; very thin dark gunmetal circular rim, outer corners pure black. Absolutely NO TEXT, LETTERS, NUMBERS, CLOCKS, LIVE READINGS, GAUGES, PANELS, WATERMARKS or BRANDING. We add all live information separately as editable widgets. Subject remains recognizable at 412 pixels. Scene: Beautiful cozy snow-covered wooden cabin, golden warm windows, snow-laden pine trees and distant mountains, deep blue winter night with tiny stars. Cabin centered y=43%-72%. Quiet dark navy upper quarter, dark blue snow bottom quarter. Detailed original illustration."
+  },
+  {
+    "number": 45,
+    "file": "summer-beach.png",
+    "original": "exec-562e2e9d-4501-4cd7-95bc-c15765e1c07d.png",
+    "tool": "built-in image_gen",
+    "prompt": "Use case: stylized-concept. Create ONE production decorative background asset for a 412x412 circular monitor, square canvas, no collage, polished detailed original premium gaming illustration. All artwork contained within a circle nearly filling the square; very thin dark gunmetal circular rim, outer corners pure black. Absolutely NO TEXT, LETTERS, NUMBERS, CLOCKS, LIVE READINGS, GAUGES, PANELS, WATERMARKS or BRANDING. We add all live information separately as editable widgets. Subject remains recognizable at 412 pixels. Scene: Tropical sunset beach with black palm silhouettes framing left and right, huge warm orange setting sun centered y=48%-65%, pink orange violet sky, calm reflective water. Quiet warm purple upper quarter, dark violet lower quarter. Original luxurious travel illustration."
+  },
+  {
+    "number": 46,
+    "file": "galaxy-core.png",
+    "original": "exec-9774f875-099e-4b53-94fc-93f4c602f22e.png",
+    "tool": "built-in image_gen",
+    "prompt": "Use case: stylized-concept. Create ONE production decorative background asset for a 412x412 circular monitor, square canvas, no collage, polished detailed original premium gaming illustration. All artwork contained within a circle nearly filling the square; very thin dark gunmetal circular rim, outer corners pure black. Absolutely NO TEXT, LETTERS, NUMBERS, CLOCKS, LIVE READINGS, GAUGES, PANELS, WATERMARKS or BRANDING. We add all live information separately as editable widgets. Subject remains recognizable at 412 pixels. Scene: Spectacular original spiral galaxy swirling in violet magenta and electric blue, bright luminous core centered at x=52% y=41%, fine star dust and cosmic nebula clouds across middle y=20%-65%. Deep navy black corners and dark bottom third for metrics."
+  },
+  {
+    "number": 49,
+    "file": "abstract-waves.png",
+    "original": "exec-ff700511-b16a-4208-bb15-49560a221602.png",
+    "tool": "built-in image_gen",
+    "prompt": "Use case: stylized-concept. Create ONE production decorative background asset for a 412x412 circular monitor, square canvas, no collage, polished detailed original premium gaming illustration. All artwork contained within a circle nearly filling the square; very thin dark gunmetal circular rim, outer corners pure black. Absolutely NO TEXT, LETTERS, NUMBERS, CLOCKS, LIVE READINGS, GAUGES, PANELS, WATERMARKS or BRANDING. We add all live information separately as editable widgets. Subject remains recognizable at 412 pixels. Scene: Original flowing fine neon ribbon waves, electric blue at left curling into violet and hot pink at right, soft luminous trails crossing through middle y=40%-63%. Black background with no objects. Quiet black upper quarter and bottom quarter, elegant high-end abstract light painting."
+  }
+]

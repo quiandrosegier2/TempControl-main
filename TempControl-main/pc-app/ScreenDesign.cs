@@ -9,7 +9,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 
 [TypeConverter(typeof(WidgetKindConverter))]
-enum WidgetKind { Text, CpuTemperature, GpuTemperature, Fps, Time, Date, CpuLoad, GpuLoad, MemoryLoad, Rectangle, Ellipse, ProgressBar, CpuClock, GpuClock, HistoryGraph, CircularGauge, AnalogClock, Panel, WeatherTemperature, WeatherIcon }
+enum WidgetKind { Text, CpuTemperature, GpuTemperature, Fps, Time, Date, CpuLoad, GpuLoad, MemoryLoad, Rectangle, Ellipse, ProgressBar, CpuClock, GpuClock, HistoryGraph, CircularGauge, AnalogClock, Panel, WeatherTemperature, WeatherIcon, ThermalFace }
 enum BackgroundFit { Cover, Contain, Stretch }
 
 static class WidgetLabels
@@ -17,7 +17,7 @@ static class WidgetLabels
     public static string Title(WidgetKind kind) => kind switch {
         WidgetKind.Text=>"Eigen tekst",WidgetKind.CpuTemperature=>"CPU-temperatuur",WidgetKind.GpuTemperature=>"GPU-temperatuur",WidgetKind.Fps=>"FPS",
         WidgetKind.Time=>"Klok",WidgetKind.Date=>"Datum",WidgetKind.CpuLoad=>"CPU-belasting (%)",WidgetKind.GpuLoad=>"GPU-belasting (%)",WidgetKind.MemoryLoad=>"Geheugengebruik (%)",
-        WidgetKind.Rectangle=>"Rechthoek",WidgetKind.Ellipse=>"Cirkel / ovaal",WidgetKind.ProgressBar=>"Voortgangsbalk",WidgetKind.CpuClock=>"CPU-kloksnelheid (MHz)",WidgetKind.GpuClock=>"GPU-kloksnelheid (MHz)",WidgetKind.HistoryGraph=>"Historiegrafiek",WidgetKind.CircularGauge=>"Ronde meter",WidgetKind.AnalogClock=>"Analoge klok",WidgetKind.Panel=>"Paneel",WidgetKind.WeatherTemperature=>"Weertemperatuur",WidgetKind.WeatherIcon=>"Weerpictogram",_=>kind.ToString()
+        WidgetKind.Rectangle=>"Rechthoek",WidgetKind.Ellipse=>"Cirkel / ovaal",WidgetKind.ProgressBar=>"Voortgangsbalk",WidgetKind.CpuClock=>"CPU-kloksnelheid (MHz)",WidgetKind.GpuClock=>"GPU-kloksnelheid (MHz)",WidgetKind.HistoryGraph=>"Historiegrafiek",WidgetKind.CircularGauge=>"Ronde meter",WidgetKind.AnalogClock=>"Analoge klok",WidgetKind.Panel=>"Paneel",WidgetKind.WeatherTemperature=>"Weertemperatuur",WidgetKind.WeatherIcon=>"Weerpictogram",WidgetKind.ThermalFace=>"Temperatuurgezicht",_=>kind.ToString()
     };
 }
 sealed class WidgetKindConverter() : EnumConverter(typeof(WidgetKind))
@@ -34,6 +34,8 @@ sealed class WidgetKindConverter() : EnumConverter(typeof(WidgetKind))
 
 sealed class ScreenWidget
 {
+    [Category("Meter"),DisplayName("Volledige regenboog")] public bool Rainbow {get;set;}
+    [Category("Inhoud"),DisplayName("Klokteken (-1 = alles)")] public int ClockCharacter {get;set;}=-1;
     [Category("Inhoud"),DisplayName("Naam")] public string Name { get; set; } = "Tekst";
     [Category("Inhoud"),DisplayName("Elementtype")] public WidgetKind Kind { get; set; }
     [Category("Inhoud"),DisplayName("Tekst / opmaak"), Description("Gebruik {value} voor de meetwaarde. Voor klok en datum bijvoorbeeld HH:mm:ss of dd-MM-yyyy.")]
@@ -250,7 +252,7 @@ sealed class DesignRenderer : IDisposable
             var value = readings.Value(w.Kind);
             var color = w.TemperatureColors && w.Kind is WidgetKind.CpuTemperature or WidgetKind.GpuTemperature
                 ? value is null ? Color.Gray : value > 50 ? Color.FromArgb(255,70,60) : Color.FromArgb(60,190,255) : w.Foreground;
-            var source=w.Kind is WidgetKind.ProgressBar or WidgetKind.HistoryGraph or WidgetKind.CircularGauge?w.BarSource:w.Kind;
+            var source=w.Kind is WidgetKind.ProgressBar or WidgetKind.HistoryGraph or WidgetKind.CircularGauge or WidgetKind.ThermalFace?w.BarSource:w.Kind;
             color=PremiumDrawing.ColorFor(w,readings.Value(source),color,readings.Now,design.AnimationsEnabled);
             var alert=readings.Alerts?.FirstOrDefault(a=>a.Sensor==source);
             if(alert!=null)color=Color.FromArgb(alert.ColorArgb);
@@ -287,6 +289,7 @@ sealed class DesignRenderer : IDisposable
             {
                 text = w.Kind is WidgetKind.Time or WidgetKind.Date ? readings.Now.ToString(w.Format, CultureInfo.CurrentCulture)
                     : w.Kind == WidgetKind.Text ? w.Format : w.Format.Replace("{value}", value?.ToString(w.Kind is WidgetKind.CpuTemperature or WidgetKind.GpuTemperature ? "0.0" : "0", CultureInfo.CurrentCulture) ?? "--");
+                if(w.Kind is WidgetKind.Time or WidgetKind.Date&&w.ClockCharacter>=0)text=w.ClockCharacter<text.Length?text[w.ClockCharacter].ToString():"";
             }
             catch (FormatException) { text = "Ongeldige opmaak"; }
             var style = (w.Bold ? FontStyle.Bold : FontStyle.Regular) | (w.Italic ? FontStyle.Italic : FontStyle.Regular);

@@ -45,6 +45,28 @@ static class Program
             using var editor=new DesignWindow(output,()=>{},PremiumTemplates.All[0].Design,_=>{});editor.Show();Application.DoEvents();using var capture2=new Bitmap(editor.Width,editor.Height);editor.DrawToBitmap(capture2,new Rectangle(Point.Empty,capture2.Size));capture2.Save(Path.Combine(output,"editor.png"));editor.Close();
             string profile=new ProfileRepository(output).Add(PremiumTemplates.All[20].Design);new StudioConfiguration{ManualProfileId=profile}.Save(output);using var main=new SettingsWindow(output);var active=(ScreenDesign?)typeof(SettingsWindow).GetField("ownPreview",System.Reflection.BindingFlags.Instance|System.Reflection.BindingFlags.NonPublic)!.GetValue(main);Check(active?.Name=="Tactical FPS","Main window did not preview the chosen template profile");
         }
+        if(limit==21)
+        {
+            using var shell=new StudioShellWindow(output);shell.Show();
+            for(int n=0;n<160;n++){Application.DoEvents();Thread.Sleep(25);}
+            var flags=System.Reflection.BindingFlags.Instance|System.Reflection.BindingFlags.NonPublic;
+            var home=(TemplatesWindow)typeof(StudioShellWindow).GetField("gallery",flags)!.GetValue(shell)!;
+            Check(home.Visible&&!home.TopLevel&&home.LoadedCount>=21,"Shell must start with embedded gallery without login");
+            typeof(StudioShellWindow).GetMethod("NewDesign",flags)!.Invoke(shell,null);Application.DoEvents();
+            var designer=(DesignWindow)typeof(StudioShellWindow).GetField("editor",flags)!.GetValue(shell)!;
+            Check(designer.Visible&&!designer.TopLevel,"Designer opened an independent window");
+            var name=(TextBox)typeof(DesignWindow).GetField("name",flags)!.GetValue(designer)!;name.Text="Niet opgeslagen ontwerp";Check(designer.HasUnsavedChanges,"A pending name edit was not protected");
+            typeof(StudioShellWindow).GetMethod("Home",flags)!.Invoke(shell,null);Application.DoEvents();
+            Check(!designer.IsDisposed&&ReferenceEquals(designer,typeof(StudioShellWindow).GetField("editor",flags)!.GetValue(shell)),"Back navigation discarded the editor");
+            Check(designer.HasUnsavedChanges&&name.Text=="Niet opgeslagen ontwerp","Back lost unsaved work");designer.SaveForNavigation();
+            var template=NeonTemplates.All[22];int originalX=template.Design.Widgets[0].X;
+            typeof(StudioShellWindow).GetMethod("Preview",flags)!.Invoke(shell,[template,false]);Application.DoEvents();
+            var preview=(TemplatePreviewWindow)typeof(StudioShellWindow).GetField("transient",flags)!.GetValue(shell)!;Check(preview.Visible&&!preview.TopLevel,"Preview opened outside the shell");preview.EditRequested!();Application.DoEvents();
+            var copyEditor=(DesignWindow)typeof(StudioShellWindow).GetField("editor",flags)!.GetValue(shell)!;var copy=(ScreenDesign)typeof(DesignWindow).GetField("design",flags)!.GetValue(copyEditor)!;copy.Widgets[0].X++;copyEditor.SaveForNavigation();Check(template.Design.Widgets[0].X==originalX,"Editing a copy changed the official template");
+            typeof(StudioShellWindow).GetMethod("Home",flags)!.Invoke(shell,null);Application.DoEvents();
+            using var capture=new Bitmap(shell.Width,shell.Height);shell.DrawToBitmap(capture,new Rectangle(Point.Empty,capture.Size));capture.Save(Path.Combine(output,"studio-shell.png"));
+            shell.Close();Console.WriteLine("PASS: shell opens gallery without login, internal designer and back preserves editor.");
+        }
         Console.WriteLine("PASS: premium batch "+limit+", original artwork, color rules, opacity, weather fallback and UI.");
     }
 }

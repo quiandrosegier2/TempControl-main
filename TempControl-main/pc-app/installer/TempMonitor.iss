@@ -4,7 +4,7 @@
 #define AppName "Qscreen"
 #define PreviewFrameCount 40
 #ifndef AppVersion
-  #define AppVersion "2.2.0-rc.1"
+  #define AppVersion "2.3.0-rc.1"
 #endif
 
 [Setup]

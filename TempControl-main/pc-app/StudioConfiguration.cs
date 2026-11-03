@@ -3,7 +3,7 @@ using System.Text.Json;
 
 enum ProfileTrigger { Foreground, Running, Idle }
 enum PageTransition { Cut, Fade, Slide, Zoom }
-enum PageAnimation { None, Orbit, Radar, Stars, Pulse, Waves, DigitalRain, Aurora, CityLights, PixelStars, Smoke }
+enum PageAnimation { None, Orbit, Radar, Stars, Pulse, Waves, DigitalRain, Aurora, CityLights, PixelStars, Smoke, Bubbles, Embers, Steam, Scanlines, Snow }
 enum TemplateCategory { Gaming, Minimal, Cyberpunk, Productivity, Hardware, Clock, Animated, Retro, Nature, SciFi }
 enum AlertCondition { Above, Below, Unavailable, Disconnected }
 

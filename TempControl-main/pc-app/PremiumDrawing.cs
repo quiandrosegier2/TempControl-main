@@ -17,6 +17,7 @@ static class PremiumDrawing
 {
     public static void Validate(ScreenWidget w)
     {
+        if(w.ClockCharacter is <-1 or >31)throw new InvalidDataException("Klokteken moet -1 tot 31 zijn.");
         if(!Enum.IsDefined(w.Motion)||!Enum.IsDefined(w.PanelShape)||w.Opacity is <0 or >100||!float.IsFinite(w.MotionSpeed)||w.MotionSpeed is <0.1f or >5||!float.IsFinite(w.StrokeWidth)||w.StrokeWidth is <1 or >50||!float.IsFinite(w.StartAngle)||Math.Abs(w.StartAngle)>3600||!float.IsFinite(w.SweepAngle)||w.SweepAngle is <1 or >360||w.Segments is <0 or >120||w.ColorRules==null||w.ColorRules.Count>16||w.ColorRules.Any(r=>r==null||!float.IsFinite(r.Minimum)))throw new InvalidDataException("Ongeldige meter, kleurregel of animatie.");
     }
     public static Color Alpha(Color c,int opacity)=>Color.FromArgb(c.A*Math.Clamp(opacity,0,100)/100,c.R,c.G,c.B);
@@ -33,6 +34,19 @@ static class PremiumDrawing
     public static bool Draw(Graphics g,ScreenWidget w,RectangleF b,ScreenReadings r,Color c,bool animated,float? eased=null)
     {
         using var brush=new SolidBrush(c);using var fill=new SolidBrush(Alpha(w.Fill,w.Opacity));
+        if(w.Kind==WidgetKind.ThermalFace)
+        {
+            float? temperature=r.Value(w.BarSource);int mood=temperature==null?-1:temperature>=80?2:temperature>=60?1:0;
+            using var face=new SolidBrush(Alpha(mood==2?Color.OrangeRed:w.Fill,w.Opacity));using var path=StudioTheme.Rounded(b,10);g.FillPath(face,path);
+            using var ink=new Pen(c,Math.Max(2,b.Width/27)){StartCap=LineCap.Round,EndCap=LineCap.Round};
+            float x=b.X,y=b.Y,s=b.Width,h=b.Height;
+            g.DrawLine(ink,x+s*.2f,y+h*.4f,x+s*.3f,y+h*.4f);g.DrawLine(ink,x+s*.7f,y+h*.4f,x+s*.8f,y+h*.4f);
+            if(mood>=1){g.DrawLine(ink,x+s*.15f,y+h*.2f,x+s*.36f,y+h*.3f);g.DrawLine(ink,x+s*.64f,y+h*.3f,x+s*.85f,y+h*.2f);}
+            if(mood<0)g.DrawLine(ink,x+s*.32f,y+h*.69f,x+s*.68f,y+h*.69f);
+            else if(mood==0)g.DrawArc(ink,x+s*.28f,y+h*.43f,s*.44f,h*.4f,0,180);
+            else g.DrawArc(ink,x+s*.28f,y+h*.64f,s*.44f,h*.3f,180,180);
+            return true;
+        }
         if(w.Kind==WidgetKind.Panel)
         {
             using var path=w.PanelShape==PanelShape.Angular?Angular(b):StudioTheme.Rounded(b,14);
@@ -45,10 +59,10 @@ static class PremiumDrawing
             float angle=w.StartAngle+(animated&&w.Motion==WidgetMotion.Rotate?(float)(r.Now.TimeOfDay.TotalSeconds*w.MotionSpeed*25%360):0);
             using var track=new Pen(Alpha(w.Fill,w.Opacity),stroke);using var pen=new Pen(c,stroke){StartCap=LineCap.Round,EndCap=LineCap.Round};
             float? value=r.Value(w.BarSource);float fraction=eased??Math.Clamp((value??0)/Math.Max(1,w.Maximum),0,1);
-            if(w.Motion==WidgetMotion.RgbCycle)
+            if(w.Rainbow||w.Motion==WidgetMotion.RgbCycle)
             {
                 g.DrawArc(track,b,angle,w.SweepAngle);float phase=animated?(float)(r.Now.TimeOfDay.TotalSeconds*w.MotionSpeed*.1%1):0;
-                using var spectrum=new Pen(c,stroke);for(int i=0;i<72*fraction;i++){float t=(i/72f+phase)%1;Color channel=t<.5f?Mix(w.Foreground,w.Accent,t*2):Mix(w.Accent,w.Foreground,(t-.5f)*2);spectrum.Color=Alpha(channel,w.Opacity);g.DrawArc(spectrum,b,angle+w.SweepAngle*i/72,w.SweepAngle/72+1);}
+                using var spectrum=new Pen(c,stroke);for(int i=0;i<72*fraction;i++){float t=(i/72f+phase)%1;Color channel=w.Rainbow?Spectrum(t):t<.5f?Mix(w.Foreground,w.Accent,t*2):Mix(w.Accent,w.Foreground,(t-.5f)*2);spectrum.Color=Alpha(channel,w.Opacity);g.DrawArc(spectrum,b,angle+w.SweepAngle*i/72,w.SweepAngle/72+1);}
             }
             else if(w.Segments==0){g.DrawArc(track,b,angle,w.SweepAngle);if(fraction>0)g.DrawArc(pen,b,angle,w.SweepAngle*fraction);}
             else for(int i=0;i<w.Segments;i++){float sweep=w.SweepAngle/w.Segments;using var segment=new Pen(i<Math.Floor(fraction*w.Segments)?Mix(c,Alpha(w.Accent,w.Opacity),(float)i/Math.Max(1,w.Segments-1)):track.Color,stroke);g.DrawArc(segment,b,angle+i*sweep,Math.Max(.1f,sweep*.72f));}
@@ -75,9 +89,24 @@ static class PremiumDrawing
     static GraphicsPath Angular(RectangleF b){var p=new GraphicsPath();float d=Math.Min(14,Math.Min(b.Width,b.Height)/3);p.AddPolygon(new PointF[]{new(b.X+d,b.Y),new(b.Right,b.Y),new(b.Right,b.Bottom-d),new(b.Right-d,b.Bottom),new(b.X,b.Bottom),new(b.X,b.Y+d)});return p;}
     public static bool Animation(Graphics g,PageAnimation type,double phase)
     {
-        if(type==PageAnimation.Waves||type==PageAnimation.Aurora)
+        if(type is PageAnimation.Snow or PageAnimation.Embers or PageAnimation.Bubbles)
         {
-            for(int band=0;band<5;band++){using var pen=new Pen(Color.FromArgb(type==PageAnimation.Aurora?55:85,band%2==0?Color.MediumPurple:Color.Cyan),type==PageAnimation.Aurora?14:2);var points=Enumerable.Range(0,53).Select(i=>new PointF(i*8,230+band*16+(float)Math.Sin(i*.12+phase*.6+band)*35+(float)Math.Cos(i*.09-phase*.4)*20)).ToArray();g.DrawCurve(pen,points);}
+            for(int i=0;i<28;i++)
+            {
+                float x=(float)((i*79+Math.Sin(phase*.7+i)*12+450)%412);
+                float y=(float)(((i*53+phase*(type==PageAnimation.Snow?19:-23))%470+470)%470)-28;
+                float radius=type==PageAnimation.Bubbles?3+i%4:1+i%2;
+                using var pen=new Pen(Color.FromArgb(95,type==PageAnimation.Embers?Color.Orange:type==PageAnimation.Snow?Color.White:Color.Cyan),1);
+                if(type==PageAnimation.Bubbles)g.DrawEllipse(pen,x,y,radius*2,radius*2);else{using var dot=new SolidBrush(pen.Color);g.FillEllipse(dot,x,y,radius*2,radius*2);}
+            }
+        }
+        else if(type==PageAnimation.Scanlines)
+        {using var pen=new Pen(Color.FromArgb(35,Color.Cyan),1);for(int i=0;i<18;i++){float y=(float)((phase*26+i*24)%440)-14;g.DrawLine(pen,45,y,367,y);}}
+        else if(type==PageAnimation.Steam)
+        {for(int band=0;band<3;band++){using var pen=new Pen(Color.FromArgb(45,Color.Bisque),3);var points=Enumerable.Range(0,15).Select(i=>new PointF(166+band*36+(float)Math.Sin(i*.4+phase+band)*10,180-i*7)).ToArray();g.DrawCurve(pen,points);}}
+        else if(type==PageAnimation.Waves||type==PageAnimation.Aurora)
+        {
+            for(int band=0;band<5;band++){bool aurora=type==PageAnimation.Aurora;using var pen=new Pen(Color.FromArgb(aurora?24:70,band%2==0?Color.MediumPurple:Color.Cyan),aurora?10:2);var points=Enumerable.Range(0,53).Select(i=>new PointF(i*8,(aurora?150:230)+band*16+(float)Math.Sin(i*.12+phase*.6+band)*35+(float)Math.Cos(i*.09-phase*.4)*20)).ToArray();g.DrawCurve(pen,points);}
         }
         else if(type==PageAnimation.DigitalRain)
         {using var font=new Font("Consolas",11,FontStyle.Regular,GraphicsUnit.Pixel);for(int col=0;col<23;col++)for(int row=0;row<7;row++){int y=(int)((phase*28+col*47+row*17)%470)-30;using var b=new SolidBrush(Color.FromArgb(25+row*16,40,255,125));g.DrawString(((col*7+row)%10).ToString(),font,b,col*19,y);}}
@@ -87,5 +116,10 @@ static class PremiumDrawing
         {for(int i=0;i<8;i++){using var b=new SolidBrush(Color.FromArgb(8,160,170,185));float x=(float)((phase*8+i*65)%550)-80;g.FillEllipse(b,x,220+(float)Math.Sin(phase*.3+i)*40,150,80);}}
         else return false;
         return true;
+    }
+    static Color Spectrum(float t)
+    {
+        Color[] colors=[Color.Red,Color.Yellow,Color.Lime,Color.Cyan,Color.Blue,Color.Magenta,Color.Red];
+        float p=(t%1)*6;int index=(int)p;return Mix(colors[index],colors[index+1],p-index);
     }
 }
