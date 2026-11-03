@@ -156,7 +156,7 @@ static class AdvancedMonitor
 {
     public static async Task RunAsync(string directory,Func<ScreenReadings> readSensors,string? fixedPort=null,CancellationToken cancellation=default)
     {
-        var profiles=new ProfileRepository(directory);var selector=new ProfileEngine();var history=new SensorHistory();
+        var profiles=new ProfileRepository(directory);var selector=new ProfileEngine();var history=new SensorHistory();var sampler=new SensorSampler(readSensors,Log.Write);
         var workers=new Dictionary<string,DeviceWorker>();var states=new ConcurrentDictionary<string,DeviceRuntimeStatus>();
         var config=new StudioConfiguration();DateTime configTime=DateTime.MinValue,nextDiscovery=DateTime.MinValue,nextHistory=DateTime.MinValue,nextStatus=DateTime.MinValue,lastSample=DateTime.MinValue;
         var designs=new Dictionary<string,(DateTime Time,ScreenDesign Design,string Revision)>();using var notifications=new DesktopAlerts();
@@ -167,7 +167,7 @@ static class AdvancedMonitor
                 DateTime now=DateTime.UtcNow;
                 try{var modified=File.GetLastWriteTimeUtc(StudioConfiguration.PathIn(directory));if(modified!=configTime){config=StudioConfiguration.Load(directory);configTime=modified;}}
                 catch(Exception ex)when(ex is IOException or InvalidDataException or JsonException or ArgumentException){Log.Write("Studio-instellingen: "+ex.Message);}
-                var activity=ActivitySnapshot.Capture();var readings=readSensors() with{History=history};
+                var activity=ActivitySnapshot.Capture();var readings=sampler.Read(DateTime.Now) with{History=history};
                 if(now-lastSample>=TimeSpan.FromSeconds(config.SamplingSeconds)){history.Add(readings);lastSample=now;}
                 string automatic=selector.Select(config,activity,now,profiles.Exists);
                 if(now>=nextDiscovery)

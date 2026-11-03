@@ -106,6 +106,7 @@ sealed class AdvancedStudioWindow : Form
                 int index=Array.IndexOf(ids,current);if(devices.Items.Count>0)devices.SelectedIndex=Math.Max(0,index);
             }
             var selected=SelectedRuntime();if(selected!=null)deviceStatus.Text=$"{selected.Name} · {selected.Port} · {(selected.Connected?"Verbonden":"Niet verbonden")}\nFirmware: {selected.Firmware}\nProfiel: {selected.ProfileName} · pagina {selected.Page+1}/{selected.PageCount}\n{selected.Message}";
+            liveBrightness.Enabled=selected is {Connected:true,AdvancedControls:true};
             devices.Invalidate();
         }
         catch(Exception ex)when(ex is IOException or JsonException){ }
@@ -117,7 +118,7 @@ sealed class AdvancedStudioWindow : Form
         selectedDevice=config.Devices.FirstOrDefault(d=>d.DeviceId==item.DeviceId||!string.IsNullOrEmpty(item.UsbId)&&d.DeviceId==item.UsbId);
         if(selectedDevice==null){selectedDevice=new(){DeviceId=item.DeviceId,Name=item.Name};config.Devices.Add(selectedDevice);}
         selectedDevice.DeviceId=item.DeviceId;
-        updating=true;deviceProperties.SelectedObject=selectedDevice;deviceProfile.SelectedValue=string.IsNullOrEmpty(selectedDevice.ProfileId)?"legacy":selectedDevice.ProfileId;brightness.Value=Math.Clamp(selectedDevice.Brightness.Manual,0,100);liveBrightness.Enabled=item.AdvancedControls;updating=false;
+        updating=true;deviceProperties.SelectedObject=selectedDevice;deviceProfile.SelectedValue=string.IsNullOrEmpty(selectedDevice.ProfileId)?"legacy":selectedDevice.ProfileId;brightness.Value=Math.Clamp(selectedDevice.Brightness.Manual,0,100);liveBrightness.Enabled=item.Connected&&item.AdvancedControls;updating=false;
     }
     void Navigate(int direction)
     {

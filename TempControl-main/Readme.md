@@ -1,6 +1,6 @@
 # Qscreen
 
-**Qscreen Studio 2.0.0-rc.1** is de nieuwe testversie met automatische profielen, meerdere pagina's, touchbediening, sensorgrafieken, lokale DesignHub, helderheidsplanning, waarschuwingen en meerdere schermen. Lees de [handleiding en teststatus](QSCREEN-2.0-GUIDE.md). [Versie 1.6.0](https://github.com/quiandrosegier2/TempControl-main/releases/tag/v1.6.0) blijft stabiel; [2.0.0-rc.1](https://github.com/quiandrosegier2/TempControl-main/releases/tag/v2.0.0-rc.1) is een prerelease. De onderstaande basisinstructies blijven gelden; touch en helderheid vereisen de nieuwe firmware.
+**Qscreen Studio 2.0.0-rc.2** is de nieuwe testversie met automatische profielen, meerdere pagina's, touchbediening, sensorgrafieken, lokale DesignHub, helderheidsplanning, waarschuwingen en meerdere schermen. Lees de [handleiding en teststatus](QSCREEN-2.0-GUIDE.md). [Versie 1.6.0](https://github.com/quiandrosegier2/TempControl-main/releases/tag/v1.6.0) blijft stabiel; [2.0.0-rc.2](https://github.com/quiandrosegier2/TempControl-main/releases/tag/v2.0.0-rc.2) is een prerelease. De onderstaande basisinstructies blijven gelden; touch en helderheid vereisen de nieuwe firmware.
 
 Rond systeemmonitor-scherm voor de pc. Een **Waveshare ESP32-S3-Touch-LCD-1.46** toont **CPU-temperatuur, GPU-temperatuur en FPS**, die via **USB-C** van Windows binnenkomen.
 

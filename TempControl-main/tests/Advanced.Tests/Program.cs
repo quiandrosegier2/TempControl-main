@@ -13,6 +13,13 @@ static class Program
         Application.SetUnhandledExceptionMode(UnhandledExceptionMode.ThrowException);
         string directory=Path.Combine(Path.GetFullPath(args[0]),"run-"+Guid.NewGuid().ToString("N"));Directory.CreateDirectory(directory);Console.WriteLine("Artifacts: "+directory);
         DateTime now=new(2026,11,3,12,0,0,DateTimeKind.Utc);
+        bool sensorFailure=true;var sensorLogs=new List<string>();
+        var sampler=new SensorSampler(()=>sensorFailure?throw new IOException("Temporary driver failure"):ScreenReadings.Demo,sensorLogs.Add);
+        Assert(sampler.Read(now).Cpu==null&&sampler.Read(now).Fps==null,"Failed sampler reused stale readings");
+        Assert(sensorLogs.Count==1,"Repeated driver failure flooded the log");
+        sensorFailure=false;Assert(sampler.Read(now).Cpu==42&&sensorLogs.Count==2,"Sampler did not recover");
+        sampler.Read(now);Assert(sensorLogs.Count==2,"Healthy sampling logged repeatedly");
+        sensorFailure=true;sampler.Read(now);Assert(sensorLogs.Count==3,"New failure was not logged after recovery");
         bool Exists(string id)=>id is "legacy" or "gaming" or "clock";
         var config=new StudioConfiguration{AutomaticProfiles=true,SwitchDelaySeconds=3,Rules=[new(){Trigger=ProfileTrigger.Running,Executable="Warzone.exe",ProfileId="gaming"},new(){Trigger=ProfileTrigger.Idle,IdleSeconds=60,ProfileId="clock",Priority=20}]};
         var selector=new ProfileEngine();var normal=new ActivitySnapshot("code",new HashSet<string>(),TimeSpan.Zero);
