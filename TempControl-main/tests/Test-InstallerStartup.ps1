@@ -6,6 +6,13 @@ $installer = Join-Path $project 'pc-app\installer'
 $cache = Join-Path $installer 'tool-cache\startup-tests'
 New-Item -ItemType Directory -Path $cache -Force | Out-Null
 $source = Get-Content (Join-Path $installer 'TempMonitor.iss') -Raw
+$appManifest = [xml](Get-Content (Join-Path $project 'pc-app\app.manifest') -Raw)
+$executionLevel = $appManifest.SelectSingleNode("//*[local-name()='requestedExecutionLevel']").GetAttribute('level')
+$appLaunch = [regex]::Match($source, '(?m)^Filename: "\{app\}\\Qscreen\.exe";.*$').Value
+if ($executionLevel -eq 'requireAdministrator' -and $appLaunch -notmatch '\bFlags:[^\r\n]*\brunascurrentuser\b') {
+    throw 'Qscreen requires elevation: the postinstall launch must inherit Setup privileges to avoid error 740.'
+}
+Write-Output 'PASS: postinstall privileges match the Qscreen administrator manifest.'
 $source = $source.Replace('PrivilegesRequired=admin', 'PrivilegesRequired=lowest')
 $source = $source.Replace('DefaultDirName={autopf}\TempMonitor', 'DefaultDirName=' + $cache + '\fresh')
 $source = $source.Replace('DisableDirPage=yes', "DisableDirPage=yes`r`nUsePreviousAppDir=no")

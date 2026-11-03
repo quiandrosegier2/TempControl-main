@@ -1,10 +1,10 @@
 # Qscreen Studio 2.0 — testversie
 
-Deze uitbreiding bouwt voort op de bestaande Windows-app, ontwerper en 31 ingebouwde layouts. De eerste uitgave is **2.0.0-rc.2**: een publieke testversie. Versie 1.6.0 blijft de stabiele download.
+Deze uitbreiding bouwt voort op de bestaande Windows-app, ontwerper en 31 ingebouwde layouts. De eerste uitgave is **2.0.0-rc.3**: een publieke testversie. Versie 1.6.0 blijft de stabiele download.
 
 ## Beginnen
 
-Installeer `Qscreen-2.0.0-rc.2.exe` en open **Qscreen** via Start. Open **Profielen & apparaten** voor het nieuwe Studio-beheer. De achtergrondmeting blijft actief als je het venster sluit. Ontwerpen en instellingen staan op de pc; de USB-verbinding blijft nodig.
+Installeer `Qscreen-2.0.0-rc.3.exe` en open **Qscreen** via Start. Open **Profielen & apparaten** voor het nieuwe Studio-beheer. De achtergrondmeting blijft actief als je het venster sluit. Ontwerpen en instellingen staan op de pc; de USB-verbinding blijft nodig.
 
 Voor touchscreenbediening, helderheid en de energiebesparende verbinding is de meegeleverde firmware 2.0 nodig. Open **Firmware installeren**, kies bewust de COM-poort van een Waveshare ESP32-S3-Touch-LCD-1.46 en bevestig de upload. De app kiest geen poort voor je. Uploaden vervangt de firmware op dat apparaat. Bestaande firmware 1.5.1 blijft eenvoudige eigen ontwerpen ontvangen; de app toont welke geavanceerde functies ontbreken.
 
@@ -53,6 +53,8 @@ Ieder herkend scherm krijgt een onafhankelijke verbinding, naam, profiel, pagina
 Het bestaande hoofdvenster toont de levering aan het primaire scherm. Gebruik **Apparaten** voor de afzonderlijke status van alle schermen. Firmware uploaden blijft een expliciete handeling voor één geselecteerde poort.
 
 ## Bestanden, herstel en teststatus
+
+Rc.3 verhelpt fout 740 bij het openen van Qscreen aan het einde van de installatie. De app neemt daarbij de bestaande beheerdersrechten van Setup over. Na een eerdere fout kun je Qscreen ook via Start openen en de Windows-toestemmingsvraag bevestigen; die startfout op zichzelf vereist geen herinstallatie of firmware-upload.
 
 In rc.2 blijft de achtergrondmeting actief bij tijdelijke sensorfouten. De betreffende meting toont ontbrekende waarden en probeert automatisch opnieuw; het log meldt de fout en het herstel zonder iedere seconde dezelfde fout te herhalen. Directe helderheidsbediening wordt uitgeschakeld zodra een apparaat niet meer verbonden is. De schermfirmware blijft dezelfde 2.0.0-rc.1-build als in de eerste testrelease.
 

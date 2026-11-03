@@ -4,7 +4,7 @@
 #define AppName "Qscreen"
 #define PreviewFrameCount 40
 #ifndef AppVersion
-  #define AppVersion "2.0.0-rc.2"
+  #define AppVersion "2.0.0-rc.3"
 #endif
 
 [Setup]
@@ -76,7 +76,8 @@ Name: "{autodesktop}\Qscreen"; Filename: "{app}\Qscreen.exe"; Parameters: "--set
 Name: "{autoprograms}\Qscreen tools\Firmware installeren"; Filename: "{sys}\WindowsPowerShell\v1.0\powershell.exe"; Parameters: "-NoProfile -STA -ExecutionPolicy Bypass -WindowStyle Hidden -File ""{app}\flash-firmware.ps1"""; WorkingDir: "{app}"
 
 [Run]
-Filename: "{app}\Qscreen.exe"; Parameters: "--settings"; Description: "Qscreen openen: layouts bekijken en kiezen"; Flags: postinstall nowait skipifsilent
+; Qscreen requires elevation. Postinstall otherwise defaults to the original non-elevated user.
+Filename: "{app}\Qscreen.exe"; Parameters: "--settings"; Description: "Qscreen openen: layouts bekijken en kiezen"; Flags: postinstall nowait skipifsilent runascurrentuser
 Filename: "{sys}\WindowsPowerShell\v1.0\powershell.exe"; \
   Parameters: "-NoProfile -STA -ExecutionPolicy Bypass -WindowStyle Hidden -File ""{app}\flash-firmware.ps1"""; \
   Description: "Firmware op het aangesloten Waveshare-scherm installeren (alleen indien nodig)"; Flags: postinstall unchecked skipifsilent waituntilterminated runhidden
