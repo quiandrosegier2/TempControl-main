@@ -168,6 +168,7 @@ static class AdvancedMonitor
                 try{var modified=File.GetLastWriteTimeUtc(StudioConfiguration.PathIn(directory));if(modified!=configTime){config=StudioConfiguration.Load(directory);configTime=modified;}}
                 catch(Exception ex)when(ex is IOException or InvalidDataException or JsonException or ArgumentException){Log.Write("Studio-instellingen: "+ex.Message);}
                 var activity=ActivitySnapshot.Capture();var readings=sampler.Read(DateTime.Now) with{History=history,Weather=weather.Poll(now)};
+                LiveTelemetry.Write(directory,readings);
                 if(now-lastSample>=TimeSpan.FromSeconds(config.SamplingSeconds)){history.Add(readings);lastSample=now;}
                 string automatic=selector.Select(config,activity,now,profiles.Exists);
                 if(now>=nextDiscovery)

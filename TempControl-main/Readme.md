@@ -1,5 +1,7 @@
 # Qscreen
 
+**Premium 100 · 2.4.0-rc.1:** 50 extra layouts (51–100), een galerij met 100 premium ontwerpen en gedeelde live metingen in PC Monitor, ontwerper en groot voorbeeld. De oude collecties blijven beschikbaar. Aanmelden blijft optioneel. [Uitbreiding, bediening en teststatus](EXPANSION-100.md).
+
 **Neon 50 preview · 2.3.0-rc.1:** de app opent direct met 50 nieuwe, bewerkbare layouts op basis van de QPRINTS-poster. De bestaande 21 Studio Originals en 31 firmwarelayouts blijven beschikbaar. Galerij, voorbeeld en ontwerper gebruiken één hoofdvenster; aanmelden is niet verplicht. [Collectie, bediening en teststatus](NEON-50.md).
 
 **Accountpreview 2.2.0-rc.1:** een apart accountvenster zonder beheerdersrechten, veilige sessieopslag en voorbereide Coolify-accountpagina. Registratie en herstel staan nog uit totdat de website en beleids-/toestemmingskoppeling gereed zijn. [Status en handleiding](ACCOUNTS-PREVIEW.md).

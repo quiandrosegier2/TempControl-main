@@ -7,7 +7,9 @@ sealed class StudioShellWindow : Form
 {
     readonly string directory;
     readonly Panel content=new(){Dock=DockStyle.Fill};
-    readonly FlowLayoutPanel navigation=new(){Dock=DockStyle.Top,Height=66,Padding=new(12),WrapContents=false};
+    readonly Panel header=new(){Dock=DockStyle.Top,Height=66};
+    readonly FlowLayoutPanel navigation=new(){Dock=DockStyle.Fill,Padding=new(12),WrapContents=false};
+    readonly FlowLayoutPanel actions=new(){Dock=DockStyle.Right,Width=280,Padding=new(12),WrapContents=false};
     readonly FlowLayoutPanel context=new(){Dock=DockStyle.Top,Height=45,Padding=new(12,2,12,2)};
     readonly Label status=StudioTheme.Label("Kies een layout of maak je eigen ontwerp.",10,false,44);
     readonly TemplatesWindow gallery;
@@ -27,16 +29,18 @@ sealed class StudioShellWindow : Form
         branding.Controls.Add(new Label{Text="Qscreen Studio",Dock=DockStyle.Fill,TextAlign=ContentAlignment.MiddleCenter,ForeColor=StudioTheme.Text,Font=new("Segoe UI",12,FontStyle.Bold)});branding.Controls.Add(mark);navigation.Controls.Add(branding);
         Button(navigation,"Layouts",Home);Button(navigation,"Mijn ontwerpen",()=>Manage("Profielen"));
         Button(navigation,"PC Monitor",()=>Manage("Historie"));Button(navigation,"Apparaten",()=>Manage("Apparaten"));
-        Button(navigation,"+ Eigen ontwerp",NewDesign,true);
+        Button(actions,"+ Eigen ontwerp",NewDesign,true);
         var more=new ContextMenuStrip();
+        var resume=more.Items.Add("Verder met open ontwerp",null,(_,_)=>ResumeDesign());more.Opening+=(_,_)=>resume.Enabled=editor is{IsDisposed:false};
         foreach(string section in new[]{"Automatisch wisselen","Waarschuwingen","Design Hub"})more.Items.Add(section,null,(_,_)=>Manage(section));
         more.Items.Add("Ingebouwde layouts",null,(_,_)=>Cached("legacy",()=>new SettingsWindow()));
-        Button(navigation,"Meer",()=>more.Show(navigation,new Point(navigation.Width-180,55)));
-        foreach(Button button in navigation.Controls.OfType<Button>())button.Width=button.Text=="+ Eigen ontwerp"?160:button.Text=="Meer"?72:116;
+        Button(actions,"Meer",()=>more.Show(actions,new Point(actions.Width-180,55)));
+        foreach(Button button in navigation.Controls.OfType<Button>().Concat(actions.Controls.OfType<Button>()))button.Width=button.Text=="+ Eigen ontwerp"?160:button.Text=="Meer"?72:116;
         string icon=Path.Combine(directory,"branding","qprints.ico");if(File.Exists(icon))Icon=new Icon(icon);
         StudioTheme.DarkTitle(this);
-        Button(context,"← Terug naar layouts",Home);Button(context,"Verder met ontwerp",()=>{if(editor!=null)ShowPage(editor);else NewDesign();});
-        status.Dock=DockStyle.Bottom;Controls.Add(content);Controls.Add(context);Controls.Add(navigation);Controls.Add(status);
+        Button(context,"← Terug naar layouts",Home);Button(context,"Verder met ontwerp",ResumeDesign);
+        header.Controls.Add(navigation);header.Controls.Add(actions);
+        status.Dock=DockStyle.Bottom;Controls.Add(content);Controls.Add(context);Controls.Add(header);Controls.Add(status);
         gallery=new TemplatesWindow(directory){NavigateTemplate=Preview,NavigateSettings=Settings};
         FormClosing+=(_,e)=>{if(!ProtectEditor())e.Cancel=true;};
         FormClosed+=(_,_)=>{deliveryRequest++;foreach(var page in pages.Values)page.Dispose();editor?.Dispose();transient?.Dispose();gallery.Dispose();};
@@ -51,6 +55,7 @@ sealed class StudioShellWindow : Form
         page.Show();page.BringToFront();content.ResumeLayout();
     }
     void Home(){ShowPage(gallery);status.Text="Kies een layout, bekijk een voorbeeld of maak je eigen ontwerp.";}
+    void ResumeDesign(){if(editor is{IsDisposed:false})ShowPage(editor);else NewDesign();}
     void Cached(string key,Func<Form> create){if(!pages.TryGetValue(key,out var page)){page=create();pages.Add(key,page);}ShowPage(page);}
     void Settings(string section){if(section=="Weer")Cached("weather",()=>new WeatherSettingsWindow(directory));else Cached("hub",()=>new TemplateHubWindow(directory));}
     void Manage(string section)
@@ -75,7 +80,7 @@ sealed class StudioShellWindow : Form
     }
     void Preview(DesignTemplate template,bool apply)
     {
-        transient?.Dispose();var preview=new TemplatePreviewWindow(template,apply);
+        transient?.Dispose();var preview=new TemplatePreviewWindow(template,apply,directory);
         preview.ApplyRequested=()=>Apply(repository.Add(DesignSnapshot.Capture(template.Design).Restore()));
         preview.EditRequested=()=>{if(ProtectEditor())OpenDesign(repository.Add(DesignSnapshot.Capture(template.Design).Restore()));};
         transient=preview;ShowPage(preview);if(apply)preview.ApplyRequested();

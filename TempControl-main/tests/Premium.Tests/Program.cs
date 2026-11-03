@@ -58,7 +58,7 @@ static class Program
             var name=(TextBox)typeof(DesignWindow).GetField("name",flags)!.GetValue(designer)!;name.Text="Niet opgeslagen ontwerp";Check(designer.HasUnsavedChanges,"A pending name edit was not protected");
             typeof(StudioShellWindow).GetMethod("Home",flags)!.Invoke(shell,null);Application.DoEvents();
             Check(!designer.IsDisposed&&ReferenceEquals(designer,typeof(StudioShellWindow).GetField("editor",flags)!.GetValue(shell)),"Back navigation discarded the editor");
-            Check(designer.HasUnsavedChanges&&name.Text=="Niet opgeslagen ontwerp","Back lost unsaved work");designer.SaveForNavigation();
+            Check(designer.HasUnsavedChanges&&name.Text=="Niet opgeslagen ontwerp","Back lost unsaved work");typeof(StudioShellWindow).GetMethod("ResumeDesign",flags)!.Invoke(shell,null);Application.DoEvents();Check(designer.Visible&&designer.HasUnsavedChanges,"Resume did not restore unsaved editor");designer.SaveForNavigation();
             var template=NeonTemplates.All[22];int originalX=template.Design.Widgets[0].X;
             typeof(StudioShellWindow).GetMethod("Preview",flags)!.Invoke(shell,[template,false]);Application.DoEvents();
             var preview=(TemplatePreviewWindow)typeof(StudioShellWindow).GetField("transient",flags)!.GetValue(shell)!;Check(preview.Visible&&!preview.TopLevel,"Preview opened outside the shell");preview.EditRequested!();Application.DoEvents();

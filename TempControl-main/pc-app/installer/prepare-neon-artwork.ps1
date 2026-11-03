@@ -1,7 +1,7 @@
-param([Parameter(Mandatory=$true)][string]$Manifest)
+param([Parameter(Mandatory=$true)][string]$Manifest,[string]$AssetDirectory=(Join-Path $PSScriptRoot '..\assets\neon50'))
 $ErrorActionPreference='Stop'
 Add-Type -AssemblyName System.Drawing
-$assetRoot=[IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..\assets\neon50'))
+$assetRoot=[IO.Path]::GetFullPath($AssetDirectory)
 New-Item -ItemType Directory -Force -Path $assetRoot | Out-Null
 foreach($entry in (Get-Content -LiteralPath $Manifest -Raw | ConvertFrom-Json)){
     if($entry.slug -notmatch '^[a-z0-9-]+$'){throw 'Invalid asset name'}

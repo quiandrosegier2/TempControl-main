@@ -21,6 +21,10 @@ sealed class DesignWindow : Form
     readonly ComboBox animation=new(){DropDownStyle=ComboBoxStyle.DropDownList,Dock=DockStyle.Top};
     readonly NumericUpDown animationSpeed=new(){Minimum=.1m,Maximum=5,DecimalPlaces=1,Increment=.1m,Width=80};
     readonly CheckBox animationsEnabled=new(){Text="Animaties inschakelen",AutoSize=true};
+    readonly CheckBox demoMode=new(){Text="Demowaarden",AutoSize=true,ForeColor=StudioTheme.Muted,Padding=new(8,10,0,0)};
+    readonly Label sourceNote=StudioTheme.Label("",9,false,54);
+    LiveTelemetry? telemetry;
+    DateTime nextTelemetry;
     readonly System.Windows.Forms.Timer clock = new() { Interval = 33 };
     bool renderQueued;
     long lastClockUpdate;
@@ -123,8 +127,9 @@ sealed class DesignWindow : Form
         var center=new Panel{Dock=DockStyle.Fill,Padding=new Padding(14,0,14,0)};
         var stage=new StudioCard{Dock=DockStyle.Fill,Padding=new Padding(12)};
         var canvasLabel=StudioTheme.Label("CANVAS                                         412 × 412",8,true,34);canvasLabel.Padding=new Padding(10,0,0,0);
-        var note=StudioTheme.Label("Sleep om te verplaatsen · Ctrl+Z om te herstellen\nVoorbeeld met testwaarden",9,false,54);note.Dock=DockStyle.Bottom;note.TextAlign=ContentAlignment.MiddleCenter;
-        stage.Controls.Add(canvas);stage.Controls.Add(note);stage.Controls.Add(canvasLabel);center.Controls.Add(stage);
+        demoMode.CheckedChanged+=(_,_)=>{nextTelemetry=default;renderQueued=true;Render();};files.Controls.Add(demoMode);
+        sourceNote.Dock=DockStyle.Bottom;sourceNote.TextAlign=ContentAlignment.MiddleCenter;
+        stage.Controls.Add(canvas);stage.Controls.Add(sourceNote);stage.Controls.Add(canvasLabel);center.Controls.Add(stage);
         var body=new Panel{Dock=DockStyle.Fill,Padding=new Padding(20,0,20,16)};
         body.Controls.Add(center);body.Controls.Add(right);body.Controls.Add(left);
         status.Dock=DockStyle.Bottom;status.Height=56;status.Padding=new Padding(22,12,22,8);status.BackColor=StudioTheme.Surface;status.ForeColor=StudioTheme.Muted;
@@ -139,7 +144,7 @@ sealed class DesignWindow : Form
         {
             bool second=Environment.TickCount64-lastClockUpdate>=1000;
             if(second)lastClockUpdate=Environment.TickCount64;
-            if(WindowState!=FormWindowState.Minimized&&Visible&&(renderQueued||renderer.HasPendingMotion||DesignRenderer.IsAnimated(design)||design.AnimationsEnabled&&renderer.HasAnimatedBackground||(second&&design.Widgets.Any(w=>w.Visible&&w.Kind is WidgetKind.Time or WidgetKind.Date))))Render();
+            if(WindowState!=FormWindowState.Minimized&&Visible&&(renderQueued||renderer.HasPendingMotion||DesignRenderer.IsAnimated(design)||design.AnimationsEnabled&&renderer.HasAnimatedBackground||second))Render();
             if(second&&pendingRevision!=null){var delivery=ScreenDelivery.Read(directory);status.Text=ScreenDelivery.Describe(delivery,pendingRevision,requestedUtc,DateTime.UtcNow);status.ForeColor=status.Text.StartsWith("Ontwerp ontvangen",StringComparison.Ordinal)?StudioTheme.Green:Color.Orange;}
         };clock.Start();
         FormClosing += (_,e) => { if(HasUnsavedChanges){var answer=MessageBox.Show(this,"Wijzigingen opslaan als concept?","Qscreen",MessageBoxButtons.YesNoCancel,MessageBoxIcon.Question);if(answer==DialogResult.Cancel)e.Cancel=true;else if(answer==DialogResult.Yes){try{SaveDraft();}catch(Exception ex){MessageBox.Show(this,ex.Message);e.Cancel=true;}}} };
@@ -147,6 +152,13 @@ sealed class DesignWindow : Form
         StudioTheme.FitWindow(this,new Size(1360,900),new Size(1000,700));
     }
 
+    ScreenReadings PreviewReadings()
+    {
+        if(demoMode.Checked){sourceNote.Text="DEMO · Testwaarden · Sleep om te verplaatsen · Ctrl+Z om te herstellen";return ScreenReadings.Demo;}
+        if(DateTime.UtcNow>=nextTelemetry){telemetry=LiveTelemetry.Read(directory,DateTime.UtcNow);nextTelemetry=DateTime.UtcNow.AddSeconds(1);}
+        sourceNote.Text=LiveTelemetry.Summary(telemetry);
+        return telemetry is {} snapshot?snapshot.Readings with{Now=DateTime.Now}:LiveTelemetry.Unavailable(DateTime.Now);
+    }
     void Safe(Action action) { try { action(); } catch(Exception ex) { pendingRevision=null;status.ForeColor=Color.Orange;status.Text=ex.Message; } }
     void Remember() => PushUndo(DesignSnapshot.Capture(design));
     void PushUndo(DesignSnapshot state) { undo.Add(state); if(undo.Count>20)undo.RemoveAt(0); redo.Clear(); }
@@ -173,7 +185,7 @@ sealed class DesignWindow : Form
     void Render()
     {
         renderQueued=false;
-        try { var next=renderer.Render(design,ScreenReadings.Demo); var previous=canvas.Image;canvas.Image=next;previous?.Dispose();canvas.Invalidate(); }
+        try { var next=renderer.Render(design,PreviewReadings()); var previous=canvas.Image;canvas.Image=next;previous?.Dispose();canvas.Invalidate(); }
         catch(Exception ex) { status.Text="Voorbeeld: "+ex.Message; }
     }
     void AddWidget(WidgetKind kind)

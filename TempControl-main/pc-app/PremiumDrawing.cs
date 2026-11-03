@@ -15,6 +15,7 @@ sealed class WidgetColorRule
 }
 static class PremiumDrawing
 {
+    static readonly Color[] spectrumColors=[Color.Red,Color.Yellow,Color.Lime,Color.Cyan,Color.Blue,Color.Magenta,Color.Red];
     public static void Validate(ScreenWidget w)
     {
         if(w.ClockCharacter is <-1 or >31)throw new InvalidDataException("Klokteken moet -1 tot 31 zijn.");
@@ -34,6 +35,26 @@ static class PremiumDrawing
     public static bool Draw(Graphics g,ScreenWidget w,RectangleF b,ScreenReadings r,Color c,bool animated,float? eased=null)
     {
         using var brush=new SolidBrush(c);using var fill=new SolidBrush(Alpha(w.Fill,w.Opacity));
+        if(w.Kind==WidgetKind.NeonLine)
+        {
+            using var glow=new Pen(Alpha(c,25),w.StrokeWidth*4){StartCap=LineCap.Round,EndCap=LineCap.Round};using var edge=new Pen(c,w.StrokeWidth){StartCap=LineCap.Round,EndCap=LineCap.Round};
+            g.DrawLine(glow,b.Left,b.Bottom,b.Right,b.Top);g.DrawLine(edge,b.Left,b.Bottom,b.Right,b.Top);return true;
+        }
+        if(w.Kind==WidgetKind.InfinityRibbon)
+        {
+            b.Inflate(-w.StrokeWidth*1.5f,-w.StrokeWidth*1.5f);if(b.Width<=0||b.Height<=0)return true;
+            double phase=animated&&w.Motion!=WidgetMotion.None?r.Now.TimeOfDay.TotalSeconds*w.MotionSpeed*.12:0;
+            PointF Point(double t)=>new(b.X+b.Width/2+(float)Math.Sin(t)*b.Width/2,b.Y+b.Height/2+(float)Math.Sin(t*2)*b.Height/2);
+            using var glow=new Pen(Color.Transparent,w.StrokeWidth*3){StartCap=LineCap.Round,EndCap=LineCap.Round};using var light=new Pen(Color.Transparent,w.StrokeWidth){StartCap=LineCap.Round,EndCap=LineCap.Round};
+            var a=Point(0);
+            for(int i=0;i<160;i++)
+            {
+                float t=(float)((i/160d+phase)%1);Color color=w.Rainbow?Spectrum(t):Mix(w.Foreground,w.Accent,(float)(.5+.5*Math.Sin(t*Math.PI*2)));
+                glow.Color=Alpha(color,w.Opacity*18/100);light.Color=Alpha(color,w.Opacity);
+                var z=Point((i+1)*Math.PI*2/160);g.DrawLine(glow,a,z);g.DrawLine(light,a,z);a=z;
+            }
+            return true;
+        }
         if(w.Kind==WidgetKind.ThermalFace)
         {
             float? temperature=r.Value(w.BarSource);int mood=temperature==null?-1:temperature>=80?2:temperature>=60?1:0;
@@ -58,7 +79,7 @@ static class PremiumDrawing
             if(b.Width<=0||b.Height<=0)return true;
             float angle=w.StartAngle+(animated&&w.Motion==WidgetMotion.Rotate?(float)(r.Now.TimeOfDay.TotalSeconds*w.MotionSpeed*25%360):0);
             using var track=new Pen(Alpha(w.Fill,w.Opacity),stroke);using var pen=new Pen(c,stroke){StartCap=LineCap.Round,EndCap=LineCap.Round};
-            float? value=r.Value(w.BarSource);float fraction=eased??Math.Clamp((value??0)/Math.Max(1,w.Maximum),0,1);
+            float? value=r.Value(w.BarSource);float fraction=w.DecorativeRing?1:eased??Math.Clamp((value??0)/Math.Max(1,w.Maximum),0,1);
             if(w.Rainbow||w.Motion==WidgetMotion.RgbCycle)
             {
                 g.DrawArc(track,b,angle,w.SweepAngle);float phase=animated?(float)(r.Now.TimeOfDay.TotalSeconds*w.MotionSpeed*.1%1):0;
@@ -89,7 +110,20 @@ static class PremiumDrawing
     static GraphicsPath Angular(RectangleF b){var p=new GraphicsPath();float d=Math.Min(14,Math.Min(b.Width,b.Height)/3);p.AddPolygon(new PointF[]{new(b.X+d,b.Y),new(b.Right,b.Y),new(b.Right,b.Bottom-d),new(b.Right-d,b.Bottom),new(b.X,b.Bottom),new(b.X,b.Y+d)});return p;}
     public static bool Animation(Graphics g,PageAnimation type,double phase)
     {
-        if(type is PageAnimation.Snow or PageAnimation.Embers or PageAnimation.Bubbles)
+        if(type==PageAnimation.Ripples)
+        {for(int i=0;i<3;i++){float p=(float)((phase*.14+i/3d)%1),radius=25+p*130;using var pen=new Pen(Color.FromArgb((int)((1-p)*55),100,205,240),1);g.DrawEllipse(pen,206-radius,238-radius*.35f,radius*2,radius*.7f);}}
+        else if(type==PageAnimation.SpectralFire)
+        {
+            for(int i=0;i<7;i++){using var pen=new Pen(Color.FromArgb(60,90,220,255),2);var points=Enumerable.Range(0,13).Select(j=>new PointF(46+i*52+(float)Math.Sin(j*.4+phase*1.4+i)*12,280-j*13+(float)Math.Sin(phase+i)*8)).ToArray();g.DrawCurve(pen,points);}
+        }
+        else if(type is PageAnimation.Petals or PageAnimation.Hearts)
+        {
+            using var font=new Font("Segoe UI Symbol",12,FontStyle.Regular,GraphicsUnit.Pixel);
+            for(int i=0;i<17;i++){float x=(float)((i*71+Math.Sin(phase*.7+i)*18+460)%412),y=(float)(((i*53+phase*(type==PageAnimation.Hearts?-13:18))%470+470)%470)-25;using var b=new SolidBrush(Color.FromArgb(110,255,130,190));if(type==PageAnimation.Hearts)g.DrawString("♥",font,b,x,y);else g.FillEllipse(b,x,y,4+i%3,7+i%3);}
+        }
+        else if(type==PageAnimation.Lightning)
+        {int alpha=(int)(Math.Pow(Math.Max(0,Math.Sin(phase*.8)),24)*115);using var p=new Pen(Color.FromArgb(alpha,180,155,255),2);g.DrawLines(p,new PointF[]{new(268,38),new(230,113),new(259,108),new(205,223),new(226,152),new(201,156)});}
+        else if(type is PageAnimation.Snow or PageAnimation.Embers or PageAnimation.Bubbles)
         {
             for(int i=0;i<28;i++)
             {
@@ -119,7 +153,6 @@ static class PremiumDrawing
     }
     static Color Spectrum(float t)
     {
-        Color[] colors=[Color.Red,Color.Yellow,Color.Lime,Color.Cyan,Color.Blue,Color.Magenta,Color.Red];
-        float p=(t%1)*6;int index=(int)p;return Mix(colors[index],colors[index+1],p-index);
+        float p=(t%1)*6;int index=(int)p;return Mix(spectrumColors[index],spectrumColors[index+1],p-index);
     }
 }

@@ -26,6 +26,7 @@ sealed class AdvancedStudioWindow : Form
     readonly TrackBar brightness=new(){Minimum=0,Maximum=100,TickFrequency=10,Width=260};
     readonly CheckBox liveBrightness=new(){Text="Helderheid direct toepassen",AutoSize=true};
     readonly HistoryPlot history=new();
+    readonly Label liveValues=StudioTheme.Label("",11,true,58);
     readonly ComboBox metric=new(){Width=220,DropDownStyle=ComboBoxStyle.DropDownList};
     readonly ComboBox window=new(){Width=100,DropDownStyle=ComboBoxStyle.DropDownList};
     readonly System.Windows.Forms.Timer timer=new(){Interval=1000};
@@ -140,10 +141,11 @@ sealed class AdvancedStudioWindow : Form
         var sampling=new NumericUpDown{Minimum=1,Maximum=60,Value=config.SamplingSeconds,Width=70};sampling.ValueChanged+=(_,_)=>config.SamplingSeconds=(int)sampling.Value;
         choices.Controls.AddRange([metric,window,new Label{Text="minuten · meetinterval (s)",AutoSize=true},sampling]);
         metric.SelectedIndexChanged+=(_,_)=>nextHistory=DateTime.MinValue;window.SelectedIndexChanged+=(_,_)=>nextHistory=DateTime.MinValue;
-        page.Controls.Add(history);page.Controls.Add(choices);
+        page.Controls.Add(history);page.Controls.Add(choices);page.Controls.Add(liveValues);
     }
     void RefreshHistory()
     {
+        liveValues.Text=LiveTelemetry.Summary(LiveTelemetry.Read(directory,DateTime.UtcNow));
         try
         {
             if(DateTime.UtcNow>=nextHistory){AtomicJson.Write(Path.Combine(directory,"history-request.json"),new HistoryRequest((WidgetKind)metric.SelectedItem!,(int)window.SelectedItem!,DateTime.UtcNow));nextHistory=DateTime.UtcNow.AddSeconds(5);}

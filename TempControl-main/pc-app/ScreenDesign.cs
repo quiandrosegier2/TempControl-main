@@ -9,7 +9,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 
 [TypeConverter(typeof(WidgetKindConverter))]
-enum WidgetKind { Text, CpuTemperature, GpuTemperature, Fps, Time, Date, CpuLoad, GpuLoad, MemoryLoad, Rectangle, Ellipse, ProgressBar, CpuClock, GpuClock, HistoryGraph, CircularGauge, AnalogClock, Panel, WeatherTemperature, WeatherIcon, ThermalFace }
+enum WidgetKind { Text, CpuTemperature, GpuTemperature, Fps, Time, Date, CpuLoad, GpuLoad, MemoryLoad, Rectangle, Ellipse, ProgressBar, CpuClock, GpuClock, HistoryGraph, CircularGauge, AnalogClock, Panel, WeatherTemperature, WeatherIcon, ThermalFace, InfinityRibbon, NeonLine }
 enum BackgroundFit { Cover, Contain, Stretch }
 
 static class WidgetLabels
@@ -17,7 +17,7 @@ static class WidgetLabels
     public static string Title(WidgetKind kind) => kind switch {
         WidgetKind.Text=>"Eigen tekst",WidgetKind.CpuTemperature=>"CPU-temperatuur",WidgetKind.GpuTemperature=>"GPU-temperatuur",WidgetKind.Fps=>"FPS",
         WidgetKind.Time=>"Klok",WidgetKind.Date=>"Datum",WidgetKind.CpuLoad=>"CPU-belasting (%)",WidgetKind.GpuLoad=>"GPU-belasting (%)",WidgetKind.MemoryLoad=>"Geheugengebruik (%)",
-        WidgetKind.Rectangle=>"Rechthoek",WidgetKind.Ellipse=>"Cirkel / ovaal",WidgetKind.ProgressBar=>"Voortgangsbalk",WidgetKind.CpuClock=>"CPU-kloksnelheid (MHz)",WidgetKind.GpuClock=>"GPU-kloksnelheid (MHz)",WidgetKind.HistoryGraph=>"Historiegrafiek",WidgetKind.CircularGauge=>"Ronde meter",WidgetKind.AnalogClock=>"Analoge klok",WidgetKind.Panel=>"Paneel",WidgetKind.WeatherTemperature=>"Weertemperatuur",WidgetKind.WeatherIcon=>"Weerpictogram",WidgetKind.ThermalFace=>"Temperatuurgezicht",_=>kind.ToString()
+        WidgetKind.Rectangle=>"Rechthoek",WidgetKind.Ellipse=>"Cirkel / ovaal",WidgetKind.ProgressBar=>"Voortgangsbalk",WidgetKind.CpuClock=>"CPU-kloksnelheid (MHz)",WidgetKind.GpuClock=>"GPU-kloksnelheid (MHz)",WidgetKind.HistoryGraph=>"Historiegrafiek",WidgetKind.CircularGauge=>"Ronde meter",WidgetKind.AnalogClock=>"Analoge klok",WidgetKind.Panel=>"Paneel",WidgetKind.WeatherTemperature=>"Weertemperatuur",WidgetKind.WeatherIcon=>"Weerpictogram",WidgetKind.ThermalFace=>"Temperatuurgezicht",WidgetKind.InfinityRibbon=>"Neon oneindigheid",WidgetKind.NeonLine=>"Neonlijn",_=>kind.ToString()
     };
 }
 sealed class WidgetKindConverter() : EnumConverter(typeof(WidgetKind))
@@ -35,6 +35,7 @@ sealed class WidgetKindConverter() : EnumConverter(typeof(WidgetKind))
 sealed class ScreenWidget
 {
     [Category("Meter"),DisplayName("Volledige regenboog")] public bool Rainbow {get;set;}
+    [Category("Meter"),DisplayName("Decoratieve boog")] public bool DecorativeRing {get;set;}
     [Category("Inhoud"),DisplayName("Klokteken (-1 = alles)")] public int ClockCharacter {get;set;}=-1;
     [Category("Inhoud"),DisplayName("Naam")] public string Name { get; set; } = "Tekst";
     [Category("Inhoud"),DisplayName("Elementtype")] public WidgetKind Kind { get; set; }
@@ -260,7 +261,8 @@ sealed class DesignRenderer : IDisposable
             using var brush = new SolidBrush(color);
             using var fill = new SolidBrush(PremiumDrawing.Alpha(w.Fill,w.Opacity));
             float? meter=null;
-            if(w.Kind is WidgetKind.CircularGauge or WidgetKind.ProgressBar)
+            if(w.Kind==WidgetKind.CircularGauge&&w.DecorativeRing)meter=1;
+            else if(w.Kind is WidgetKind.CircularGauge or WidgetKind.ProgressBar)
             {
                 float target=Math.Clamp((readings.Value(w.BarSource)??0)/Math.Max(1,w.Maximum),0,1);DateTime now=readings.Now;
                 if(!meters.TryGetValue(w,out var state)||!design.AnimationsEnabled||readings.Value(w.BarSource)==null)state=(target,target,now);
