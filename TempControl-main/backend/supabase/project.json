@@ -3,6 +3,7 @@
   "dashboardUrl": "https://supabase.com/dashboard/project/ybmesonqfclarqigwxfe",
   "expectedApiOrigin": "https://ybmesonqfclarqigwxfe.supabase.co",
   "connectionVerified": true,
-  "schemaApplied": false,
+  "schemaApplied": true,
+  "accountFoundationMigration": "20261103174355",
   "administratorProvisioned": false
 }
