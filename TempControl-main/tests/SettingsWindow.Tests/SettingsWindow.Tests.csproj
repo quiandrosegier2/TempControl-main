@@ -7,6 +7,11 @@
     <ImplicitUsings>enable</ImplicitUsings>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="../../pc-app/StudioTheme.cs" Link="StudioTheme.cs" />
+    <Compile Include="../../pc-app/PreviewImageCache.cs" Link="PreviewImageCache.cs" />
+    <Compile Include="../../pc-app/DesignSnapshot.cs" Link="DesignSnapshot.cs" />
+    <Compile Include="../../pc-app/WidgetInspector.cs" Link="WidgetInspector.cs" />
+
     <Compile Include="../../pc-app/SettingsWindow.cs" Link="SettingsWindow.cs" />
     <Compile Include="../../pc-app/LayoutSettings.cs" Link="LayoutSettings.cs" />
     <Compile Include="../../pc-app/ScreenDesign.cs" Link="ScreenDesign.cs" />

@@ -4,7 +4,7 @@
 #define AppName "Qscreen"
 #define PreviewFrameCount 40
 #ifndef AppVersion
-  #define AppVersion "1.5.1"
+  #define AppVersion "1.6.0"
 #endif
 
 [Setup]
@@ -54,13 +54,14 @@ Source: "layout-previews\layout-samurai-crest.bmp"; Flags: dontcopy solidbreak
 Source: "layout-previews\layout-retro-arcade.bmp"; Flags: dontcopy solidbreak
 Source: "layout-previews\layout-stealth-map.bmp"; Flags: dontcopy solidbreak
 Source: "layout-previews\*.png"; DestDir: "{app}\previews"; Flags: ignoreversion
-Source: "preview-animation\*.bmp"; DestDir: "{app}\previews"; Flags: ignoreversion
+Source: "app-previews\*.png"; DestDir: "{app}\previews"; Flags: ignoreversion
 Source: "preview-animation\*.bmp"; Flags: dontcopy solidbreak
 Source: "branding\qprints-footer.bmp"; Flags: dontcopy
 Source: "branding\qprints-wordmark.png"; DestDir: "{app}\branding"; Flags: ignoreversion
 Source: "branding\qprints.ico"; DestDir: "{app}\branding"; Flags: ignoreversion
 
 [InstallDelete]
+Type: files; Name: "{app}\previews\*-??.bmp"
 Type: files; Name: "{autoprograms}\Qprints esp installer.lnk"
 Type: files; Name: "{autodesktop}\Qprints esp installer.lnk"
 Type: files; Name: "{autoprograms}\TempMonitor\Firmware installeren.lnk"
@@ -78,7 +79,7 @@ Name: "{autoprograms}\Qscreen tools\Firmware installeren"; Filename: "{sys}\Wind
 Filename: "{app}\Qscreen.exe"; Parameters: "--settings"; Description: "Qscreen openen: layouts bekijken en kiezen"; Flags: postinstall nowait skipifsilent
 Filename: "{sys}\WindowsPowerShell\v1.0\powershell.exe"; \
   Parameters: "-NoProfile -STA -ExecutionPolicy Bypass -WindowStyle Hidden -File ""{app}\flash-firmware.ps1"""; \
-  Description: "Firmware op het aangesloten Waveshare-scherm installeren"; Flags: postinstall skipifsilent waituntilterminated runhidden
+  Description: "Firmware op het aangesloten Waveshare-scherm installeren (alleen indien nodig)"; Flags: postinstall unchecked skipifsilent waituntilterminated runhidden
 
 [UninstallRun]
 Filename: "{sys}\WindowsPowerShell\v1.0\powershell.exe"; \

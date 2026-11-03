@@ -89,6 +89,7 @@ Copy-Item $pawnio (Join-Path $publishDir 'drivers\PawnIO_setup.exe')
 # 5. Installer compileren
 & (Join-Path $installerDir 'build-layout-previews.ps1')
 & (Join-Path $installerDir 'build-animated-previews.ps1')
+& (Join-Path $installerDir 'build-app-previews.ps1')
 & (Join-Path $installerDir 'build-branding.ps1')
 $iscc = $InnoCompiler
 if (-not $iscc) { $iscc = @(

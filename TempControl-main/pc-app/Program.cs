@@ -116,7 +116,11 @@ while (true)
                     ScreenDelivery.Write(AppContext.BaseDirectory,customRevision,"invalid-design",ex.Message);
                 }
             }
-            if (!sentCustom) port.Write(line + "\n");
+            if (!sentCustom)
+            {
+                port.Write(line + "\n");
+                if(!File.Exists(Path.Combine(AppContext.BaseDirectory,"custom-active.txt")))ScreenDelivery.Write(AppContext.BaseDirectory,"","preset","USB verbonden");
+            }
             Console.Write($"\r{port.PortName} -> {line}      ");
         }
         else if (lastStatus != "notfound")

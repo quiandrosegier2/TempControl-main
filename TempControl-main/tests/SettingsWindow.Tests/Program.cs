@@ -19,7 +19,20 @@ internal static class Program
             if (i < 3 || i >= 26)
                 File.Copy(Path.Combine(source, "layout-previews", $"layout-{id}.png"), Path.Combine(root, "previews", $"layout-{id}.png"), true);
             else for (int frame = 0; frame < 2; frame++)
+            {
                 File.Copy(Path.Combine(source, "preview-animation", $"{id}-{frame:D2}.bmp"), Path.Combine(root, "previews", $"{id}-{frame:D2}.bmp"), true);
+                string hd=Path.Combine(source,"app-previews",$"{id}-{frame:D2}.png");
+                if(File.Exists(hd))File.Copy(hd,Path.Combine(root,"previews",Path.GetFileName(hd)),true);
+            }
+        }
+        using(var cache=new PreviewImageCache(2))
+        {
+            string file=Path.Combine(root,"previews","layout-classic.png");
+            var first=cache.Get(file);File.Move(file,file+".backup",true);
+            try{if(!ReferenceEquals(first,cache.Get(file)))throw new Exception("Cached image reopened the file");}
+            finally{File.Move(file+".backup",file,true);}
+            cache.Get(Path.Combine(root,"previews","layout-gauges.png"));cache.Get(Path.Combine(root,"previews","layout-minimal.png"));
+            if(cache.Count!=2)throw new Exception("Preview cache exceeded its memory bound");
         }
         File.WriteAllText(Path.Combine(root, "layout.txt"), "minimal");
         Application.EnableVisualStyles();

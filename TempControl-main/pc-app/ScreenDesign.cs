@@ -150,6 +150,8 @@ static class DesignFiles
 
 sealed class DesignRenderer : IDisposable
 {
+    readonly Dictionary<(string Family,float Size,FontStyle Style),Font> fonts=new();
+    public int CachedFontCount=>fonts.Count;
     Image? background;
     string? cachedBackground;
     public Bitmap Render(ScreenDesign design, ScreenReadings readings)
@@ -203,7 +205,7 @@ sealed class DesignRenderer : IDisposable
             }
             catch (FormatException) { text = "Ongeldige opmaak"; }
             var style = (w.Bold ? FontStyle.Bold : FontStyle.Regular) | (w.Italic ? FontStyle.Italic : FontStyle.Regular);
-            using var font = CreateFont(w.FontFamily, Math.Clamp(w.FontSize, 6, 160), style);
+            var font = GetFont(w.FontFamily, Math.Clamp(w.FontSize, 6, 160), style);
             using var format = new StringFormat { Alignment = w.Alignment, LineAlignment = StringAlignment.Center, Trimming = StringTrimming.EllipsisCharacter };
             g.DrawString(text, font, brush, bounds, format);
         }
@@ -238,5 +240,12 @@ sealed class DesignRenderer : IDisposable
         finally { image.UnlockBits(data); }
         return result;
     }
-    public void Dispose() => background?.Dispose();
+    Font GetFont(string family,float size,FontStyle style)
+    {
+        var key=(family,size,style);
+        if(fonts.TryGetValue(key,out var font))return font;
+        if(fonts.Count>=64){foreach(var old in fonts.Values)old.Dispose();fonts.Clear();}
+        font=CreateFont(family,size,style);fonts.Add(key,font);return font;
+    }
+    public void Dispose(){background?.Dispose();foreach(var font in fonts.Values)font.Dispose();fonts.Clear();}
 }

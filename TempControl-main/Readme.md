@@ -18,9 +18,9 @@ pc-app/installer/  Inno Setup-installer
 
 Download het installatiebestand via [GitHub Releases](https://github.com/quiandrosegier2/TempControl-main/releases/latest).
 
-1. Start `Qscreen-1.5.1.exe`, geef toestemming voor beheerdersrechten en kies een schermlayout. Het bewegende demovoorbeeld speelt op de layoutpagina; met **Pauzeren/Afspelen** stop of start je de animatie.
+1. Start `Qscreen-1.6.0.exe`, geef toestemming voor beheerdersrechten en kies een schermlayout. Het bewegende demovoorbeeld speelt op de layoutpagina; met **Pauzeren/Afspelen** stop of start je de animatie.
 2. Sluit een **Waveshare ESP32-S3-Touch-LCD-1.46 (16 MB)** met een USB-C-datakabel aan.
-3. Laat aan het einde van Setup de optie om firmware te installeren aangevinkt.
+3. Vink de firmwarestap aan bij een eerste installatie of als de schermfirmware moet worden bijgewerkt. Voor alleen een app-update hoeft dit niet.
 4. Kies de COM-poort van het scherm en klik op **Firmware installeren**. Dit vervangt de bestaande firmware.
 5. Laat de kabel aangesloten tot de upload klaar is. Druk zo nodig op RESET of sluit het scherm opnieuw aan.
 
@@ -106,7 +106,7 @@ Voor stille installaties kan `/LAYOUT=` worden gevolgd door `classic`, `gauges`,
 
 ## 2. Windows-app installeren
 
-Voer `Qscreen-1.5.1.exe` uit. De donkere installer en het firmwarevenster tonen het QSCREEN //-beeldmerk. De installer:
+Voer `Qscreen-1.6.0.exe` uit. De donkere installer en het firmwarevenster tonen het QSCREEN //-beeldmerk. De installer:
 
 - installeert de app in `C:\Program Files\TempMonitor`; .NET zit erin, dus dat hoef je niet apart te installeren
 - installeert desgewenst de **PawnIO**-driver (vinkje). Die is nodig om de CPU-temperatuur van een Ryzen te lezen.
@@ -199,3 +199,11 @@ Ontwerper testen: `dotnet run --project tests/Design.Tests -c Release -- pc-app/
 ### Toepassen lijkt niets te doen (1.5.1)
 
 De Windows-app installeren werkt de firmware van het scherm niet automatisch bij. Gebruik **Firmware bijwerken** in de ontwerper en installeer de meegeleverde firmware 1.5.1. **Toepassen op scherm** bewaart het ontwerp, start de achtergrondtaak en toont de ontvangststatus. Alleen een verse FRAMEOK voor hetzelfde ontwerp geeft een groene bevestiging. Ontbrekende verbinding, ongeschikte firmware en geen bevestiging worden expliciet getoond. Je bestaande ontwerp blijft bewaard. Het verbeterde protocol wacht na elk blok van 1024 bytes op FRAMECHUNK; de ontvangbuffer is vergroot tot 4096 bytes.
+
+### Qscreen 1.6 - vernieuwde vormgeving en optimalisaties
+
+Hoofdvenster en ontwerper gebruiken dezelfde donkere vormgeving met zijbalk, afgeronde knoppen, panelen en een rond canvas. De verbindingsstatus staat in het hoofdvenster. De inspector verbergt eigenschappen die niet bij het gekozen element horen. Vensters passen binnen het beschikbare bureaublad.
+
+De app-voorbeelden zijn nu scherpe PNG-beelden van 412x412 pixels: de 920 animatiebestanden nemen 16,6 MB in in plaats van 178,2 MB (90,7% minder schijfruimte). De beeldcache bewaart maximaal 40 beelden en opent gecachte bestanden niet opnieuw. Eigen voorbeelden verversen eenmaal per seconde; verborgen en geminimaliseerde voorbeelden worden niet gerenderd. Undo/redo deelt de onveranderlijke achtergrondgegevens, lettertypen worden hergebruikt en slepen wordt gebundeld via een timer van 33 ms.
+
+De bestaande firmware 1.5.1 en USB-overdracht blijven behouden. Wie firmware 1.5.1 al gebruikt, hoeft niet opnieuw te flashen. De firmwarestap in Setup staat daarom standaard uit. Persoonlijke ontwerpen en achtergronden blijven bewaard. `tests/Test-AppPreviews.ps1` controleert alle 920 nieuwe PNG-beelden.

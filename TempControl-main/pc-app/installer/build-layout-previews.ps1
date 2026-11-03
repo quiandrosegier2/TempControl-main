@@ -4,7 +4,8 @@ param(
     [string[]]$Layouts = @('classic', 'gauges', 'minimal', 'orbit', 'radar', 'neon-pulse', 'reactor', 'waveform', 'matrix', 'starfield', 'speedometer', 'aurora', 'hex-grid', 'arsenal', 'bullet-storm', 'inferno', 'warzone-city', 'sniper-scope', 'cyber-ops', 'plasma-core', 'boss-fight', 'drone-swarm', 'lightning-strike', 'space-fleet', 'race-grid', 'portal-rift', 'tactical-steel', 'ammo-vault', 'samurai-crest', 'retro-arcade', 'stealth-map'),
     [float]$FrameTime = 1.6,
     [int]$FrameIndex = -1,
-    [int]$RenderSize = 412
+    [int]$RenderSize = 412,
+    [ValidateSet('Bmp','Png')][string]$FrameFormat = 'Bmp'
 )
 $ErrorActionPreference = 'Stop'
 Add-Type -AssemblyName System.Drawing
@@ -396,7 +397,9 @@ foreach ($layout in $Layouts) {
         }
     }
     if($FrameIndex -ge 0){
-        $bitmap.Save((Join-Path $output ('{0}-{1:D2}.bmp' -f $layout,$FrameIndex)),[Drawing.Imaging.ImageFormat]::Bmp)
+        $extension=$FrameFormat.ToLowerInvariant()
+        $format=if($FrameFormat -eq 'Png'){[Drawing.Imaging.ImageFormat]::Png}else{[Drawing.Imaging.ImageFormat]::Bmp}
+        $bitmap.Save((Join-Path $output ('{0}-{1:D2}.{2}' -f $layout,$FrameIndex,$extension)),$format)
     }else{
         $bitmap.Save((Join-Path $output "layout-$layout.bmp"), [Drawing.Imaging.ImageFormat]::Bmp)
         $bitmap.Save((Join-Path $output "layout-$layout.png"), [Drawing.Imaging.ImageFormat]::Png)

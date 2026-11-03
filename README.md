@@ -21,9 +21,9 @@ A compact PC system monitor featuring a round Waveshare ESP32-S3-Touch-LCD-1.46 
 
 Download the setup executable from [GitHub Releases](https://github.com/quiandrosegier2/TempControl-main/releases/latest).
 
-1. Run `Qscreen-1.5.1.exe` on a Windows x64 PC and allow administrator access. Choose a layout and watch its demo on the layout page; use **Pauzeren/Afspelen** to pause or play.
+1. Run `Qscreen-1.6.0.exe` on a Windows x64 PC and allow administrator access. Choose a layout and watch its demo on the layout page; use **Pauzeren/Afspelen** to pause or play.
 2. Connect a **Waveshare ESP32-S3-Touch-LCD-1.46 (16 MB)** using a USB-C data cable.
-3. Leave the firmware installation option selected at the end of Setup.
+3. On a first installation or when firmware is outdated, select the firmware installation option at the end of Setup. UI-only updates do not require flashing.
 4. Select the display's COM port and click **Firmware installeren**. This replaces any existing firmware on that display.
 5. Keep the cable connected until the upload finishes. Press RESET or reconnect the display if needed.
 
@@ -102,3 +102,13 @@ Built with PlatformIO, .NET, LibreHardwareMonitor, and PresentMon.
 ### Applying a custom design (1.5.1)
 
 Apply saves the design, starts the scheduled background monitor and waits for a fresh acknowledgment for that exact design. Green success appears only after the screen returns FRAMEOK. Missing USB, incompatible firmware and missing confirmation are displayed explicitly. Use Firmware bijwerken in the designer to install the bundled 1.5.1 firmware; updating only the Windows app does not update the screen. The revised protocol waits for FRAMECHUNK after every 1024 bytes and uses a 4096-byte receiver queue to prevent large images overflowing USB reception. Existing designs remain saved during upgrades.
+
+### Qscreen 1.6 - refreshed workspace and smoother editing
+
+The desktop app and designer share a new dark theme, rounded controls, a workspace sidebar, a circular canvas stage, clearer actions and live connection status. The inspector shows only properties relevant to the selected widget. Windows fit within the available desktop working area.
+
+App previews are now full 412x412 PNG images. The 920 installed animation files total 16,563,874 bytes instead of 178,161,680 bytes for the former BMP library, a 90.7% reduction. One animation cycle is cached in memory (at most 40 images); cached frames do not reopen files. Custom previews update once per second and hidden/minimized previews stop rendering.
+
+Undo/redo shares immutable background strings and stores only element metadata per edit. The renderer reuses a bounded cache of fonts; dragging is coalesced to a 33 ms UI timer, while selection changes redraw only selection guides.
+
+This release retains firmware 1.5.1 and its working acknowledged USB protocol. Existing custom designs and backgrounds remain compatible. Firmware upload is optional and unchecked by default; users already on firmware 1.5.1 do not need to flash again. Tests cover image caching and bounds, shared-image undo with isolated widgets, font reuse, contextual properties, UI editing, sharp preview assets and installer startup.

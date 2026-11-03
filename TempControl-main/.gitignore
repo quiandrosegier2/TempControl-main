@@ -15,6 +15,7 @@ dist/
 pc-app/installer/tool-cache/
 pc-app/installer/layout-previews/
 pc-app/installer/preview-animation/
+pc-app/installer/app-previews/
 pc-app/installer/branding/
 pc-app/installer/startup-smoke.iss
 

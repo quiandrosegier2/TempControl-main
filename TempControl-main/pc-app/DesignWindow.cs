@@ -11,17 +11,19 @@ sealed class DesignWindow : Form
     ScreenDesign design;
     readonly string directory;
     readonly DesignRenderer renderer = new();
-    readonly PictureBox canvas = new() { Dock = DockStyle.Fill, SizeMode = PictureBoxSizeMode.Zoom, BackColor = Color.FromArgb(18, 19, 24), AllowDrop = true };
+    readonly PictureBox canvas = new StudioPreview() { Dock = DockStyle.Fill, AllowDrop = true };
     readonly ListBox elements = new() { Dock = DockStyle.Fill, BackColor = Color.FromArgb(32,34,42), ForeColor = Color.White, BorderStyle = BorderStyle.None };
     readonly PropertyGrid properties = new() { Dock = DockStyle.Fill, HelpVisible = true, ToolbarVisible = false, ViewBackColor = Color.FromArgb(32,34,42), ViewForeColor = Color.White, HelpBackColor = Color.FromArgb(24,25,31), HelpForeColor = Color.White, LineColor = Color.FromArgb(55,58,70) };
     readonly Label status = new() { Dock = DockStyle.Bottom, Height = 42, Padding = new Padding(10), ForeColor = Color.Silver };
     readonly TextBox name = new() { Dock = DockStyle.Top };
     readonly ComboBox fit = new() { DropDownStyle = ComboBoxStyle.DropDownList, Width = 265 };
     readonly NumericUpDown darken = new() { Minimum=0, Maximum=100, Width=80 };
-    readonly System.Windows.Forms.Timer clock = new() { Interval = 1000 };
-    readonly List<string> undo = [], redo = [];
-    string lastSnapshot;
-    string? dragSnapshot;
+    readonly System.Windows.Forms.Timer clock = new() { Interval = 33 };
+    bool renderQueued;
+    long lastClockUpdate;
+    readonly List<DesignSnapshot> undo = [], redo = [];
+    DesignSnapshot lastSnapshot;
+    DesignSnapshot? dragSnapshot;
     Point dragStart, widgetStart;
     bool dragging, changed, refreshing;
     readonly Action requestMonitorStart;
@@ -38,78 +40,101 @@ sealed class DesignWindow : Form
         design = ScreenDesign.CreateDefault();
         try { if (File.Exists(draft)) design = DesignFiles.Load(draft); else if (File.Exists(active)) design = DesignFiles.Load(active); }
         catch (Exception ex) when (ex is IOException or System.Text.Json.JsonException or InvalidDataException or UnauthorizedAccessException) { status.Text = "Opgeslagen ontwerp kon niet worden geopend: " + ex.Message; }
-        lastSnapshot = DesignFiles.Serialize(design);
-        Text = "Qscreen — Ontwerpstudio"; StartPosition = FormStartPosition.CenterParent;
-        Size = new Size(1220, 820); MinimumSize = new Size(1000, 700);
-        BackColor = Color.FromArgb(24,25,31); ForeColor = Color.White; Font = new Font("Segoe UI", 10);
-        var bar = new FlowLayoutPanel { Dock = DockStyle.Top, Height = 100, Padding = new Padding(8), BackColor = Color.FromArgb(32,34,42), WrapContents = true };
-        Button Button(string title, Action action)
+        lastSnapshot = DesignSnapshot.Capture(design);
+        Text="Qscreen — Ontwerpstudio";StartPosition=FormStartPosition.CenterParent;
+        Size=new Size(1360,900);MinimumSize=new Size(1100,760);
+        BackColor=StudioTheme.Background;ForeColor=StudioTheme.Text;Font=new Font("Segoe UI",10);
+        string icon=Path.Combine(directory,"branding","qprints.ico");if(File.Exists(icon))Icon=new Icon(icon);
+        var top=new Panel{Dock=DockStyle.Top,Height=80,Padding=new Padding(20,16,20,14),BackColor=StudioTheme.Surface};
+        var brand=StudioTheme.Label("Qscreen / Studio",20,true,46);brand.Dock=DockStyle.Left;brand.Width=224;
+        var files=new FlowLayoutPanel{Dock=DockStyle.Fill,WrapContents=false,Padding=new Padding(0,0,0,0)};
+        Button ActionButton(string title,Action action,bool primary=false,int width=90)
         {
-            var b = new Button { Text = title, AutoSize = true, Height = 34, FlatStyle = FlatStyle.Flat, BackColor = Color.FromArgb(40,42,51), ForeColor = Color.White, Margin = new Padding(3) };
-            b.Click += (_, _) => Safe(action); bar.Controls.Add(b); return b;
+            var button=StudioTheme.Button(title,primary);button.Width=width;button.Height=40;button.Font=new Font("Segoe UI",9,FontStyle.Bold);
+            button.Click+=(_,_)=>Safe(action);return button;
         }
-        Button("Nieuw", () => { Remember(); design = ScreenDesign.CreateDefault(); Commit(); RefreshList(); });
-        Button("Openen…", Open);
-        Button("Opslaan", SaveDraft);
-        Button("Exporteren…", Export);
-        Button("Ongedaan", Undo);
-        Button("Opnieuw", Redo);
-        Button("Achtergrond…", ImportBackground);
-        Button("Geen afbeelding", () => Change(() => design.BackgroundPng = null));
-        Button("Achtergrondkleur", () => { using var d = new ColorDialog { Color = Color.FromArgb(design.BackgroundArgb) }; if(d.ShowDialog(this)==DialogResult.OK) Change(() => design.BackgroundArgb=d.Color.ToArgb()); });
-        Button("Lettertype…", ChooseFont);
-        Button("Toepassen op scherm", Apply).BackColor = Color.FromArgb(165,35,43);
-        Button("Firmware bijwerken…",()=>Process.Start(new ProcessStartInfo("powershell.exe","-NoProfile -STA -ExecutionPolicy Bypass -WindowStyle Hidden -File \""+Path.Combine(directory,"flash-firmware.ps1")+"\""){UseShellExecute=true,WindowStyle=ProcessWindowStyle.Hidden}));
+        files.Controls.Add(ActionButton("Nieuw",()=>{Remember();design=ScreenDesign.CreateDefault();Commit();RefreshList();},false,65));
+        files.Controls.Add(ActionButton("Openen",Open,false,72));files.Controls.Add(ActionButton("Opslaan",SaveDraft,false,78));files.Controls.Add(ActionButton("Export",Export,false,70));
+        files.Controls.Add(ActionButton("↶",Undo,false,40));files.Controls.Add(ActionButton("↷",Redo,false,40));
+        var apply=ActionButton("Toepassen op scherm",Apply,true,190);apply.Dock=DockStyle.Right;
+        top.Controls.Add(files);top.Controls.Add(apply);top.Controls.Add(brand);
+        var tools=new FlowLayoutPanel{Dock=DockStyle.Top,Height=62,Padding=new Padding(20,8,20,8),BackColor=StudioTheme.Background,WrapContents=false};
+        tools.Controls.Add(ActionButton("Afbeelding kiezen",ImportBackground,false,155));
+        tools.Controls.Add(ActionButton("Afbeelding wissen",()=>Change(()=>design.BackgroundPng=null),false,150));
+        tools.Controls.Add(ActionButton("Achtergrondkleur",()=>{using var d=new ColorDialog{Color=Color.FromArgb(design.BackgroundArgb)};if(d.ShowDialog(this)==DialogResult.OK)Change(()=>design.BackgroundArgb=d.Color.ToArgb());},false,150));
+        tools.Controls.Add(ActionButton("Lettertype",ChooseFont,false,110));
+        tools.Controls.Add(ActionButton("Firmware bijwerken",()=>Process.Start(new ProcessStartInfo("powershell.exe","-NoProfile -STA -ExecutionPolicy Bypass -WindowStyle Hidden -File \""+Path.Combine(directory,"flash-firmware.ps1")+"\""){UseShellExecute=true,WindowStyle=ProcessWindowStyle.Hidden}),false,165));
 
-        var left = new Panel { Dock = DockStyle.Left, Width = 228, Padding = new Padding(12) };
-        var nameLabel = new Label { Text = "ONTWERPNAAM", Dock = DockStyle.Top, Height = 27 };
-        name.Text = design.Name;
-        name.Leave += (_, _) => { if(name.Text != design.Name) Change(() => design.Name = name.Text); };
-        var add = new ComboBox { Dock = DockStyle.Top, DropDownStyle = ComboBoxStyle.DropDownList, Height = 32 };
-        add.FormattingEnabled=true;
-        add.Format+=(_,e)=>{if(e.ListItem is WidgetKind kind)e.Value=WidgetLabels.Title(kind);};
-        add.Items.AddRange(Enum.GetValues<WidgetKind>().Cast<object>().ToArray()); add.SelectedIndex = 0;
-        var addButton = new Button { Text = "+ Element toevoegen", Dock = DockStyle.Top, Height = 38, FlatStyle = FlatStyle.Flat };
-        addButton.Click += (_, _) => Safe(() => AddWidget((WidgetKind)add.SelectedItem!));
-        var layerBar = new FlowLayoutPanel { Dock = DockStyle.Bottom, Height = 80 };
-        foreach (var (caption, action) in new (string,Action)[] { ("Verwijder",Delete), ("Kopieer",Duplicate), ("Naar voren",()=>MoveLayer(1)), ("Naar achter",()=>MoveLayer(-1)) })
+        var left=new StudioCard{Dock=DockStyle.Left,Width=242,Padding=new Padding(16)};
+        var nameLabel=StudioTheme.Label("MIJN ONTWERP",9,true,30);nameLabel.ForeColor=StudioTheme.Accent;
+        name.Text=design.Name;StudioTheme.Input(name);
+        name.Leave+=(_,_)=>{if(name.Text!=design.Name)Change(()=>design.Name=name.Text);};
+        var gap=new Panel{Dock=DockStyle.Top,Height=20};
+        var elementLabel=StudioTheme.Label("ELEMENTEN",9,true,32);
+        var add=new ComboBox{Dock=DockStyle.Top,DropDownStyle=ComboBoxStyle.DropDownList,Height=32};StudioTheme.Input(add);
+        add.FormattingEnabled=true;add.Format+=(_,e)=>{if(e.ListItem is WidgetKind kind)e.Value=WidgetLabels.Title(kind);};
+        add.Items.AddRange(Enum.GetValues<WidgetKind>().Cast<object>().ToArray());add.SelectedIndex=0;
+        var addButton=ActionButton("+  Toevoegen",()=>AddWidget((WidgetKind)add.SelectedItem!),false,200);addButton.Dock=DockStyle.Top;addButton.Height=40;
+        elements.BackColor=StudioTheme.Surface;elements.ForeColor=StudioTheme.Text;elements.DrawMode=DrawMode.OwnerDrawFixed;elements.ItemHeight=48;elements.IntegralHeight=false;
+        elements.DrawItem+=(_,e)=>
         {
-            var b=new Button { Text=caption, Width=96, Height=32, FlatStyle=FlatStyle.Flat }; b.Click+=(_,_)=>Safe(action); layerBar.Controls.Add(b);
-        }
-        left.Controls.Add(elements); left.Controls.Add(layerBar); left.Controls.Add(addButton); left.Controls.Add(add); left.Controls.Add(name); left.Controls.Add(nameLabel);
-        var right = new Panel { Dock = DockStyle.Right, Width = 300, Padding = new Padding(8) };
-        var hint = new Label { Text = "EIGENSCHAPPEN\nKlik op een element en versleep het.\nKleur, maat, opmaak en lettertype hieronder.", Dock = DockStyle.Top, Height = 90 };
-        var backgroundOptions = new FlowLayoutPanel { Dock = DockStyle.Bottom, Height = 115, FlowDirection = FlowDirection.TopDown };
-        backgroundOptions.Controls.Add(new Label { Text = "Achtergrond schalen", AutoSize = true });
-        fit.Items.AddRange(Enum.GetNames<BackgroundFit>()); fit.SelectedItem = design.Fit.ToString();
-        fit.SelectedIndexChanged += (_,_) => Change(() => design.Fit = Enum.Parse<BackgroundFit>((string)fit.SelectedItem!));
-        darken.Value=design.Darken;
-        darken.ValueChanged += (_,_)=>Change(()=>design.Darken=(int)darken.Value);
-        backgroundOptions.Controls.Add(fit); backgroundOptions.Controls.Add(new Label { Text="Verdonkeren (%)", AutoSize=true }); backgroundOptions.Controls.Add(darken);
-        right.Controls.Add(properties); right.Controls.Add(backgroundOptions); right.Controls.Add(hint);
-        var center = new Panel { Dock=DockStyle.Fill, Padding=new Padding(14) };
-        var note = new Label { Text="412 × 412 · rond scherm · voorbeeld met testwaarden\nDe pc tekent je ontwerp; datum, tijd en meetwaarden worden elke seconde bijgewerkt.", Dock=DockStyle.Bottom, Height=50, TextAlign=ContentAlignment.MiddleCenter };
-        center.Controls.Add(canvas); center.Controls.Add(note);
-        Controls.Add(center); Controls.Add(right); Controls.Add(left); Controls.Add(status); Controls.Add(bar);
-        elements.SelectedIndexChanged += (_,_) => { properties.SelectedObject=Selected; Render(); };
+            if(e.Index<0)return;var widget=(ScreenWidget)elements.Items[e.Index];using(var background=new SolidBrush(StudioTheme.Surface))e.Graphics.FillRectangle(background,e.Bounds);
+            if((e.State&DrawItemState.Selected)!=0){using var fill=new SolidBrush(StudioTheme.Raised);using var shape=StudioTheme.Rounded(new RectangleF(e.Bounds.X,e.Bounds.Y+2,e.Bounds.Width-3,e.Bounds.Height-4),8);e.Graphics.FillPath(fill,shape);}
+            using var titleFont=new Font("Segoe UI",10,FontStyle.Bold);using var subFont=new Font("Segoe UI",8);
+            TextRenderer.DrawText(e.Graphics,widget.Name,titleFont,new Rectangle(e.Bounds.X+12,e.Bounds.Y+5,e.Bounds.Width-20,20),widget.Visible?StudioTheme.Text:StudioTheme.Muted,TextFormatFlags.EndEllipsis);
+            TextRenderer.DrawText(e.Graphics,WidgetLabels.Title(widget.Kind),subFont,new Rectangle(e.Bounds.X+12,e.Bounds.Y+26,e.Bounds.Width-20,18),StudioTheme.Muted,TextFormatFlags.EndEllipsis);
+        };
+        var layerBar=new FlowLayoutPanel{Dock=DockStyle.Bottom,Height=98,WrapContents=true};
+        foreach(var (caption,action) in new (string,Action)[]{("Verwijder",Delete),("Kopieer",Duplicate),("Naar voren",()=>MoveLayer(1)),("Naar achter",()=>MoveLayer(-1))})layerBar.Controls.Add(ActionButton(caption,action,false,94));
+        left.Controls.Add(elements);left.Controls.Add(layerBar);left.Controls.Add(addButton);left.Controls.Add(add);left.Controls.Add(elementLabel);left.Controls.Add(gap);left.Controls.Add(name);left.Controls.Add(nameLabel);
+        var right=new StudioCard{Dock=DockStyle.Right,Width=300,Padding=new Padding(16)};
+        var hint=StudioTheme.Label("EIGENSCHAPPEN",9,true,38);
+        properties.ViewBackColor=StudioTheme.Surface;properties.ViewForeColor=StudioTheme.Text;properties.HelpBackColor=StudioTheme.Surface;properties.HelpForeColor=StudioTheme.Muted;properties.LineColor=StudioTheme.Border;properties.CategoryForeColor=StudioTheme.Text;properties.CategorySplitterColor=StudioTheme.Raised;properties.Font=new Font("Segoe UI",10);
+        var backgroundOptions=new Panel{Dock=DockStyle.Bottom,Height=166,Padding=new Padding(0,18,0,0)};
+        var backgroundLabel=StudioTheme.Label("ACHTERGROND",9,true,32);
+        var fitLabel=StudioTheme.Label("Plaatsing",9,false,25);fit.Dock=DockStyle.Top;StudioTheme.Input(fit);
+        fit.FormattingEnabled=true;fit.Format+=(_,e)=>{e.Value=e.ListItem?.ToString() switch{"Cover"=>"Vullend (bijsnijden)","Contain"=>"Volledig zichtbaar","Stretch"=>"Uitrekken",_=>e.ListItem};};
+        fit.Items.AddRange(Enum.GetNames<BackgroundFit>());fit.SelectedItem=design.Fit.ToString();
+        fit.SelectedIndexChanged+=(_,_)=>Change(()=>design.Fit=Enum.Parse<BackgroundFit>((string)fit.SelectedItem!));
+        var darkLabel=StudioTheme.Label("Verdonkeren (%)",9,false,30);darken.Dock=DockStyle.Top;darken.BackColor=StudioTheme.Raised;darken.ForeColor=StudioTheme.Text;darken.BorderStyle=BorderStyle.FixedSingle;darken.Value=design.Darken;
+        darken.ValueChanged+=(_,_)=>Change(()=>design.Darken=(int)darken.Value);
+        backgroundOptions.Controls.Add(darken);backgroundOptions.Controls.Add(darkLabel);backgroundOptions.Controls.Add(fit);backgroundOptions.Controls.Add(fitLabel);backgroundOptions.Controls.Add(backgroundLabel);
+        right.Controls.Add(properties);right.Controls.Add(backgroundOptions);right.Controls.Add(hint);
+        var center=new Panel{Dock=DockStyle.Fill,Padding=new Padding(14,0,14,0)};
+        var stage=new StudioCard{Dock=DockStyle.Fill,Padding=new Padding(12)};
+        var canvasLabel=StudioTheme.Label("CANVAS                                         412 × 412",8,true,34);canvasLabel.Padding=new Padding(10,0,0,0);
+        var note=StudioTheme.Label("Sleep om te verplaatsen · Ctrl+Z om te herstellen\nVoorbeeld met testwaarden",9,false,54);note.Dock=DockStyle.Bottom;note.TextAlign=ContentAlignment.MiddleCenter;
+        stage.Controls.Add(canvas);stage.Controls.Add(note);stage.Controls.Add(canvasLabel);center.Controls.Add(stage);
+        var body=new Panel{Dock=DockStyle.Fill,Padding=new Padding(20,0,20,16)};
+        body.Controls.Add(center);body.Controls.Add(right);body.Controls.Add(left);
+        status.Dock=DockStyle.Bottom;status.Height=56;status.Padding=new Padding(22,12,22,8);status.BackColor=StudioTheme.Surface;status.ForeColor=StudioTheme.Muted;
+        Controls.Add(body);Controls.Add(status);Controls.Add(tools);Controls.Add(top);
+        elements.SelectedIndexChanged += (_,_) => { properties.SelectedObject=Selected is {} widget?new WidgetInspector(widget):null; canvas.Invalidate(); };
         properties.PropertyValueChanged += (_,_) => Safe(() => { int i=elements.SelectedIndex; PushUndo(lastSnapshot); Commit(); RefreshList(null,i); });
         canvas.MouseDown += MouseDownCanvas; canvas.MouseMove += MouseMoveCanvas; canvas.MouseUp += MouseUpCanvas;
-        canvas.Paint += (_,e) => { if(Selected is { } w){var r=ToCanvas(new RectangleF(w.X,w.Y,w.Width,w.Height));using var pen=new Pen(Color.FromArgb(230,70,90),2){DashStyle=System.Drawing.Drawing2D.DashStyle.Dash};e.Graphics.DrawRectangle(pen,r.X,r.Y,r.Width,r.Height);} };
+        ((StudioPreview)canvas).SelectionPainter = e => { if(Selected is { } w){var r=ToCanvas(new RectangleF(w.X,w.Y,w.Width,w.Height));using var pen=new Pen(Color.FromArgb(230,70,90),2){DashStyle=System.Drawing.Drawing2D.DashStyle.Dash};e.Graphics.DrawRectangle(pen,r.X,r.Y,r.Width,r.Height);} };
         canvas.DragEnter += (_,e) => e.Effect=e.Data?.GetDataPresent(DataFormats.FileDrop)==true?DragDropEffects.Copy:DragDropEffects.None;
         canvas.DragDrop += (_,e) => Safe(()=>{ if(e.Data?.GetData(DataFormats.FileDrop) is string[] files && files.Length>0) SetBackground(files[0]); });
-        clock.Tick += (_,_) => { Render(); if(pendingRevision!=null){var delivery=ScreenDelivery.Read(directory);status.Text=ScreenDelivery.Describe(delivery,pendingRevision,requestedUtc,DateTime.UtcNow);status.ForeColor=status.Text.StartsWith("Ontwerp ontvangen",StringComparison.Ordinal)?Color.LightGreen:Color.Orange;} }; clock.Start();
+        clock.Tick += (_,_) =>
+        {
+            bool second=Environment.TickCount64-lastClockUpdate>=1000;
+            if(second)lastClockUpdate=Environment.TickCount64;
+            if(WindowState!=FormWindowState.Minimized&&Visible&&(renderQueued||(second&&design.Widgets.Any(w=>w.Visible&&w.Kind is WidgetKind.Time or WidgetKind.Date))))Render();
+            if(second&&pendingRevision!=null){var delivery=ScreenDelivery.Read(directory);status.Text=ScreenDelivery.Describe(delivery,pendingRevision,requestedUtc,DateTime.UtcNow);status.ForeColor=status.Text.StartsWith("Ontwerp ontvangen",StringComparison.Ordinal)?StudioTheme.Green:Color.Orange;}
+        };clock.Start();
         FormClosing += (_,e) => { if(changed){var answer=MessageBox.Show(this,"Wijzigingen opslaan als concept?","Qscreen",MessageBoxButtons.YesNoCancel,MessageBoxIcon.Question);if(answer==DialogResult.Cancel)e.Cancel=true;else if(answer==DialogResult.Yes){try{SaveDraft();}catch(Exception ex){MessageBox.Show(this,ex.Message);e.Cancel=true;}}} };
         FormClosed += (_,_) => { clock.Dispose(); renderer.Dispose(); canvas.Image?.Dispose(); };
         RefreshList();
+        StudioTheme.FitWindow(this,new Size(1360,900),new Size(1000,700));
     }
 
     void Safe(Action action) { try { action(); } catch(Exception ex) { pendingRevision=null;status.ForeColor=Color.Orange;status.Text=ex.Message; } }
-    void Remember() => PushUndo(DesignFiles.Serialize(design));
-    void PushUndo(string state) { undo.Add(state); if(undo.Count>20)undo.RemoveAt(0); redo.Clear(); }
+    void Remember() => PushUndo(DesignSnapshot.Capture(design));
+    void PushUndo(DesignSnapshot state) { undo.Add(state); if(undo.Count>20)undo.RemoveAt(0); redo.Clear(); }
     void Commit()
     {
-        design=DesignFiles.Parse(DesignFiles.Serialize(design));
-        lastSnapshot=DesignFiles.Serialize(design); changed=true; Render();
+        design=DesignSnapshot.Capture(design).Restore();
+        lastSnapshot=DesignSnapshot.Capture(design); changed=true; Render();
         pendingRevision=null;status.ForeColor=Color.Silver;status.Text="Wijzigingen nog niet toegepast.";
     }
     void Change(Action action)
@@ -128,6 +153,7 @@ sealed class DesignWindow : Form
     }
     void Render()
     {
+        renderQueued=false;
         try { var next=renderer.Render(design,ScreenReadings.Demo); var previous=canvas.Image;canvas.Image=next;previous?.Dispose();canvas.Invalidate(); }
         catch(Exception ex) { status.Text="Voorbeeld: "+ex.Message; }
     }
@@ -143,8 +169,8 @@ sealed class DesignWindow : Form
     void Delete(){if(Selected is {} w){Remember();design.Widgets.Remove(w);Commit();RefreshList();}}
     void Duplicate(){if(Selected is {} w){if(design.Widgets.Count>=64)return;Remember();var copy=System.Text.Json.JsonSerializer.Deserialize<ScreenWidget>(System.Text.Json.JsonSerializer.Serialize(w,DesignFiles.Json),DesignFiles.Json)!;copy.Name+=" kopie";copy.X+=10;copy.Y+=10;design.Widgets.Add(copy);Commit();RefreshList(null,design.Widgets.Count-1);}}
     void MoveLayer(int delta){int i=elements.SelectedIndex,j=i+delta;if(i<0||j<0||j>=design.Widgets.Count)return;Remember();(design.Widgets[i],design.Widgets[j])=(design.Widgets[j],design.Widgets[i]);Commit();RefreshList(null,j);}
-    void Undo(){if(undo.Count==0)return;redo.Add(DesignFiles.Serialize(design));design=DesignFiles.Parse(undo[^1]);undo.RemoveAt(undo.Count-1);lastSnapshot=DesignFiles.Serialize(design);changed=true;RefreshList();}
-    void Redo(){if(redo.Count==0)return;undo.Add(DesignFiles.Serialize(design));design=DesignFiles.Parse(redo[^1]);redo.RemoveAt(redo.Count-1);lastSnapshot=DesignFiles.Serialize(design);changed=true;RefreshList();}
+    void Undo(){if(undo.Count==0)return;redo.Add(DesignSnapshot.Capture(design));design=undo[^1].Restore();undo.RemoveAt(undo.Count-1);lastSnapshot=DesignSnapshot.Capture(design);pendingRevision=null;changed=true;RefreshList();}
+    void Redo(){if(redo.Count==0)return;undo.Add(DesignSnapshot.Capture(design));design=redo[^1].Restore();redo.RemoveAt(redo.Count-1);lastSnapshot=DesignSnapshot.Capture(design);pendingRevision=null;changed=true;RefreshList();}
     void SaveDraft(){design.Name=name.Text;DesignFiles.Save(Path.Combine(directory,"custom-draft.json"),design);changed=false;status.Text="Concept opgeslagen. Klik op Toepassen op scherm om dit ontwerp te gebruiken.";}
     void Apply()
     {
@@ -168,17 +194,17 @@ sealed class DesignWindow : Form
         Change(()=>design.BackgroundPng=encoded);status.Text="Achtergrond geïmporteerd en in je ontwerp opgenomen.";
     }
     void ChooseFont(){if(Selected is not {} w)return;using var d=new FontDialog{Font=new Font(w.FontFamily,w.FontSize,FontStyle.Regular,GraphicsUnit.Pixel),ShowColor=true,Color=w.Foreground};if(d.ShowDialog(this)==DialogResult.OK)Change(()=>{w.FontFamily=d.Font.FontFamily.Name;w.FontSize=d.Font.SizeInPoints*96/72;w.Bold=d.Font.Bold;w.Italic=d.Font.Italic;w.Foreground=d.Color;});}
-    RectangleF ScreenBounds { get {float size=Math.Min(canvas.ClientSize.Width,canvas.ClientSize.Height);return new((canvas.ClientSize.Width-size)/2,(canvas.ClientSize.Height-size)/2,size,size);} }
+    RectangleF ScreenBounds=>((StudioPreview)canvas).DisplayBounds;
     Point ScreenPoint(Point p){var r=ScreenBounds;return new((int)((p.X-r.X)*412/Math.Max(1,r.Width)),(int)((p.Y-r.Y)*412/Math.Max(1,r.Height)));}
     RectangleF ToCanvas(RectangleF rect){var r=ScreenBounds;float scale=r.Width/412;return new(r.X+rect.X*scale,r.Y+rect.Y*scale,rect.Width*scale,rect.Height*scale);}
     void MouseDownCanvas(object? sender,MouseEventArgs e)
     {
         if(e.Button!=MouseButtons.Left)return;var p=ScreenPoint(e.Location);
         var w=design.Widgets.LastOrDefault(w=>w.Visible&&new Rectangle(w.X,w.Y,w.Width,w.Height).Contains(p));
-        if(w==null)return;elements.SelectedItem=w;dragStart=p;widgetStart=new(w.X,w.Y);dragSnapshot=DesignFiles.Serialize(design);dragging=true;canvas.Capture=true;
+        if(w==null)return;elements.SelectedItem=w;dragStart=p;widgetStart=new(w.X,w.Y);dragSnapshot=DesignSnapshot.Capture(design);dragging=true;canvas.Capture=true;
     }
-    void MouseMoveCanvas(object? sender,MouseEventArgs e){if(!dragging||Selected is not {} w)return;var p=ScreenPoint(e.Location);w.X=Math.Clamp(widgetStart.X+p.X-dragStart.X,-412,412);w.Y=Math.Clamp(widgetStart.Y+p.Y-dragStart.Y,-412,412);properties.Refresh();Render();}
-    void MouseUpCanvas(object? sender,MouseEventArgs e){if(!dragging)return;dragging=false;canvas.Capture=false;if(dragSnapshot!=null&&dragSnapshot!=DesignFiles.Serialize(design)){int index=elements.SelectedIndex;PushUndo(dragSnapshot);Commit();RefreshList(null,index);}dragSnapshot=null;}
+    void MouseMoveCanvas(object? sender,MouseEventArgs e){if(!dragging||Selected is not {} w)return;var p=ScreenPoint(e.Location);w.X=Math.Clamp(widgetStart.X+p.X-dragStart.X,-412,412);w.Y=Math.Clamp(widgetStart.Y+p.Y-dragStart.Y,-412,412);renderQueued=true;}
+    void MouseUpCanvas(object? sender,MouseEventArgs e){if(!dragging)return;dragging=false;canvas.Capture=false;if(dragSnapshot!=null&&dragSnapshot!=DesignSnapshot.Capture(design)){int index=elements.SelectedIndex;PushUndo(dragSnapshot);Commit();RefreshList(null,index);}dragSnapshot=null;}
     protected override bool ProcessCmdKey(ref Message msg,Keys keyData)
     {
         if(keyData==(Keys.Control|Keys.S)){Safe(SaveDraft);return true;}
