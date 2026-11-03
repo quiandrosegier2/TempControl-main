@@ -16,5 +16,5 @@ foreach($name in @('Qscreen.exe','Qscreen.dll','Qscreen.runtimeconfig.json','Pre
 }
 if(Test-Path -LiteralPath (Join-Path $publish 'TempMonitor.exe')){throw 'Legacy executable remains in clean publish output'}
 $version=[Diagnostics.FileVersionInfo]::GetVersionInfo((Join-Path $publish 'Qscreen.exe')).ProductVersion
-if($version -notlike '1.5.0*'){throw ('Wrong app version: '+$version)}
-'PASS: Qscreen 1.5.0 payload, self-contained WinForms, firmware offsets and matching factory image, no stale launcher.'
+if($version -notlike '1.5.1*'){throw ('Wrong app version: '+$version)}
+'PASS: Qscreen 1.5.1 payload, self-contained WinForms, firmware offsets and matching factory image, no stale launcher.'

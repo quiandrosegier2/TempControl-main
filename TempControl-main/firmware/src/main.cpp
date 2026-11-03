@@ -77,13 +77,13 @@ static float parseValue(const char *s) {
 
 static void handleLine(char *line) {
   if (strcmp(line, "CAPS") == 0) {
-    Serial.println("QSCREEN_FRAME1");
+    Serial.println("QSCREEN_FRAME2");
     return;
   }
-  if (strncmp(line, "FRAME=", 6) == 0) {
+  if (strncmp(line, "FRAME2=", 7) == 0) {
     unsigned long count, hash;
     char extra;
-    if (sscanf(line + 6, "%lu,%lu%c", &count, &hash, &extra) != 2 || count != CustomFrame::Bytes) {
+    if (sscanf(line + 7, "%lu,%lu%c", &count, &hash, &extra) != 2 || count != CustomFrame::Bytes) {
       Serial.println("FRAMEERR length"); return;
     }
     if (!customPixels) customPixels = static_cast<uint8_t *>(ps_malloc(CustomFrame::Bytes));
@@ -150,6 +150,7 @@ static void readSerial() {
         customActive = true; everReceived = true; lastRx = millis(); dirty = false;
         Serial.println("FRAMEOK");
       }
+      else if (customReceived % 1024u == 0) Serial.println("FRAMECHUNK");
       continue;
     }
     char c = Serial.read();
@@ -422,6 +423,7 @@ static void resetPanel() {
 }
 
 void setup() {
+  Serial.setRxBufferSize(4096);
   Serial.begin(115200);
   preferencesReady = layoutPreferences.begin("tempcontrol", false);
   if (preferencesReady) {

@@ -2,6 +2,7 @@ using System.Drawing;
 using System.Drawing.Imaging;
 using System.Windows.Forms;
 using System.Runtime.InteropServices;
+using System.Diagnostics;
 
 sealed class DesignWindow : Form
 {
@@ -23,11 +24,15 @@ sealed class DesignWindow : Form
     string? dragSnapshot;
     Point dragStart, widgetStart;
     bool dragging, changed, refreshing;
+    readonly Action requestMonitorStart;
+    string? pendingRevision;
+    DateTime requestedUtc;
     ScreenWidget? Selected => elements.SelectedItem as ScreenWidget;
 
-    public DesignWindow(string appDirectory)
+    public DesignWindow(string appDirectory, Action? startMonitor = null)
     {
         directory = appDirectory;
+        requestMonitorStart = startMonitor ?? (() => Process.Start(new ProcessStartInfo("powershell.exe", "-NoProfile -Command \"Start-ScheduledTask -TaskName TempMonitor -ErrorAction Stop\"") { UseShellExecute=false,CreateNoWindow=true }));
         string draft = Path.Combine(directory, "custom-draft.json");
         string active = Path.Combine(directory, "custom-design.json");
         design = ScreenDesign.CreateDefault();
@@ -54,6 +59,7 @@ sealed class DesignWindow : Form
         Button("Achtergrondkleur", () => { using var d = new ColorDialog { Color = Color.FromArgb(design.BackgroundArgb) }; if(d.ShowDialog(this)==DialogResult.OK) Change(() => design.BackgroundArgb=d.Color.ToArgb()); });
         Button("Lettertype…", ChooseFont);
         Button("Toepassen op scherm", Apply).BackColor = Color.FromArgb(165,35,43);
+        Button("Firmware bijwerken…",()=>Process.Start(new ProcessStartInfo("powershell.exe","-NoProfile -STA -ExecutionPolicy Bypass -WindowStyle Hidden -File \""+Path.Combine(directory,"flash-firmware.ps1")+"\""){UseShellExecute=true,WindowStyle=ProcessWindowStyle.Hidden}));
 
         var left = new Panel { Dock = DockStyle.Left, Width = 228, Padding = new Padding(12) };
         var nameLabel = new Label { Text = "ONTWERPNAAM", Dock = DockStyle.Top, Height = 27 };
@@ -91,19 +97,20 @@ sealed class DesignWindow : Form
         canvas.Paint += (_,e) => { if(Selected is { } w){var r=ToCanvas(new RectangleF(w.X,w.Y,w.Width,w.Height));using var pen=new Pen(Color.FromArgb(230,70,90),2){DashStyle=System.Drawing.Drawing2D.DashStyle.Dash};e.Graphics.DrawRectangle(pen,r.X,r.Y,r.Width,r.Height);} };
         canvas.DragEnter += (_,e) => e.Effect=e.Data?.GetDataPresent(DataFormats.FileDrop)==true?DragDropEffects.Copy:DragDropEffects.None;
         canvas.DragDrop += (_,e) => Safe(()=>{ if(e.Data?.GetData(DataFormats.FileDrop) is string[] files && files.Length>0) SetBackground(files[0]); });
-        clock.Tick += (_,_) => Render(); clock.Start();
+        clock.Tick += (_,_) => { Render(); if(pendingRevision!=null){var delivery=ScreenDelivery.Read(directory);status.Text=ScreenDelivery.Describe(delivery,pendingRevision,requestedUtc,DateTime.UtcNow);status.ForeColor=status.Text.StartsWith("Ontwerp ontvangen",StringComparison.Ordinal)?Color.LightGreen:Color.Orange;} }; clock.Start();
         FormClosing += (_,e) => { if(changed){var answer=MessageBox.Show(this,"Wijzigingen opslaan als concept?","Qscreen",MessageBoxButtons.YesNoCancel,MessageBoxIcon.Question);if(answer==DialogResult.Cancel)e.Cancel=true;else if(answer==DialogResult.Yes){try{SaveDraft();}catch(Exception ex){MessageBox.Show(this,ex.Message);e.Cancel=true;}}} };
         FormClosed += (_,_) => { clock.Dispose(); renderer.Dispose(); canvas.Image?.Dispose(); };
         RefreshList();
     }
 
-    void Safe(Action action) { try { action(); } catch(Exception ex) { status.Text=ex.Message; } }
+    void Safe(Action action) { try { action(); } catch(Exception ex) { pendingRevision=null;status.ForeColor=Color.Orange;status.Text=ex.Message; } }
     void Remember() => PushUndo(DesignFiles.Serialize(design));
     void PushUndo(string state) { undo.Add(state); if(undo.Count>20)undo.RemoveAt(0); redo.Clear(); }
     void Commit()
     {
         design=DesignFiles.Parse(DesignFiles.Serialize(design));
         lastSnapshot=DesignFiles.Serialize(design); changed=true; Render();
+        pendingRevision=null;status.ForeColor=Color.Silver;status.Text="Wijzigingen nog niet toegepast.";
     }
     void Change(Action action)
     {
@@ -139,7 +146,14 @@ sealed class DesignWindow : Form
     void Undo(){if(undo.Count==0)return;redo.Add(DesignFiles.Serialize(design));design=DesignFiles.Parse(undo[^1]);undo.RemoveAt(undo.Count-1);lastSnapshot=DesignFiles.Serialize(design);changed=true;RefreshList();}
     void Redo(){if(redo.Count==0)return;undo.Add(DesignFiles.Serialize(design));design=DesignFiles.Parse(redo[^1]);redo.RemoveAt(redo.Count-1);lastSnapshot=DesignFiles.Serialize(design);changed=true;RefreshList();}
     void SaveDraft(){design.Name=name.Text;DesignFiles.Save(Path.Combine(directory,"custom-draft.json"),design);changed=false;status.Text="Concept opgeslagen. Klik op Toepassen op scherm om dit ontwerp te gebruiken.";}
-    void Apply(){design.Name=name.Text;DesignFiles.Apply(directory,design);SaveDraft();status.Text="Eigen ontwerp actief. Vereist firmware 1.5.0. De achtergrondmeting stuurt je ontwerp automatisch; het scherm moet via USB verbonden blijven.";}
+    void Apply()
+    {
+        design.Name=name.Text; DesignFiles.Apply(directory,design); SaveDraft();
+        pendingRevision=ScreenDelivery.RevisionOf(directory); requestedUtc=DateTime.UtcNow;
+        requestMonitorStart();
+        status.ForeColor=Color.Orange;
+        status.Text=ScreenDelivery.Describe(null,pendingRevision,requestedUtc,requestedUtc);
+    }
     void Open(){using var d=new OpenFileDialog { Filter="Qscreen ontwerp (*.qscreen;*.json)|*.qscreen;*.json" };if(d.ShowDialog(this)!=DialogResult.OK)return;var loaded=DesignFiles.Load(d.FileName);Remember();design=loaded;Commit();RefreshList();status.Text="Ontwerp geopend; nog niet toegepast.";}
     void Export(){using var d=new SaveFileDialog {Filter="Qscreen ontwerp (*.qscreen)|*.qscreen",FileName="Mijn ontwerp.qscreen"};if(d.ShowDialog(this)==DialogResult.OK){design.Name=name.Text;DesignFiles.Save(d.FileName,design);status.Text="Ontwerp inclusief achtergrond geëxporteerd.";}}
     void ImportBackground(){using var d=new OpenFileDialog{Filter="Afbeeldingen|*.png;*.jpg;*.jpeg;*.bmp"};if(d.ShowDialog(this)==DialogResult.OK)SetBackground(d.FileName);}

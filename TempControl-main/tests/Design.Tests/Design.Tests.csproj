@@ -7,6 +7,7 @@
     <Compile Include="../../pc-app/ScreenDesign.cs" Link="ScreenDesign.cs" />
     <Compile Include="../../pc-app/CustomScreenSender.cs" Link="CustomScreenSender.cs" />
     <Compile Include="../../pc-app/DesignWindow.cs" Link="DesignWindow.cs" />
+    <Compile Include="../../pc-app/ScreenDelivery.cs" Link="ScreenDelivery.cs" />
     <PackageReference Include="System.IO.Ports" Version="10.0.3" />
   </ItemGroup>
 </Project>

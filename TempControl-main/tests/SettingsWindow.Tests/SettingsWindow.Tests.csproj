@@ -11,5 +11,6 @@
     <Compile Include="../../pc-app/LayoutSettings.cs" Link="LayoutSettings.cs" />
     <Compile Include="../../pc-app/ScreenDesign.cs" Link="ScreenDesign.cs" />
     <Compile Include="../../pc-app/DesignWindow.cs" Link="DesignWindow.cs" />
+    <Compile Include="../../pc-app/ScreenDelivery.cs" Link="ScreenDelivery.cs" />
   </ItemGroup>
 </Project>

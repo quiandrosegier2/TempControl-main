@@ -18,7 +18,7 @@ pc-app/installer/  Inno Setup-installer
 
 Download het installatiebestand via [GitHub Releases](https://github.com/quiandrosegier2/TempControl-main/releases/latest).
 
-1. Start `Qscreen-1.5.0.exe`, geef toestemming voor beheerdersrechten en kies een schermlayout. Het bewegende demovoorbeeld speelt op de layoutpagina; met **Pauzeren/Afspelen** stop of start je de animatie.
+1. Start `Qscreen-1.5.1.exe`, geef toestemming voor beheerdersrechten en kies een schermlayout. Het bewegende demovoorbeeld speelt op de layoutpagina; met **Pauzeren/Afspelen** stop of start je de animatie.
 2. Sluit een **Waveshare ESP32-S3-Touch-LCD-1.46 (16 MB)** met een USB-C-datakabel aan.
 3. Laat aan het einde van Setup de optie om firmware te installeren aangevinkt.
 4. Kies de COM-poort van het scherm en klik op **Firmware installeren**. Dit vervangt de bestaande firmware.
@@ -44,7 +44,7 @@ Gebruik `{value}` voor meetwaarden, `HH:mm:ss` voor een klok en `dd-MM-yyyy` voo
 
 **Opslaan** bewaart een concept. **Exporteren…** maakt een zelfstandig `.qscreen`-bestand inclusief achtergrond; bewaar zo meerdere ontwerpen of deel ze. **Openen…** importeert een ontwerp. Lettertypen worden niet meegestuurd: op een andere pc moeten ze geïnstalleerd zijn, anders wordt een vervangend lettertype gebruikt. Maximaal 64 elementen per ontwerp; achtergronden worden verkleind tot maximaal 1024 pixels aan de langste zijde.
 
-Klik **Toepassen op scherm** om je ontwerp te activeren. Hiervoor is de meegeleverde **firmware 1.5.0** nodig. Windows tekent het volledige beeld en stuurt dat met lengte- en checksumcontrole via USB naar het scherm. De pc en USB-verbinding moeten actief blijven. De verversing is bedoeld voor meetwaarden en klokupdates; de overdrachtstijd telt mee, dus dit is geen videospeler. Zonder pc-data valt het scherm terug op de ingebouwde offline-weergave. Ontwerpen staan op de pc en worden niet elke seconde in de flash van het scherm geschreven. Je kunt wel zonder aangesloten scherm ontwerpen en voorbeelden bekijken.
+Klik **Toepassen op scherm** om je ontwerp te activeren. Hiervoor is de meegeleverde **firmware 1.5.1** nodig. Windows tekent het volledige beeld en stuurt dat met lengte- en checksumcontrole via USB naar het scherm. De pc en USB-verbinding moeten actief blijven. De verversing is bedoeld voor meetwaarden en klokupdates; de overdrachtstijd telt mee, dus dit is geen videospeler. Zonder pc-data valt het scherm terug op de ingebouwde offline-weergave. Ontwerpen staan op de pc en worden niet elke seconde in de flash van het scherm geschreven. Je kunt wel zonder aangesloten scherm ontwerpen en voorbeelden bekijken.
 
 Een vaste layout toepassen in het hoofdvenster schakelt je eigen ontwerp uit. Het concept blijft bewaard. Dubbelklikken op **Qscreen.exe** opent voortaan de app; de achtergrondtaak gebruikt `Qscreen.exe --monitor`. Bestaande installatiemap en taaknaam blijven behouden voor upgrades. Het bureaublad en Start krijgen Qscreen-snelkoppelingen.
 
@@ -106,7 +106,7 @@ Voor stille installaties kan `/LAYOUT=` worden gevolgd door `classic`, `gauges`,
 
 ## 2. Windows-app installeren
 
-Voer `Qscreen-1.5.0.exe` uit. De donkere installer en het firmwarevenster tonen het QSCREEN //-beeldmerk. De installer:
+Voer `Qscreen-1.5.1.exe` uit. De donkere installer en het firmwarevenster tonen het QSCREEN //-beeldmerk. De installer:
 
 - installeert de app in `C:\Program Files\TempMonitor`; .NET zit erin, dus dat hoef je niet apart te installeren
 - installeert desgewenst de **PawnIO**-driver (vinkje). Die is nodig om de CPU-temperatuur van een Ryzen te lezen.
@@ -177,7 +177,7 @@ CPU=42.5;GPU=48.0;FPS=165
 
 Een onbekende waarde wordt `nan`. Stuur je `PING`, dan antwoordt het scherm met `TEMPMON`.
 
-Voor eigen ontwerpen antwoordt firmware 1.5.0 op `CAPS` met `QSCREEN_FRAME1`. De pc stuurt `FRAME=339488,<FNV1a-checksum>` en wacht op `FRAMEREADY` voordat hij 339488 bytes RGB565 (little endian, 412 × 412) verzendt. Alleen na een complete, geldige checksum wordt het canvas vervangen en volgt `FRAMEOK`; fouten leveren `FRAMEERR` op. Er worden geen binaire beelden naar oude firmware gestuurd. Onvolledige overdrachten vervallen na tien seconden zonder nieuwe bytes. De host bewaart het ontwerp; de firmware bewaart het laatst ontvangen beeld uitsluitend in RAM.
+Voor eigen ontwerpen antwoordt firmware 1.5.1 op `CAPS` met `QSCREEN_FRAME2`. De pc stuurt `FRAME2=339488,<FNV1a-checksum>` en wacht op `FRAMEREADY` voordat hij 339488 bytes RGB565 (little endian, 412 × 412) verzendt. Alleen na een complete, geldige checksum wordt het canvas vervangen en volgt `FRAMEOK`; fouten leveren `FRAMEERR` op. Er worden geen binaire beelden naar oude firmware gestuurd. Onvolledige overdrachten vervallen na tien seconden zonder nieuwe bytes. De host bewaart het ontwerp; de firmware bewaart het laatst ontvangen beeld uitsluitend in RAM.
 
 Optioneel kan `;LAYOUT=` met een van de eenendertig layoutnamen worden toegevoegd, bijvoorbeeld `;LAYOUT=arsenal`. Een afzonderlijke `LAYOUT=arsenal`-regel werkt ook, zonder de meetwaarden te veranderen. Onbekende layoutnamen worden genegeerd. Het scherm schrijft de keuze alleen naar het geheugen wanneer deze verandert.
 
@@ -195,3 +195,7 @@ Bovenaan `firmware/src/main.cpp`:
 Windows-venster testen: `dotnet run --project tests/SettingsWindow.Tests -c Release -- pc-app/installer` (eerst voorbeelden en branding genereren). Dit controleert selectie, opslaan, timer, pauzeren en hervatten zonder echte hardware of installatie te wijzigen.
 
 Ontwerper testen: `dotnet run --project tests/Design.Tests -c Release -- pc-app/installer/tool-cache/qscreen-tests`. Dit controleert ontwerpen/achtergronden, widgets, verslepen, undo/redo, RGB565 en gesimuleerde USB-overdracht. `tests/Test-Payload.ps1` controleert de gebouwde app en firmware. `tests/speedometer/custom-frame-tests.cpp` controleert de checksum en framegrootte aan firmwarezijde.
+
+### Toepassen lijkt niets te doen (1.5.1)
+
+De Windows-app installeren werkt de firmware van het scherm niet automatisch bij. Gebruik **Firmware bijwerken** in de ontwerper en installeer de meegeleverde firmware 1.5.1. **Toepassen op scherm** bewaart het ontwerp, start de achtergrondtaak en toont de ontvangststatus. Alleen een verse FRAMEOK voor hetzelfde ontwerp geeft een groene bevestiging. Ontbrekende verbinding, ongeschikte firmware en geen bevestiging worden expliciet getoond. Je bestaande ontwerp blijft bewaard. Het verbeterde protocol wacht na elk blok van 1024 bytes op FRAMECHUNK; de ontvangbuffer is vergroot tot 4096 bytes.

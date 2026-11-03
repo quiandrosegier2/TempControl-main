@@ -60,6 +60,7 @@ ScreenDesign? customDesign = null;
 DateTime designModified = DateTime.MinValue;
 string? designError = null;
 bool customFirmwareWarning = false;
+string customRevision = "";
 string? lastStatus = null;
 
 while (true)
@@ -90,6 +91,7 @@ while (true)
                     DateTime modified = File.GetLastWriteTimeUtc(path);
                     if (customDesign == null || modified != designModified)
                     {
+                        customRevision = ScreenDelivery.RevisionOf(AppContext.BaseDirectory);
                         customDesign = DesignFiles.Load(path); designModified = modified;
                     }
                     var readings = new ScreenReadings(cpu, gpu, fps,
@@ -97,10 +99,12 @@ while (true)
                         ReadLoad(computer, HardwareType.GpuNvidia, HardwareType.GpuAmd, HardwareType.GpuIntel),
                         ReadLoad(computer, HardwareType.Memory), DateTime.Now);
                     using var frame = customRenderer.Render(customDesign, readings);
+                    ScreenDelivery.Write(AppContext.BaseDirectory,customRevision,"sending","Beeld verzenden");
                     sentCustom = customSender!.Send(DesignRenderer.Rgb565(frame));
+                    ScreenDelivery.Write(AppContext.BaseDirectory,customRevision,sentCustom ? "received" : "firmware-required",sentCustom ? "FRAMEOK" : "QSCREEN_FRAME2 ontbreekt");
                     if (!sentCustom && !customFirmwareWarning)
                     {
-                        Log.Write("Eigen ontwerpen vereisen Qscreen-firmware 1.5.0. Werk het scherm bij via de app.");
+                        Log.Write("Eigen ontwerpen vereisen Qscreen-firmware 1.5.1. Werk het scherm bij via de app.");
                         customFirmwareWarning = true;
                     }
                     designError = null;
@@ -109,6 +113,7 @@ while (true)
                 {
                     if (designError != ex.Message) Log.Write("Eigen ontwerp: " + ex.Message);
                     designError = ex.Message;
+                    ScreenDelivery.Write(AppContext.BaseDirectory,customRevision,"invalid-design",ex.Message);
                 }
             }
             if (!sentCustom) port.Write(line + "\n");
@@ -119,6 +124,7 @@ while (true)
             Log.Write($"Scherm niet gevonden, blijf zoeken... ({line})");
             lastStatus = "notfound";
         }
+        if(port==null)ScreenDelivery.Write(AppContext.BaseDirectory,customRevision,"disconnected","USB-scherm niet gevonden.");
 
         // Ontbrekende sensoren eenmalig melden
         string sensors = $"cpu:{cpu.HasValue} gpu:{gpu.HasValue}";
@@ -133,6 +139,7 @@ while (true)
     catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or InvalidOperationException or TimeoutException)
     {
         Log.Write($"Verbinding verbroken: {ex.Message}");
+        ScreenDelivery.Write(AppContext.BaseDirectory,customRevision,"disconnected",ex.Message);
         lastStatus = null;
         try { port?.Dispose(); } catch { }
         port = null;

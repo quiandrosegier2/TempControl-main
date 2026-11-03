@@ -21,7 +21,7 @@ A compact PC system monitor featuring a round Waveshare ESP32-S3-Touch-LCD-1.46 
 
 Download the setup executable from [GitHub Releases](https://github.com/quiandrosegier2/TempControl-main/releases/latest).
 
-1. Run `Qscreen-1.5.0.exe` on a Windows x64 PC and allow administrator access. Choose a layout and watch its demo on the layout page; use **Pauzeren/Afspelen** to pause or play.
+1. Run `Qscreen-1.5.1.exe` on a Windows x64 PC and allow administrator access. Choose a layout and watch its demo on the layout page; use **Pauzeren/Afspelen** to pause or play.
 2. Connect a **Waveshare ESP32-S3-Touch-LCD-1.46 (16 MB)** using a USB-C data cable.
 3. Leave the firmware installation option selected at the end of Setup.
 4. Select the display's COM port and click **Firmware installeren**. This replaces any existing firmware on that display.
@@ -33,7 +33,7 @@ You can repeat the upload from **Start > Qscreen tools > Firmware installeren**.
 
 The app, .NET runtime, firmware, uploader and optional PawnIO driver are included. No internet connection or winget is needed during installation. Windows may request a restart after installing the driver. Developer build instructions are in [the project guide](TempControl-main/Readme.md).
 
-To change layouts later, open **Qscreen** from the desktop or Start menu, select a layout and click **Layout toepassen**. The monitor picks up the selection within its next one-second update; no restart is needed. Upload the bundled **1.5.0 firmware** once to enable all 31 designs. Further layout changes require no flashing. Updates preserve the current layout selection. Layout Studio can also be opened directly with `Qscreen.exe --settings`.
+To change layouts later, open **Qscreen** from the desktop or Start menu, select a layout and click **Layout toepassen**. The monitor picks up the selection within its next one-second update; no restart is needed. Upload the bundled **1.5.1 firmware** once to enable all 31 designs. Further layout changes require no flashing. Updates preserve the current layout selection. Layout Studio can also be opened directly with `Qscreen.exe --settings`.
 
 ### Qscreen Design Studio — version 1.5.0
 
@@ -47,7 +47,7 @@ Open **Eigen ontwerp maken…** in Qscreen to create a custom design for the rou
 - Save drafts, export portable `.qscreen` files including their background, and import them later. Export files to keep multiple designs or share them; fonts must be installed on the receiving Windows PC or a fallback font is used.
 - Click **Toepassen op scherm** to activate the design. Applying a preset switches back to the existing firmware themes.
 
-Custom designs require the bundled **1.5.0 firmware**. Windows renders the chosen fonts and images and sends complete, checksum-verified frames over USB. The PC app and USB connection must remain active; the refresh interval includes image transfer time and is intended for sensor/clock updates, not video playback. After loss of PC data the display returns to its built-in offline view. Designs and backgrounds are stored on the PC, rather than written to the screen's flash every second. Editing and previewing designs works without a connected display.
+Custom designs require the bundled **1.5.1 firmware**. Windows renders the chosen fonts and images and sends complete, checksum-verified frames over USB. The PC app and USB connection must remain active; the refresh interval includes image transfer time and is intended for sensor/clock updates, not video playback. After loss of PC data the display returns to its built-in offline view. Designs and backgrounds are stored on the PC, rather than written to the screen's flash every second. Editing and previewing designs works without a connected display.
 
 Double-clicking **Qscreen.exe** opens the app. The scheduled background task uses `Qscreen.exe --monitor`; `--settings`, `--port COM5` and `--list` remain available. Upgrading keeps the existing installation directory and task identity, and replaces the old launcher shortcuts with Qscreen shortcuts.
 
@@ -98,3 +98,7 @@ Gaming artwork is original and generated in code. Weapons, bullets, fire and ene
 Speedometer needles smoothly follow their own live readings; the digital numbers show the actual values. Missing readings hide the relevant needle. Values beyond a dial's range pin its needle at the scale limit while retaining the actual digital reading. Upload the 1.2.2 firmware once to get the three-dial Speedometer design.
 
 Built with PlatformIO, .NET, LibreHardwareMonitor, and PresentMon.
+
+### Applying a custom design (1.5.1)
+
+Apply saves the design, starts the scheduled background monitor and waits for a fresh acknowledgment for that exact design. Green success appears only after the screen returns FRAMEOK. Missing USB, incompatible firmware and missing confirmation are displayed explicitly. Use Firmware bijwerken in the designer to install the bundled 1.5.1 firmware; updating only the Windows app does not update the screen. The revised protocol waits for FRAMECHUNK after every 1024 bytes and uses a 4096-byte receiver queue to prevent large images overflowing USB reception. Existing designs remain saved during upgrades.

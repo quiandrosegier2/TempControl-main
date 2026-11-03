@@ -35,13 +35,23 @@ static class Program
         Assert(bytes.Length==339488,"Incorrect RGB565 length");
         using(var red=new Bitmap(412,412)){using(var g=Graphics.FromImage(red))g.Clear(Color.Red);var raw=DesignRenderer.Rgb565(red);Assert(raw[0]==0&&raw[1]==248,"RGB565 byte order incorrect");}
         Assert(CustomScreenSender.Hash("hello"u8.ToArray())==0x4f9f2cab,"FNV-1a test vector failed");
-        var connection=new FakeConnection(["QSCREEN_FRAME1","FRAMEREADY","FRAMEOK"]);
+        var connection=new FakeConnection(new[]{"QSCREEN_FRAME2","FRAMEREADY"}.Concat(Enumerable.Repeat("FRAMECHUNK",(bytes.Length-1)/1024)).Append("FRAMEOK"));
         Assert(new CustomScreenSender(connection).Send(bytes),"Transfer failed");
-        Assert(connection.Commands[0]=="CAPS"&&connection.Commands[1]==$"FRAME=339488,{CustomScreenSender.Hash(bytes)}","Handshake or checksum header incorrect");
+        Assert(connection.Commands[0]=="CAPS"&&connection.Commands[1]==$"FRAME2=339488,{CustomScreenSender.Hash(bytes)}","Handshake or checksum header incorrect");
         Assert(connection.Payload.SequenceEqual(bytes),"Chunked transfer corrupted payload");
         var old=new FakeConnection([]);var sender=new CustomScreenSender(old);
         Assert(!sender.Send(bytes)&&!sender.Send(bytes)&&old.Commands.Count==1&&old.Payload.Count==0,"Old firmware was sent binary data");
-        Reject(()=>new CustomScreenSender(new FakeConnection(["QSCREEN_FRAME1","FRAMEERR memory"])).Send(bytes),"Receiver rejection ignored");
+        Reject(()=>new CustomScreenSender(new FakeConnection(["QSCREEN_FRAME2","FRAMEERR memory"])).Send(bytes),"Receiver rejection ignored");
+        var previous=new FakeConnection(["QSCREEN_FRAME1"]);
+        Assert(!new CustomScreenSender(previous).Send(bytes)&&previous.Payload.Count==0,"Old frame protocol received binary data");
+        DateTime now=DateTime.UtcNow;
+        Assert(!ScreenDelivery.Describe(new(now,"other","received",""),"mine",now,now).Contains("weergegeven"),"Another design was marked received");
+        Assert(!ScreenDelivery.Describe(new(now.AddSeconds(-2),"mine","received",""),"mine",now,now).Contains("weergegeven"),"Stale acknowledgment was accepted");
+        Assert(ScreenDelivery.Describe(new(now,"mine","received",""),"mine",now,now).Contains("weergegeven"),"Matching frame acknowledgment missing");
+        Assert(ScreenDelivery.Describe(new(now,"mine","firmware-required",""),"mine",now,now).Contains("Firmware bijwerken"),"Firmware update instruction missing");
+        Assert(ScreenDelivery.Describe(null,"mine",now.AddMinutes(-1),now).Contains("geen bevestiging"),"Stopped monitor falsely reported success");
+        ScreenDelivery.Write(work,"mine","received","FRAMEOK");
+        Assert(ScreenDelivery.Read(work)?.Revision=="mine","Delivery status did not roundtrip");
         Reject(()=>DesignFiles.Parse("{\"Version\":2}"),"Unknown schema accepted");
         Reject(()=>DesignFiles.Parse("{\"Widgets\":null}"),"Null widget collection accepted");
         Reject(()=>DesignFiles.Parse("{\"BackgroundPng\":\"invalid\"}"),"Bad background accepted");
@@ -58,7 +68,7 @@ static class Program
         design.Name="Qscreen / Night Ops";
         DesignFiles.Save(Path.Combine(work,"custom-draft.json"),design);
         Application.EnableVisualStyles();
-        using var window=new DesignWindow(work);
+        using var window=new DesignWindow(work,()=>{});
         T Field<T>(string field)=>(T)typeof(DesignWindow).GetField(field,BindingFlags.Instance|BindingFlags.NonPublic)!.GetValue(window)!;
         void Call(string method,params object[] values)=>typeof(DesignWindow).GetMethod(method,BindingFlags.Instance|BindingFlags.NonPublic)!.Invoke(window,values);
         int count=Field<ScreenDesign>("design").Widgets.Count;
@@ -89,10 +99,21 @@ static class Program
     sealed class FakeConnection(IEnumerable<string> replies) : IFrameConnection
     {
         readonly Queue<string> responses=new(replies);
+        bool mayWrite;
         public List<string> Commands=[];
         public List<byte> Payload=[];
         public void WriteLine(string line)=>Commands.Add(line);
-        public void Write(byte[] bytes,int offset,int count)=>Payload.AddRange(bytes.Skip(offset).Take(count));
-        public string ReadLine()=>responses.Count>0?responses.Dequeue():throw new TimeoutException();
+        public void Write(byte[] bytes,int offset,int count)
+        {
+            Assert(count<=1024,"Transfer block exceeds safe RX budget");
+            Assert(mayWrite,"Sender skipped chunk acknowledgment"); mayWrite=false;
+            Payload.AddRange(bytes.Skip(offset).Take(count));
+        }
+        public string ReadLine()
+        {
+            string reply=responses.Count>0?responses.Dequeue():throw new TimeoutException();
+            if(reply is "FRAMEREADY" or "FRAMECHUNK")mayWrite=true;
+            return reply;
+        }
     }
 }

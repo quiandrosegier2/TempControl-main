@@ -32,6 +32,7 @@ sealed class CustomScreenSender(IFrameConnection connection)
         {
             string line=connection.ReadLine().Trim();
             if(line==expected)return;
+            if(expected=="QSCREEN_FRAME2" && line.StartsWith("QSCREEN_FRAME",StringComparison.Ordinal))throw new NotSupportedException("Oud beeldprotocol.");
             if(line.StartsWith("FRAMEERR",StringComparison.Ordinal))throw new IOException("Qscreen heeft het beeld geweigerd: "+line);
         }
         throw new IOException("Onverwacht antwoord van Qscreen.");
@@ -42,14 +43,19 @@ sealed class CustomScreenSender(IFrameConnection connection)
         if(supported==null)
         {
             connection.WriteLine("CAPS");
-            try { Expect("QSCREEN_FRAME1"); supported=true; }
-            catch(TimeoutException) { supported=false; }
+            try { Expect("QSCREEN_FRAME2"); supported=true; }
+            catch(Exception ex) when(ex is TimeoutException or NotSupportedException) { supported=false; }
         }
         if(supported!=true)return false;
-        connection.WriteLine("FRAME="+FrameBytes.ToString(CultureInfo.InvariantCulture)+","+Hash(bytes).ToString(CultureInfo.InvariantCulture));
+        connection.WriteLine("FRAME2="+FrameBytes.ToString(CultureInfo.InvariantCulture)+","+Hash(bytes).ToString(CultureInfo.InvariantCulture));
         Expect("FRAMEREADY");
-        // The receiver drains USB between display updates; no data is sent before READY.
-        for(int offset=0;offset<bytes.Length;offset+=4096)connection.Write(bytes,offset,Math.Min(4096,bytes.Length-offset));
+        // Never outrun the ESP32 RX queue: wait after each complete 1024-byte block.
+        for(int offset=0;offset<bytes.Length;offset+=1024)
+        {
+            int count=Math.Min(1024,bytes.Length-offset);
+            connection.Write(bytes,offset,count);
+            if(offset+count<bytes.Length)Expect("FRAMECHUNK");
+        }
         Expect("FRAMEOK");
         return true;
     }
