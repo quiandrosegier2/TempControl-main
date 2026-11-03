@@ -2,6 +2,8 @@ using System.Drawing;
 using System.Drawing.Imaging;
 using System.Reflection;
 using System.Diagnostics;
+using System.IO.Ports;
+using System.Text.Json;
 using System.Windows.Forms;
 
 static class Program
@@ -12,6 +14,7 @@ static class Program
     static void Run(string[] args)
     {
         Application.SetUnhandledExceptionMode(UnhandledExceptionMode.ThrowException);
+        if(args.Length>=3&&args[1]=="--physical"){Physical(Path.GetFullPath(args[0]),args[2],args.Length>3?args[3]:"");return;}
         string output=Path.GetFullPath(args[0]);Directory.CreateDirectory(output);int batch=args.Length>1?int.Parse(args[1]):0;
         var templates=batch==0?ExpansionTemplates.All:ExpansionTemplates.Batch(batch);
         Check(templates.Count==(batch==0?50:10),"Wrong expansion count");Check(templates.Select(t=>t.Id).Distinct().Count()==templates.Count,"Duplicate identifiers");
@@ -67,5 +70,24 @@ static class Program
             using var capture=new Bitmap(gallery.Width,gallery.Height);gallery.DrawToBitmap(capture,new Rectangle(Point.Empty,capture.Size));capture.Save(Path.Combine(output,"gallery-100.png"));gallery.Close();
         }
         Console.WriteLine($"PASS batch {batch}: {templates.Count} templates; background bytes={bytes}; median first render={timings.Order().ElementAt(timings.Count/2):0.0} ms. Physical ESP32 and missing reference poster not verified.");
+    }
+    static void Physical(string output,string portName,string installedDirectory)
+    {
+        if(!System.Text.RegularExpressions.Regex.IsMatch(portName,@"^COM\d{1,3}$"))throw new ArgumentException("Invalid COM port");
+        Directory.CreateDirectory(output);var results=new List<object>();int frames=0;
+        using var port=new SerialPort(portName,115200){NewLine="\n",DtrEnable=false,RtsEnable=false,WriteTimeout=5000,ReadTimeout=12000};port.Open();Thread.Sleep(600);port.DiscardInBuffer();
+        var sender=new CustomScreenSender(new SerialFrameConnection(port));using var renderer=new DesignRenderer();
+        foreach(var template in ExpansionTemplates.All)
+        {
+            int count=DesignRenderer.IsAnimated(template.Design)?2:1;var elapsed=Stopwatch.StartNew();
+            for(int i=0;i<count;i++)
+            {
+                var now=DateTime.Now.AddSeconds(i*1.2);var snapshot=LiveTelemetry.Read(installedDirectory,DateTime.UtcNow);var readings=snapshot is{} live?live.Readings with{Now=now}:LiveTelemetry.Unavailable(now);
+                using var frame=renderer.Render(template.Design,readings);if(!sender.Send(DesignRenderer.Rgb565(frame)))throw new IOException("Screen does not support acknowledged FRAME2");frames++;Thread.Sleep(180);
+            }
+            elapsed.Stop();results.Add(new{Name=template.Manifest.Name,Frames=count,Milliseconds=elapsed.ElapsedMilliseconds});Console.WriteLine("FRAMEOK: "+template.Manifest.Name+" / "+count);Console.Out.Flush();
+        }
+        File.WriteAllText(Path.Combine(output,"physical-report.json"),JsonSerializer.Serialize(new{UpdatedUtc=DateTime.UtcNow,Port=portName,Templates=results.Count,AcknowledgedFrames=frames,Results=results,VisualInspection=false,FirmwareFlashed=false},new JsonSerializerOptions{WriteIndented=true}));
+        Console.WriteLine("PASS: physical USB acknowledgements for "+results.Count+" templates / "+frames+" frames; manual visual inspection remains separate.");
     }
 }

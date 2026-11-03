@@ -42,4 +42,6 @@ Each batch is checked for complete required bindings, unique identifiers/appeara
 
 These checks are software tests. **The 50 new layouts have not been physically cycled through or visually verified on the ESP32.** Renderer timing and animation flags do not establish physical display frame rate. No comparison to the missing reference poster is claimed.
 
+A bounded developer USB test is provided in `tests/Test-PhysicalExpansion.ps1` and the Expansion.Tests `--physical` mode. It temporarily pauses only the Qscreen scheduled measurement task, checks FRAMEOK for each new design (including a second frame for animated designs), then restarts the original measurement in `finally`. It does not install firmware or change profiles. Build the test project in Release before explicitly running the script as administrator. The attempted run for this release was canceled at the Windows elevation prompt; the test never started and no device success is claimed.
+
 Source: `pc-app/ExpansionTemplates.cs`, `ExpansionArtwork.cs`, `OfficialTemplates.cs`, `LiveTelemetry.cs`. Artwork and final generation prompts: `pc-app/assets/expansion50/`. Plan: `docs/EXPANSION-100-IMPLEMENTATION.md`.
