@@ -27,6 +27,7 @@ sealed record ScreenDelivery(DateTime UpdatedUtc, string Revision, string State,
         {
             if(delivery.State=="disconnected")return "Geen schermverbinding. Sluit het scherm aan met een USB-datakabel. "+delivery.Message;
             if(delivery.State=="firmware-required")return "Het scherm ondersteunt eigen ontwerpen nog niet. Klik op Firmware bijwerken en installeer de meegeleverde firmware.";
+            if(delivery.State=="sleeping")return "Het scherm staat in slaapstand. Gebruik de pc of tik op het scherm om te wekken; je ontwerp is opgeslagen.";
             if(delivery.Revision==revision)
             {
                 if(delivery.State=="received")return "Ontwerp ontvangen en weergegeven op het scherm.";

@@ -8,14 +8,16 @@ interface IFrameConnection
     string ReadLine();
 }
 
-sealed class SerialFrameConnection(SerialPort port) : IFrameConnection
+interface IEventFrameConnection : IFrameConnection { bool HasData { get; } }
+sealed class SerialFrameConnection(SerialPort port) : IEventFrameConnection
 {
+    public bool HasData=>port.IsOpen&&port.BytesToRead>0;
     public void WriteLine(string line) => port.WriteLine(line);
     public void Write(byte[] bytes,int offset,int count) => port.Write(bytes,offset,count);
     public string ReadLine() => port.ReadLine().Trim();
 }
 
-sealed class CustomScreenSender(IFrameConnection connection)
+sealed class CustomScreenSender(IFrameConnection connection,Action<string>? onEvent=null)
 {
     bool? supported;
     public const int FrameBytes = 412 * 412 * 2;
@@ -28,14 +30,21 @@ sealed class CustomScreenSender(IFrameConnection connection)
     void Expect(string expected)
     {
         // Ignore startup messages and old PING replies, but never an explicit rejection.
-        for(int i=0;i<8;i++)
+        for(int i=0;i<128;i++)
         {
             string line=connection.ReadLine().Trim();
+            if(line.StartsWith("EVENT;",StringComparison.Ordinal)){onEvent?.Invoke(line);continue;}
             if(line==expected)return;
             if(expected=="QSCREEN_FRAME2" && line.StartsWith("QSCREEN_FRAME",StringComparison.Ordinal))throw new NotSupportedException("Oud beeldprotocol.");
             if(line.StartsWith("FRAMEERR",StringComparison.Ordinal))throw new IOException("Qscreen heeft het beeld geweigerd: "+line);
         }
         throw new IOException("Onverwacht antwoord van Qscreen.");
+    }
+    public void Control(string command,string expected){connection.WriteLine(command);Expect(expected);}
+    public void PollEvents()
+    {
+        if(connection is not IEventFrameConnection events)return;
+        for(int i=0;i<16&&events.HasData;i++){string line=events.ReadLine().Trim();if(line.StartsWith("EVENT;",StringComparison.Ordinal))onEvent?.Invoke(line);}
     }
     public bool Send(byte[] bytes)
     {

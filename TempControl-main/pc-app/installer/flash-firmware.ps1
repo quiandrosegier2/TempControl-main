@@ -125,8 +125,8 @@ function Refresh-Ports {
         $devices = @(Get-CimInstance Win32_PnPEntity -Filter "PNPDeviceID LIKE '%VID_303A%'" |
             Where-Object { $_.Name -match '\(COM\d+\)' })
         foreach ($device in $devices) { [void]$ports.Items.Add($device.Name) }
-        if ($ports.Items.Count -gt 0) { $ports.SelectedIndex = 0 }
-        $flash.Enabled = $ports.Items.Count -gt 0
+        $ports.SelectedIndex = -1
+        $flash.Enabled = $false
         if ($ports.Items.Count -eq 0) { $log.Text = 'Geen Espressif USB-scherm gevonden. Controleer de kabel en gebruik BOOT/RESET, daarna Vernieuwen.' }
         else { $log.Text = 'Kies je Waveshare-scherm en klik op Firmware installeren.' }
     } catch {
@@ -135,6 +135,7 @@ function Refresh-Ports {
     }
 }
 $refresh.Add_Click({ Refresh-Ports })
+$ports.Add_SelectedIndexChanged({ $flash.Enabled = -not $script:flashing -and $ports.SelectedIndex -ge 0 })
 $form.Add_FormClosing({ param($sender, $eventArgs) if ($script:flashing) { $eventArgs.Cancel = $true } })
 $flash.Add_Click({
     if ($ports.SelectedItem -notmatch '\((COM\d+)\)') { return }

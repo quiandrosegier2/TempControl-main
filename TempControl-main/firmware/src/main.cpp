@@ -12,6 +12,8 @@
 #include <Preferences.h>
 #include "display-layout.h"
 #include "custom-frame.h"
+#include "touch-gestures.h"
+#include "waveshare-touch.h"
 
 // ---------- Instellingen ----------
 static const char *BRAND = "QSCREEN";
@@ -68,6 +70,12 @@ static uint8_t *customPixels = nullptr;
 static size_t customReceived = 0;
 static uint32_t customExpectedHash = 0, customHash = CustomFrame::StartHash, customLastByte = 0;
 static bool customReceiving = false, customActive = false;
+static bool touchEnabled=false,touchPresent=false,touchFeedback=true;
+static int touchWeight=1,brightnessPercent=100,awakeBrightness=100;
+static TouchGesture::Options touchOptions;
+static TouchGesture::Tracker touchTracker;
+static WaveshareTouch::Point touchPoint;
+static uint32_t touchFeedbackAt=0;
 
 static float parseValue(const char *s) {
   char *end;
@@ -76,6 +84,24 @@ static float parseValue(const char *s) {
 }
 
 static void handleLine(char *line) {
+  if(strcmp(line,"INFO")==0){Serial.printf("QSCREEN;MODEL=WS146;FW=2.0.0-rc.1;ID=%012llX;CAPS=FRAME2,TOUCH:%d,BRIGHTNESS,ALIVE\n",ESP.getEfuseMac(),touchPresent?1:0);return;}
+  if(strcmp(line,"ALIVE")==0){lastRx=millis();Serial.println("ALIVEOK");return;}
+  if(strncmp(line,"QSET;",5)==0){
+    char *state;
+    for(char *token=strtok_r(line+5,";",&state);token;token=strtok_r(nullptr,";",&state)){
+      int value=atoi(strchr(token,'=')?strchr(token,'=')+1:"");
+      if(strncmp(token,"B=",2)==0){brightnessPercent=constrain(value,0,100);if(brightnessPercent>0)awakeBrightness=brightnessPercent;ledcWrite(PIN_LCD_BL,brightnessPercent*255/100);dirty=true;}
+      else if(strncmp(token,"T=",2)==0)touchEnabled=value!=0;
+      else if(strncmp(token,"SW=",3)==0)touchOptions.swipe=constrain(value,20,250);
+      else if(strncmp(token,"HOLD=",5)==0)touchOptions.hold=constrain(value,400,3000);
+      else if(strncmp(token,"MIN=",4)==0)touchWeight=constrain(value,1,255);
+      else if(strncmp(token,"ROT=",4)==0)touchOptions.rotation=constrain(value,0,3);
+      else if(strncmp(token,"FB=",3)==0)touchFeedback=value!=0;
+      else if(strncmp(token,"MENU=",5)==0)touchOptions.menu=value!=0;
+    }
+    if(!touchEnabled){touchTracker.down=false;touchPoint.down=false;}
+    Serial.println("QSETOK");return;
+  }
   if (strcmp(line, "CAPS") == 0) {
     Serial.println("QSCREEN_FRAME2");
     return;
@@ -129,6 +155,7 @@ static void handleLine(char *line) {
 }
 
 static void readSerial() {
+  uint32_t budgetStarted=micros();
   static char buf[128];
   static size_t len = 0;
   if (customReceiving && millis() - customLastByte > 10000u) {
@@ -136,6 +163,7 @@ static void readSerial() {
     Serial.println("FRAMEERR timeout");
   }
   while (Serial.available()) {
+    if(micros()-budgetStarted>2000u)return;
     if (customReceiving) {
       int count = Serial.read(customPixels + customReceived,
         min(static_cast<size_t>(Serial.available()), CustomFrame::Bytes - customReceived));
@@ -417,7 +445,7 @@ static void resetPanel() {
   };
   writeReg(0x03, 0xFC);  // EXIO1 + EXIO2 als uitgang
   writeReg(0x01, 0x00);  // laag = reset
-  delay(20);
+  delay(50);
   writeReg(0x01, 0x03);  // hoog = vrijgeven
   delay(120);
 }
@@ -432,17 +460,34 @@ void setup() {
   }
 
   resetPanel();
+  Wire.setTimeOut(10);pinMode(4,INPUT_PULLUP);touchPresent=WaveshareTouch::present();
 
   if (!gfx->begin()) {
     Serial.println("Display init mislukt");
   }
-  pinMode(PIN_LCD_BL, OUTPUT);
-  digitalWrite(PIN_LCD_BL, HIGH);
+  ledcAttach(PIN_LCD_BL,2000,8);ledcWrite(PIN_LCD_BL,255);
 }
 
 void loop() {
   readSerial();
+  static uint32_t lastTouch=0;
+  if(touchEnabled&&touchPresent&&millis()-lastTouch>=20){
+    lastTouch=millis();
+    WaveshareTouch::poll(touchPoint,touchWeight);
+    if(!WaveshareTouch::healthy){touchPoint.down=false;touchTracker.down=false;}
+    else{
+      auto event=touchTracker.update(touchPoint.down,touchPoint.x,touchPoint.y,millis(),touchOptions);
+      if(event.type!=TouchGesture::Type::None){
+        if(brightnessPercent==0){brightnessPercent=awakeBrightness;ledcWrite(PIN_LCD_BL,brightnessPercent*255/100);dirty=true;}
+        const char *kind=event.type==TouchGesture::Type::Next?"NEXT":event.type==TouchGesture::Type::Previous?"PREVIOUS":event.type==TouchGesture::Type::Menu?"MENU":"TAP";
+        Serial.printf("EVENT;%s;%d;%d\n",kind,event.x,event.y);
+        if(touchFeedback&&!customReceiving){gfx->drawCircle(event.x,event.y,12,to565(VALUE_COOL));gfx->flush();dirty=true;touchFeedbackAt=millis();}
+      }
+    }
+  }
   if (customReceiving) return;
+  if(brightnessPercent==0)return;
+  if(touchFeedbackAt&&millis()-touchFeedbackAt>200u){touchFeedbackAt=0;if(customActive&&customPixels){gfx->draw16bitRGBBitmap(0,0,reinterpret_cast<uint16_t *>(customPixels),412,412);gfx->flush();}}
   if (customActive) {
     if (millis() - lastRx < DATA_TIMEOUT_MS) return;
     customActive = false; dirty = true;

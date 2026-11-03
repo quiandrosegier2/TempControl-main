@@ -18,6 +18,7 @@ sealed class DesignWindow : Form
     readonly TextBox name = new() { Dock = DockStyle.Top };
     readonly ComboBox fit = new() { DropDownStyle = ComboBoxStyle.DropDownList, Width = 265 };
     readonly NumericUpDown darken = new() { Minimum=0, Maximum=100, Width=80 };
+    readonly ComboBox animation=new(){DropDownStyle=ComboBoxStyle.DropDownList,Dock=DockStyle.Top};
     readonly System.Windows.Forms.Timer clock = new() { Interval = 33 };
     bool renderQueued;
     long lastClockUpdate;
@@ -27,18 +28,20 @@ sealed class DesignWindow : Form
     Point dragStart, widgetStart;
     bool dragging, changed, refreshing;
     readonly Action requestMonitorStart;
+    readonly Action<ScreenDesign>? savePage;
     string? pendingRevision;
     DateTime requestedUtc;
     ScreenWidget? Selected => elements.SelectedItem as ScreenWidget;
 
-    public DesignWindow(string appDirectory, Action? startMonitor = null)
+    public DesignWindow(string appDirectory, Action? startMonitor = null,ScreenDesign? initialDesign=null,Action<ScreenDesign>? savePage=null)
     {
         directory = appDirectory;
+        this.savePage=savePage;
         requestMonitorStart = startMonitor ?? (() => Process.Start(new ProcessStartInfo("powershell.exe", "-NoProfile -Command \"Start-ScheduledTask -TaskName TempMonitor -ErrorAction Stop\"") { UseShellExecute=false,CreateNoWindow=true }));
         string draft = Path.Combine(directory, "custom-draft.json");
         string active = Path.Combine(directory, "custom-design.json");
         design = ScreenDesign.CreateDefault();
-        try { if (File.Exists(draft)) design = DesignFiles.Load(draft); else if (File.Exists(active)) design = DesignFiles.Load(active); }
+        try { if(initialDesign!=null)design=DesignSnapshot.Capture(initialDesign).Restore();else if (File.Exists(draft)) design = DesignFiles.Load(draft); else if (File.Exists(active)) design = DesignFiles.Load(active); }
         catch (Exception ex) when (ex is IOException or System.Text.Json.JsonException or InvalidDataException or UnauthorizedAccessException) { status.Text = "Opgeslagen ontwerp kon niet worden geopend: " + ex.Message; }
         lastSnapshot = DesignSnapshot.Capture(design);
         Text="Qscreen — Ontwerpstudio";StartPosition=FormStartPosition.CenterParent;
@@ -56,14 +59,17 @@ sealed class DesignWindow : Form
         files.Controls.Add(ActionButton("Nieuw",()=>{Remember();design=ScreenDesign.CreateDefault();Commit();RefreshList();},false,65));
         files.Controls.Add(ActionButton("Openen",Open,false,72));files.Controls.Add(ActionButton("Opslaan",SaveDraft,false,78));files.Controls.Add(ActionButton("Export",Export,false,70));
         files.Controls.Add(ActionButton("↶",Undo,false,40));files.Controls.Add(ActionButton("↷",Redo,false,40));
-        var apply=ActionButton("Toepassen op scherm",Apply,true,190);apply.Dock=DockStyle.Right;
+        var apply=ActionButton(savePage!=null?"Wijzigingen bewaren":"Toepassen op scherm",Apply,true,190);apply.Dock=DockStyle.Right;
         top.Controls.Add(files);top.Controls.Add(apply);top.Controls.Add(brand);
         var tools=new FlowLayoutPanel{Dock=DockStyle.Top,Height=62,Padding=new Padding(20,8,20,8),BackColor=StudioTheme.Background,WrapContents=false};
         tools.Controls.Add(ActionButton("Afbeelding kiezen",ImportBackground,false,155));
         tools.Controls.Add(ActionButton("Afbeelding wissen",()=>Change(()=>design.BackgroundPng=null),false,150));
         tools.Controls.Add(ActionButton("Achtergrondkleur",()=>{using var d=new ColorDialog{Color=Color.FromArgb(design.BackgroundArgb)};if(d.ShowDialog(this)==DialogResult.OK)Change(()=>design.BackgroundArgb=d.Color.ToArgb());},false,150));
         tools.Controls.Add(ActionButton("Lettertype",ChooseFont,false,110));
+        tools.Controls.Add(ActionButton("Pagina's",()=>{using var manager=new PagesWindow(directory,design);if(manager.ShowDialog(this)==DialogResult.OK)Change(()=>design=manager.Project);},false,92));
+        tools.Controls.Add(ActionButton("Aanraakzones",()=>{using var zones=new TouchZonesWindow(design.TouchZones);if(zones.ShowDialog(this)==DialogResult.OK)Change(()=>design.TouchZones=zones.Zones);},false,120));
         tools.Controls.Add(ActionButton("Firmware bijwerken",()=>Process.Start(new ProcessStartInfo("powershell.exe","-NoProfile -STA -ExecutionPolicy Bypass -WindowStyle Hidden -File \""+Path.Combine(directory,"flash-firmware.ps1")+"\""){UseShellExecute=true,WindowStyle=ProcessWindowStyle.Hidden}),false,165));
+        tools.WrapContents=true;tools.AutoSize=true;tools.AutoSizeMode=AutoSizeMode.GrowAndShrink;tools.MinimumSize=new Size(0,62);
 
         var left=new StudioCard{Dock=DockStyle.Left,Width=242,Padding=new Padding(16)};
         var nameLabel=StudioTheme.Label("MIJN ONTWERP",9,true,30);nameLabel.ForeColor=StudioTheme.Accent;
@@ -90,7 +96,7 @@ sealed class DesignWindow : Form
         var right=new StudioCard{Dock=DockStyle.Right,Width=300,Padding=new Padding(16)};
         var hint=StudioTheme.Label("EIGENSCHAPPEN",9,true,38);
         properties.ViewBackColor=StudioTheme.Surface;properties.ViewForeColor=StudioTheme.Text;properties.HelpBackColor=StudioTheme.Surface;properties.HelpForeColor=StudioTheme.Muted;properties.LineColor=StudioTheme.Border;properties.CategoryForeColor=StudioTheme.Text;properties.CategorySplitterColor=StudioTheme.Raised;properties.Font=new Font("Segoe UI",10);
-        var backgroundOptions=new Panel{Dock=DockStyle.Bottom,Height=166,Padding=new Padding(0,18,0,0)};
+        var backgroundOptions=new Panel{Dock=DockStyle.Bottom,Height=220,Padding=new Padding(0,18,0,0)};
         var backgroundLabel=StudioTheme.Label("ACHTERGROND",9,true,32);
         var fitLabel=StudioTheme.Label("Plaatsing",9,false,25);fit.Dock=DockStyle.Top;StudioTheme.Input(fit);
         fit.FormattingEnabled=true;fit.Format+=(_,e)=>{e.Value=e.ListItem?.ToString() switch{"Cover"=>"Vullend (bijsnijden)","Contain"=>"Volledig zichtbaar","Stretch"=>"Uitrekken",_=>e.ListItem};};
@@ -98,7 +104,9 @@ sealed class DesignWindow : Form
         fit.SelectedIndexChanged+=(_,_)=>Change(()=>design.Fit=Enum.Parse<BackgroundFit>((string)fit.SelectedItem!));
         var darkLabel=StudioTheme.Label("Verdonkeren (%)",9,false,30);darken.Dock=DockStyle.Top;darken.BackColor=StudioTheme.Raised;darken.ForeColor=StudioTheme.Text;darken.BorderStyle=BorderStyle.FixedSingle;darken.Value=design.Darken;
         darken.ValueChanged+=(_,_)=>Change(()=>design.Darken=(int)darken.Value);
-        backgroundOptions.Controls.Add(darken);backgroundOptions.Controls.Add(darkLabel);backgroundOptions.Controls.Add(fit);backgroundOptions.Controls.Add(fitLabel);backgroundOptions.Controls.Add(backgroundLabel);
+        StudioTheme.Input(animation);animation.Items.AddRange(Enum.GetNames<PageAnimation>());animation.SelectedItem=design.Animation.ToString();animation.SelectedIndexChanged+=(_,_)=>Change(()=>design.Animation=Enum.Parse<PageAnimation>((string)animation.SelectedItem!));
+        var animationLabel=StudioTheme.Label("Animatie",9,false,26);
+        backgroundOptions.Controls.Add(animation);backgroundOptions.Controls.Add(animationLabel);backgroundOptions.Controls.Add(darken);backgroundOptions.Controls.Add(darkLabel);backgroundOptions.Controls.Add(fit);backgroundOptions.Controls.Add(fitLabel);backgroundOptions.Controls.Add(backgroundLabel);
         right.Controls.Add(properties);right.Controls.Add(backgroundOptions);right.Controls.Add(hint);
         var center=new Panel{Dock=DockStyle.Fill,Padding=new Padding(14,0,14,0)};
         var stage=new StudioCard{Dock=DockStyle.Fill,Padding=new Padding(12)};
@@ -119,7 +127,7 @@ sealed class DesignWindow : Form
         {
             bool second=Environment.TickCount64-lastClockUpdate>=1000;
             if(second)lastClockUpdate=Environment.TickCount64;
-            if(WindowState!=FormWindowState.Minimized&&Visible&&(renderQueued||(second&&design.Widgets.Any(w=>w.Visible&&w.Kind is WidgetKind.Time or WidgetKind.Date))))Render();
+            if(WindowState!=FormWindowState.Minimized&&Visible&&(renderQueued||design.Animation!=PageAnimation.None||renderer.HasAnimatedBackground||(second&&design.Widgets.Any(w=>w.Visible&&w.Kind is WidgetKind.Time or WidgetKind.Date))))Render();
             if(second&&pendingRevision!=null){var delivery=ScreenDelivery.Read(directory);status.Text=ScreenDelivery.Describe(delivery,pendingRevision,requestedUtc,DateTime.UtcNow);status.ForeColor=status.Text.StartsWith("Ontwerp ontvangen",StringComparison.Ordinal)?StudioTheme.Green:Color.Orange;}
         };clock.Start();
         FormClosing += (_,e) => { if(changed){var answer=MessageBox.Show(this,"Wijzigingen opslaan als concept?","Qscreen",MessageBoxButtons.YesNoCancel,MessageBoxIcon.Question);if(answer==DialogResult.Cancel)e.Cancel=true;else if(answer==DialogResult.Yes){try{SaveDraft();}catch(Exception ex){MessageBox.Show(this,ex.Message);e.Cancel=true;}}} };
@@ -149,7 +157,7 @@ sealed class DesignWindow : Form
         elements.Items.Clear(); elements.Items.AddRange(design.Widgets.Cast<object>().ToArray());
         if(elements.Items.Count>0)elements.SelectedIndex=Math.Clamp(index,0,elements.Items.Count-1);
         else properties.SelectedObject=null;
-        name.Text=design.Name;fit.SelectedItem=design.Fit.ToString();darken.Value=design.Darken; refreshing=false; Render();
+        name.Text=design.Name;fit.SelectedItem=design.Fit.ToString();darken.Value=design.Darken;animation.SelectedItem=design.Animation.ToString(); refreshing=false; Render();
     }
     void Render()
     {
@@ -164,6 +172,7 @@ sealed class DesignWindow : Form
         var w=new ScreenWidget { Name=WidgetLabels.Title(kind),Kind=kind,Format=kind switch {WidgetKind.Text=>"Mijn tekst",WidgetKind.Time=>"HH:mm:ss",WidgetKind.Date=>"dd-MM-yyyy",_=>"{value}"} };
         if(kind is WidgetKind.Rectangle or WidgetKind.Ellipse){w.Width=120;w.Height=80;w.Foreground=Color.FromArgb(60,190,255);}
         if(kind==WidgetKind.ProgressBar){w.Height=12;w.Foreground=Color.FromArgb(60,190,255);}
+        if(kind==WidgetKind.HistoryGraph){w.Height=90;w.Width=280;w.X=66;w.Y=230;w.Foreground=Color.Cyan;}
         design.Widgets.Add(w);Commit();RefreshList(null,design.Widgets.Count-1);
     }
     void Delete(){if(Selected is {} w){Remember();design.Widgets.Remove(w);Commit();RefreshList();}}
@@ -171,9 +180,10 @@ sealed class DesignWindow : Form
     void MoveLayer(int delta){int i=elements.SelectedIndex,j=i+delta;if(i<0||j<0||j>=design.Widgets.Count)return;Remember();(design.Widgets[i],design.Widgets[j])=(design.Widgets[j],design.Widgets[i]);Commit();RefreshList(null,j);}
     void Undo(){if(undo.Count==0)return;redo.Add(DesignSnapshot.Capture(design));design=undo[^1].Restore();undo.RemoveAt(undo.Count-1);lastSnapshot=DesignSnapshot.Capture(design);pendingRevision=null;changed=true;RefreshList();}
     void Redo(){if(redo.Count==0)return;undo.Add(DesignSnapshot.Capture(design));design=redo[^1].Restore();redo.RemoveAt(redo.Count-1);lastSnapshot=DesignSnapshot.Capture(design);pendingRevision=null;changed=true;RefreshList();}
-    void SaveDraft(){design.Name=name.Text;DesignFiles.Save(Path.Combine(directory,"custom-draft.json"),design);changed=false;status.Text="Concept opgeslagen. Klik op Toepassen op scherm om dit ontwerp te gebruiken.";}
+    void SaveDraft(){design.Name=name.Text;if(savePage!=null)savePage(design);else DesignFiles.Save(Path.Combine(directory,"custom-draft.json"),design);changed=false;status.Text=savePage!=null?"Pagina/profiel opgeslagen.":"Concept opgeslagen. Klik op Toepassen op scherm om dit ontwerp te gebruiken.";}
     void Apply()
     {
+        if(savePage!=null){SaveDraft();return;}
         design.Name=name.Text; DesignFiles.Apply(directory,design); SaveDraft();
         pendingRevision=ScreenDelivery.RevisionOf(directory); requestedUtc=DateTime.UtcNow;
         requestMonitorStart();
@@ -182,10 +192,15 @@ sealed class DesignWindow : Form
     }
     void Open(){using var d=new OpenFileDialog { Filter="Qscreen ontwerp (*.qscreen;*.json)|*.qscreen;*.json" };if(d.ShowDialog(this)!=DialogResult.OK)return;var loaded=DesignFiles.Load(d.FileName);Remember();design=loaded;Commit();RefreshList();status.Text="Ontwerp geopend; nog niet toegepast.";}
     void Export(){using var d=new SaveFileDialog {Filter="Qscreen ontwerp (*.qscreen)|*.qscreen",FileName="Mijn ontwerp.qscreen"};if(d.ShowDialog(this)==DialogResult.OK){design.Name=name.Text;DesignFiles.Save(d.FileName,design);status.Text="Ontwerp inclusief achtergrond geëxporteerd.";}}
-    void ImportBackground(){using var d=new OpenFileDialog{Filter="Afbeeldingen|*.png;*.jpg;*.jpeg;*.bmp"};if(d.ShowDialog(this)==DialogResult.OK)SetBackground(d.FileName);}
+    void ImportBackground(){using var d=new OpenFileDialog{Filter="Afbeeldingen|*.png;*.jpg;*.jpeg;*.bmp;*.gif"};if(d.ShowDialog(this)==DialogResult.OK)SetBackground(d.FileName);}
     void SetBackground(string path)
     {
         using var image=Image.FromFile(path);
+        if(image.FrameDimensionsList.Contains(FrameDimension.Time.Guid)&&image.GetFrameCount(FrameDimension.Time)>1)
+        {
+            int frames=image.GetFrameCount(FrameDimension.Time);if(frames>60||(long)image.Width*image.Height*frames>16_000_000||new FileInfo(path).Length>8_000_000)throw new InvalidDataException("GIF te groot: maximaal 60 frames, 16 miljoen pixels en 8 MB.");
+            string gif=Convert.ToBase64String(File.ReadAllBytes(path));Change(()=>design.BackgroundPng=gif);status.Text="GIF geïmporteerd. Afspeelsnelheid op het scherm wordt begrensd door USB.";return;
+        }
         if((long)image.Width*image.Height>40_000_000)throw new InvalidDataException("Afbeelding te groot (maximaal 40 megapixels).");
         float scale=Math.Min(1,1024f/Math.Max(image.Width,image.Height));
         using var reduced=new Bitmap(Math.Max(1,(int)(image.Width*scale)),Math.Max(1,(int)(image.Height*scale)));
@@ -204,7 +219,7 @@ sealed class DesignWindow : Form
         if(w==null)return;elements.SelectedItem=w;dragStart=p;widgetStart=new(w.X,w.Y);dragSnapshot=DesignSnapshot.Capture(design);dragging=true;canvas.Capture=true;
     }
     void MouseMoveCanvas(object? sender,MouseEventArgs e){if(!dragging||Selected is not {} w)return;var p=ScreenPoint(e.Location);w.X=Math.Clamp(widgetStart.X+p.X-dragStart.X,-412,412);w.Y=Math.Clamp(widgetStart.Y+p.Y-dragStart.Y,-412,412);renderQueued=true;}
-    void MouseUpCanvas(object? sender,MouseEventArgs e){if(!dragging)return;dragging=false;canvas.Capture=false;if(dragSnapshot!=null&&dragSnapshot!=DesignSnapshot.Capture(design)){int index=elements.SelectedIndex;PushUndo(dragSnapshot);Commit();RefreshList(null,index);}dragSnapshot=null;}
+    void MouseUpCanvas(object? sender,MouseEventArgs e){if(!dragging)return;dragging=false;canvas.Capture=false;if(dragSnapshot!=null&&!dragSnapshot.Equivalent(DesignSnapshot.Capture(design))){int index=elements.SelectedIndex;PushUndo(dragSnapshot);Commit();RefreshList(null,index);}dragSnapshot=null;}
     protected override bool ProcessCmdKey(ref Message msg,Keys keyData)
     {
         if(keyData==(Keys.Control|Keys.S)){Safe(SaveDraft);return true;}

@@ -33,14 +33,14 @@ sealed class SettingsWindow : Form
         var brand=StudioTheme.Label("Qscreen /",27,true,66);
         var tagline=StudioTheme.Label("YOUR DISPLAY. YOUR RULES.",8,false,42);
         var nav=StudioTheme.Label("WORKSPACE",8,true,38);
-        var studio=StudioTheme.Button("◉   Layout Studio");studio.Dock=DockStyle.Top;studio.Height=46;studio.Enabled=false;
+        var studio=StudioTheme.Button("Profielen & apparaten");studio.Dock=DockStyle.Top;studio.Height=46;studio.Click+=(_,_)=>Safe(()=>{using var manager=new AdvancedStudioWindow(appDirectory);manager.ShowDialog(this);LoadCustomPreview();});
         var create=StudioTheme.Button("+   Eigen ontwerp maken");create.Dock=DockStyle.Top;create.Height=48;create.Click+=(_,_)=>OpenDesigner();
         var spacer=new Panel{Dock=DockStyle.Top,Height=30};
         var tools=StudioTheme.Label("APPARAAT & BEHEER",8,true,38);
         var firmware=SideAction("Firmware bijwerken",()=>LaunchPowerShell("-NoProfile -STA -ExecutionPolicy Bypass -WindowStyle Hidden -File \""+Path.Combine(appDirectory,"flash-firmware.ps1")+"\""));
         var monitor=SideAction("Metingen starten",()=>LaunchPowerShell("-NoProfile -Command \"Start-ScheduledTask -TaskName TempMonitor\""));
         var logs=SideAction("Logboek openen",()=>Process.Start(new ProcessStartInfo("explorer.exe",Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData),"TempMonitor")){UseShellExecute=true}));
-        var version=StudioTheme.Label("Qscreen 1.6\nDesktop companion",9,false,64);version.Dock=DockStyle.Bottom;
+        var version=StudioTheme.Label("Qscreen 2.0\nQPRINTS desktop companion",9,false,64);version.Dock=DockStyle.Bottom;
         sidebar.Controls.Add(logs);sidebar.Controls.Add(monitor);sidebar.Controls.Add(firmware);sidebar.Controls.Add(tools);sidebar.Controls.Add(spacer);sidebar.Controls.Add(create);sidebar.Controls.Add(studio);sidebar.Controls.Add(nav);sidebar.Controls.Add(tagline);sidebar.Controls.Add(brand);sidebar.Controls.Add(version);
         var workspace=new Panel{Dock=DockStyle.Fill,Padding=new Padding(28)};
         var header=new Panel{Dock=DockStyle.Top,Height=114};
@@ -108,12 +108,13 @@ sealed class SettingsWindow : Form
     void UpdateConnection()
     {
         var delivery=ScreenDelivery.Read(appDirectory);bool fresh=delivery!=null&&DateTime.UtcNow-delivery.UpdatedUtc<TimeSpan.FromSeconds(30);
-        connection.Text=!fresh?"●  Wachten op achtergrondmeting":delivery!.State switch{"received"=>"●  Scherm verbonden","preset"=>"●  USB verbonden","sending"=>"●  Ontwerp versturen…","firmware-required"=>"●  Firmware bijwerken",_=>"●  Geen schermverbinding"};
+        connection.Text=!fresh?"●  Wachten op achtergrondmeting":delivery!.State switch{"received"=>"●  Scherm verbonden","preset"=>"●  USB verbonden","sending"=>"●  Ontwerp versturen…","sleeping"=>"●  Slaapstand","firmware-required"=>"●  Firmware bijwerken",_=>"●  Geen schermverbinding"};
         connection.ForeColor=fresh&&delivery!.State is "received" or "preset"?StudioTheme.Green:StudioTheme.Muted;
     }
     void Apply()
     {
         string path=Path.Combine(appDirectory,"layout.txt"),temporary=path+".new";File.WriteAllText(temporary,Selected+Environment.NewLine);File.Move(temporary,path,true);File.Delete(Path.Combine(appDirectory,"custom-active.txt"));
+        StudioConfiguration.ManualLegacy(appDirectory);
         if(showingCustom)ResetPreview();showingCustom=false;play.Enabled=Animated;play.Text=Animated?"Ⅱ  Pauzeren":"Statisch voorbeeld";previewTitle.Text=Title(Selected);ShowFrame();status.ForeColor=StudioTheme.Green;status.Text=Title(Selected)+" opgeslagen. Wordt toegepast zodra je scherm verbonden is.";
     }
     protected override void Dispose(bool disposing)
