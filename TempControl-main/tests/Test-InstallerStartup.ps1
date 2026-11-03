@@ -36,6 +36,8 @@ $marker = '  LayoutChanged(nil);'
 if (-not $source.Contains($marker)) { throw 'InitializeWizard-testpunt ontbreekt' }
 $assertions = @'
   LayoutChanged(nil);
+  if not ShouldSkipPage(LayoutPage.ID) then ExitProcess(101);
+  if ShouldSkipPage(wpWelcome) or ShouldSkipPage(wpReady) then ExitProcess(102);
   if not HighContrastActive and not IsDarkInstallMode then ExitProcess(94);
   if (BrandLogo.Bitmap.Width = 0) or not BrandLogo.Visible then ExitProcess(95);
   if SelectedLayout <> ExpandConstant('{param:EXPECTLAYOUT|classic}') then

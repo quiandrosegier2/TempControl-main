@@ -4,6 +4,8 @@ De nieuwe sectie **Templates** bevat 21 originele QPRINTS-ontwerpen voor het ron
 
 ## Kiezen en aanpassen
 
+Vanaf rc.2 toont de installer geen layoutkeuzestap meer. Kies na installatie je ontwerp in Qscreen. Een app-update bewaart de bestaande layoutinstelling; alleen een nieuwe installatie zonder instelling krijgt de standaardlayout.
+
 Open Qscreen via Start en kies **Templates**. Zoek op naam, filter op categorie of toon alleen favorieten/geanimeerde ontwerpen. Iedere kaart heeft een rond voorbeeld en knoppen voor **Voorbeeld**, **Toepassen**, **Dupliceren** en **Favoriet**. Favorieten worden lokaal bewaard. Open een bewegend voorbeeld om de animatie vooraf te bekijken of te pauzeren. De preview gebruikt expliciet gelabelde demowaarden; het fysieke scherm gebruikt de bestaande sensormeting.
 
 **Toepassen** opent eerst het voorbeeld. Na bevestiging maakt de app een nieuw profiel aan en activeert het handmatig. Het huidige projectbestand wordt niet overschreven. Apparaten die vast aan een ander profiel zijn gekoppeld blijven dat profiel gebruiken; controleer **Profielen & apparaten** voor de actuele ontvangst per scherm.

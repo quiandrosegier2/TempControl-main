@@ -4,7 +4,7 @@
 #define AppName "Qscreen"
 #define PreviewFrameCount 40
 #ifndef AppVersion
-  #define AppVersion "2.1.0-rc.1"
+  #define AppVersion "2.1.0-rc.2"
 #endif
 
 [Setup]
@@ -213,6 +213,13 @@ begin
   if PreviewPageActive then StartPreview else StopPreview;
 end;
 
+function ShouldSkipPage(PageID: Integer): Boolean;
+begin
+  // Designs are chosen in the installed app. Keep the legacy catalog for build tooling.
+  Result := False;
+  if LayoutPage <> nil then Result := PageID = LayoutPage.ID;
+end;
+
 procedure DeinitializeSetup;
 begin
   PreviewClosing := True;
@@ -290,8 +297,7 @@ begin
   LayoutChoice.ItemIndex := -1;
   for Index := 0 to LayoutIds.Count - 1 do
     if InitialLayout = LayoutIds[Index] then LayoutChoice.ItemIndex := Index;
-  if LayoutChoice.ItemIndex < 0 then
-    RaiseException('Onbekende layout. Kies een van de eenendertig ondersteunde layouts.');
+  if LayoutChoice.ItemIndex < 0 then LayoutChoice.ItemIndex := 0;
   LayoutDescription := TNewStaticText.Create(LayoutPage);
   LayoutDescription.Parent := LayoutPage.Surface;
   LayoutDescription.AutoSize := False;
@@ -327,7 +333,7 @@ procedure CurStepChanged(CurStep: TSetupStep);
 var
   ResultCode: Integer;
 begin
-  if CurStep = ssPostInstall then
+  if (CurStep = ssPostInstall) and not FileExists(ExpandConstant('{app}\layout.txt')) then
     if not SaveStringToFile(ExpandConstant('{app}\layout.txt'), SelectedLayout + #13#10, False) then
       RaiseException('De gekozen schermlayout kon niet worden opgeslagen.');
   if (CurStep = ssPostInstall) and WizardIsTaskSelected('pawnio') and not PawnIOInstalled then
