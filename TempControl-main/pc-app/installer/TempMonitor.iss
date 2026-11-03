@@ -4,7 +4,7 @@
 #define AppName "Qscreen"
 #define PreviewFrameCount 40
 #ifndef AppVersion
-  #define AppVersion "2.1.0-rc.2"
+  #define AppVersion "2.2.0-rc.1"
 #endif
 
 [Setup]
@@ -73,6 +73,7 @@ Type: files; Name: "{app}\TempMonitor.runtimeconfig.json"
 [Icons]
 Name: "{autoprograms}\Qscreen"; Filename: "{app}\Qscreen.exe"; Parameters: "--settings"; IconFilename: "{app}\branding\qprints.ico"
 Name: "{autodesktop}\Qscreen"; Filename: "{app}\Qscreen.exe"; Parameters: "--settings"; IconFilename: "{app}\branding\qprints.ico"
+Name: "{autoprograms}\Qscreen Account"; Filename: "{app}\accounts\Qscreen.Accounts.exe"; IconFilename: "{app}\branding\qprints.ico"
 Name: "{autoprograms}\Qscreen tools\Firmware installeren"; Filename: "{sys}\WindowsPowerShell\v1.0\powershell.exe"; Parameters: "-NoProfile -STA -ExecutionPolicy Bypass -WindowStyle Hidden -File ""{app}\flash-firmware.ps1"""; WorkingDir: "{app}"
 
 [Run]
@@ -373,7 +374,7 @@ var
   ResultCode: Integer;
 begin
   Exec(ExpandConstant('{sys}\WindowsPowerShell\v1.0\powershell.exe'),
-    '-NoProfile -Command "Stop-ScheduledTask -TaskName TempMonitor -EA SilentlyContinue; Stop-Process -Name Qscreen,TempMonitor,PresentMon -Force -EA SilentlyContinue"',
+    '-NoProfile -Command "Stop-ScheduledTask -TaskName TempMonitor -EA SilentlyContinue; Stop-Process -Name Qscreen,Qscreen.Accounts,TempMonitor,PresentMon -Force -EA SilentlyContinue"',
     '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
   Result := '';
 end;

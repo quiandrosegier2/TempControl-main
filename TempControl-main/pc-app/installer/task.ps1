@@ -22,6 +22,7 @@ Stop-ScheduledTask -TaskName $taskName -ErrorAction SilentlyContinue
 Get-Process -Name Qscreen, TempMonitor, PresentMon -ErrorAction SilentlyContinue | Stop-Process -Force
 
 if ($Action -eq 'Uninstall') {
+    Get-Process -Name Qscreen.Accounts -ErrorAction SilentlyContinue | Stop-Process -Force
     Unregister-ScheduledTask -TaskName $taskName -Confirm:$false -ErrorAction SilentlyContinue
     return
 }

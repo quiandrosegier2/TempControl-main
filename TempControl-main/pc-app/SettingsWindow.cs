@@ -41,7 +41,7 @@ sealed class SettingsWindow : Form
         var firmware=SideAction("Firmware bijwerken",()=>LaunchPowerShell("-NoProfile -STA -ExecutionPolicy Bypass -WindowStyle Hidden -File \""+Path.Combine(appDirectory,"flash-firmware.ps1")+"\""));
         var monitor=SideAction("Metingen starten",()=>LaunchPowerShell("-NoProfile -Command \"Start-ScheduledTask -TaskName TempMonitor\""));
         var logs=SideAction("Logboek openen",()=>Process.Start(new ProcessStartInfo("explorer.exe",Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData),"TempMonitor")){UseShellExecute=true}));
-        var version=StudioTheme.Label("Qscreen 2.1\nQPRINTS desktop companion",9,false,64);version.Dock=DockStyle.Bottom;
+        var version=StudioTheme.Label("Qscreen 2.2\nQPRINTS desktop companion",9,false,64);version.Dock=DockStyle.Bottom;
         sidebar.Controls.Add(logs);sidebar.Controls.Add(monitor);sidebar.Controls.Add(firmware);sidebar.Controls.Add(tools);sidebar.Controls.Add(spacer);sidebar.Controls.Add(create);sidebar.Controls.Add(templates);sidebar.Controls.Add(studio);sidebar.Controls.Add(nav);sidebar.Controls.Add(tagline);sidebar.Controls.Add(brand);sidebar.Controls.Add(version);
         var workspace=new Panel{Dock=DockStyle.Fill,Padding=new Padding(28)};
         var header=new Panel{Dock=DockStyle.Top,Height=114};
@@ -49,6 +49,7 @@ sealed class SettingsWindow : Form
         var headline=StudioTheme.Label("Maak het scherm van jou.",26,true,50);
         var subtitle=StudioTheme.Label("Ontdek de collectie of bouw je eigen ontwerp.",11,false,30);
         header.Controls.Add(subtitle);header.Controls.Add(headline);header.Controls.Add(eyebrow);
+        var account=StudioTheme.Button("Account");account.SetBounds(0,0,145,36);account.Anchor=AnchorStyles.Top|AnchorStyles.Right;account.Click+=(_,_)=>Safe(()=>AccountLauncher.Open(appDirectory));header.Controls.Add(account);account.BringToFront();header.Resize+=(_,_)=>account.Left=Math.Max(0,header.ClientSize.Width-account.Width);
         var columns=new TableLayoutPanel{Dock=DockStyle.Fill,ColumnCount=2,RowCount=1};columns.ColumnStyles.Add(new(SizeType.Percent,62));columns.ColumnStyles.Add(new(SizeType.Percent,38));columns.RowStyles.Add(new(SizeType.Percent,100));
         var previewCard=new StudioCard{Dock=DockStyle.Fill,Margin=new Padding(0,0,16,0)};
         var previewLabel=StudioTheme.Label("SCHERMVOORBEELD                       412 × 412",8,true,35);

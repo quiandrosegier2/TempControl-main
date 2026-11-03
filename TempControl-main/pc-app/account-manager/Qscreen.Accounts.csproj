@@ -1,0 +1,4 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup><OutputType>WinExe</OutputType><TargetFramework>net10.0-windows</TargetFramework><UseWindowsForms>true</UseWindowsForms><ImplicitUsings>enable</ImplicitUsings><Nullable>enable</Nullable><AssemblyName>Qscreen.Accounts</AssemblyName><Version>2.2.0-rc.1</Version><ApplicationManifest>app.manifest</ApplicationManifest></PropertyGroup>
+  <ItemGroup><Compile Include="../StudioTheme.cs" Link="StudioTheme.cs" /><None Update="account-client.json" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" /></ItemGroup>
+</Project>

@@ -1,0 +1,119 @@
+diff --git a/frontend/next.config.ts b/frontend/next.config.ts
+index a2c6fe0..8222edd 100644
+--- a/frontend/next.config.ts
++++ b/frontend/next.config.ts
+@@ -16,6 +16,16 @@ const nextConfig: NextConfig = {
+         // Electron / web server build
+         async headers() {
+           return [
++            {
++              source: "/qscreen/account/:path*",
++              headers: [
++                { key: "Cache-Control", value: "no-store" },
++                { key: "Referrer-Policy", value: "no-referrer" },
++                { key: "X-Content-Type-Options", value: "nosniff" },
++                { key: "X-Frame-Options", value: "DENY" },
++                { key: "Content-Security-Policy", value: "default-src 'none'; script-src 'self'; style-src 'self'; connect-src https://ybmesonqfclarqigwxfe.supabase.co; base-uri 'none'; form-action 'none'; frame-ancestors 'none'" },
++              ],
++            },
+             {
+               source: "/tools/hinged-box",
+               headers: [
+diff --git a/frontend/public/qscreen/account/app.js b/frontend/public/qscreen/account/app.js
+new file mode 100644
+index 0000000..5e68ba6
+--- /dev/null
++++ b/frontend/public/qscreen/account/app.js
+@@ -0,0 +1,49 @@
++"use strict";
++// Tokens stay in this closure, never localStorage, cookies, logs or redirects.
++(async () => {
++  const fragment = new URLSearchParams(location.hash.slice(1));
++  history.replaceState(null, "", location.pathname);
++  let accessToken = fragment.get("access_token");
++  const type = fragment.get("type");
++  const hasError = fragment.has("error");
++  for (const key of [...fragment.keys()]) fragment.delete(key);
++  const title = document.getElementById("title");
++  const status = document.getElementById("status");
++  const form = document.getElementById("password-form");
++  const password = document.getElementById("password");
++  const confirmation = document.getElementById("confirmation");
++  const save = document.getElementById("save");
++  const config = window.QSCREEN_AUTH;
++  const origin = "https://ybmesonqfclarqigwxfe.supabase.co";
++  const fail = () => { accessToken = null; title.textContent = "Deze link werkt niet meer."; status.textContent = "Open de meest recente bevestigings- of herstelmail. Vraag zo nodig een nieuwe mail aan in Qscreen."; form.hidden = true; };
++  async function request(method, path, data) {
++    const controller = new AbortController();
++    const timeout = setTimeout(() => controller.abort(), 12000);
++    try {
++      const response = await fetch(origin + path, { method, credentials: "omit", referrerPolicy: "no-referrer", cache: "no-store", redirect: "error", signal: controller.signal,
++        headers: { apikey: config.publishableKey, Authorization: "Bearer " + accessToken, "Content-Type": "application/json" }, ...(data ? { body: JSON.stringify(data) } : {}) });
++      if (!response.ok || Number(response.headers.get("Content-Length") || 0) > 131072) throw new Error("request_rejected");
++      if (response.status === 204) return {};
++      const reader = response.body.getReader(); let size = 0; const chunks = [];
++      for (;;) { const { value, done } = await reader.read(); if (done) break; size += value.length; if (size > 131072) { await reader.cancel(); throw new Error("response_limit"); } chunks.push(value); }
++      const bytes = new Uint8Array(size); let offset = 0; for (const chunk of chunks) { bytes.set(chunk, offset); offset += chunk.length; }
++      return size ? JSON.parse(new TextDecoder().decode(bytes)) : {};
++    } finally { clearTimeout(timeout); }
++  }
++  if (!config || config.origin !== origin || !/^sb_publishable_[A-Za-z0-9_-]+$/.test(config.publishableKey) || !accessToken || accessToken.length > 32768 || hasError) { fail(); return; }
++  try {
++    const user = await request("GET", "/auth/v1/user");
++    if (!user.id || !user.email_confirmed_at) { fail(); return; }
++    if (type === "recovery") { title.textContent = "Kies je nieuwe wachtwoord."; status.textContent = "Gebruik minstens 12 tekens. Je wachtwoord wordt rechtstreeks bij de accountprovider gewijzigd."; form.hidden = false; }
++    else { title.textContent = "Je e-mailadres is bevestigd."; status.textContent = "Je kunt terug naar Qscreen Account en je aanmelden."; accessToken = null; }
++  } catch { fail(); return; }
++  form.addEventListener("submit", async (event) => {
++    event.preventDefault();
++    if (password.value.length < 12 || password.value !== confirmation.value) { status.textContent = "Gebruik minstens 12 tekens en vul tweemaal hetzelfde wachtwoord in."; return; }
++    save.disabled = true;
++    try { await request("PUT", "/auth/v1/user", { password: password.value }); password.value = confirmation.value = ""; form.hidden = true; title.textContent = "Je wachtwoord is gewijzigd."; status.textContent = "Ga terug naar Qscreen Account en meld je opnieuw aan.";
++      try { await request("POST", "/auth/v1/logout?scope=local", {}); } catch { /* Never retain a recovery token to retry logout. */ } accessToken = null;
++    } catch { status.textContent = "Wijzigen is niet gelukt. De link kan verlopen zijn; vraag zo nodig een nieuwe herstelmail aan."; }
++    finally { password.value = confirmation.value = ""; save.disabled = false; }
++  });
++})();
+diff --git a/frontend/public/qscreen/account/config.js b/frontend/public/qscreen/account/config.js
+new file mode 100644
+index 0000000..93418e1
+--- /dev/null
++++ b/frontend/public/qscreen/account/config.js
+@@ -0,0 +1 @@
++window.QSCREEN_AUTH = {"publishableKey":"sb_publishable_EB5cncSZkU99-dzhV5jrTA_PSbzlSnD","origin":"https://ybmesonqfclarqigwxfe.supabase.co"};
+diff --git a/frontend/public/qscreen/account/index.html b/frontend/public/qscreen/account/index.html
+new file mode 100644
+index 0000000..727fc77
+--- /dev/null
++++ b/frontend/public/qscreen/account/index.html
+@@ -0,0 +1,23 @@
++<!doctype html>
++<html lang="nl">
++<head>
++  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
++  <meta name="referrer" content="no-referrer">
++  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; connect-src https://ybmesonqfclarqigwxfe.supabase.co; base-uri 'none'; form-action 'none'">
++  <title>Qscreen — Account bevestigen</title>
++  <link rel="stylesheet" href="./style.css"><script src="./config.js" defer></script><script src="./app.js" defer></script>
++</head>
++<body>
++  <main class="card">
++    <span class="brand">Qscreen <b>//</b></span><p class="eyebrow">QPRINTS ACCOUNT</p>
++    <h1 id="title">Je account controleren.</h1>
++    <p id="status" role="status" aria-live="polite">Even wachten…</p>
++    <form id="password-form" hidden>
++      <label for="password">Nieuw wachtwoord</label><input id="password" type="password" autocomplete="new-password" minlength="12" maxlength="256" required>
++      <label for="confirmation">Herhaal je wachtwoord</label><input id="confirmation" type="password" autocomplete="new-password" minlength="12" maxlength="256" required>
++      <button type="submit" id="save">Wachtwoord bewaren</button>
++    </form>
++    <p class="foot">Je ontwerpen en sensormetingen worden hier niet geüpload.<br>Deze pagina hoort bij Qscreen, afzonderlijk van je AutoSlice-account.</p>
++  </main>
++</body>
++</html>
+diff --git a/frontend/public/qscreen/account/style.css b/frontend/public/qscreen/account/style.css
+new file mode 100644
+index 0000000..b0f76b0
+--- /dev/null
++++ b/frontend/public/qscreen/account/style.css
+@@ -0,0 +1 @@
++:root{color-scheme:dark;font-family:Segoe UI,system-ui,sans-serif;color:#edf0f8;background:#0d1018}*{box-sizing:border-box}body{margin:0;min-height:100dvh;display:grid;place-items:center;padding:26px;background:radial-gradient(ellipse at 20% 0,#3a1e37 0,transparent 55%),#0d1018}.card{width:min(100%,540px);padding:44px;border:1px solid #303747;border-radius:24px;background:#171b27;box-shadow:0 35px 100px #0006}.brand{font-size:29px;font-weight:750;letter-spacing:-1px}.brand b{color:#ef5b71}.eyebrow{margin-top:42px;color:#ef5b71;font-size:12px;letter-spacing:2px;font-weight:700}h1{font-size:32px;line-height:1.12;letter-spacing:-.8px}p{line-height:1.65;color:#a3aec1}label{display:block;margin-top:22px;margin-bottom:8px;font-size:14px}input{width:100%;border:1px solid #3d475c;border-radius:10px;padding:14px;background:#202637;color:#edf0f8;font:inherit}input:focus{outline:2px solid #ef5b71;outline-offset:2px}button{width:100%;margin-top:26px;padding:15px;border:0;border-radius:11px;background:#ef5b71;color:white;font:600 15px Segoe UI,sans-serif;cursor:pointer}button:disabled{opacity:.55;cursor:wait}.foot{border-top:1px solid #303747;margin-top:35px;padding-top:22px;font-size:12px}form[hidden]{display:none}@media(max-width:520px){.card{padding:28px}h1{font-size:28px}}

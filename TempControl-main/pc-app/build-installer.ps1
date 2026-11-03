@@ -44,6 +44,11 @@ dotnet publish (Join-Path $root 'TempMonitor.csproj') -c Release -r win-x64 --se
     -p:OutputType=WinExe -p:DebugType=none -o $publishDir
 if ($LASTEXITCODE) { throw 'dotnet publish mislukt' }
 
+# Account handling runs in a separate asInvoker process; the legacy monitor keeps its sensor privileges.
+dotnet publish (Join-Path $root 'account-manager\Qscreen.Accounts.csproj') -c Release -r win-x64 --self-contained true `
+    -p:DebugType=none -o (Join-Path $publishDir 'accounts')
+if ($LASTEXITCODE) { throw 'Qscreen Account publiceren mislukt' }
+
 # 3. PresentMon (FPS-meting) ophalen
 if (-not (Test-Path $presentMonCache)) {
     $url = "https://github.com/GameTechDev/PresentMon/releases/download/v$presentMonVersion/PresentMon-$presentMonVersion-x64.exe"

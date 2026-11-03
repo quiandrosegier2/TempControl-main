@@ -4,6 +4,8 @@ firmware/.pio/
 # .NET
 pc-app/bin/
 pc-app/obj/
+pc-app/account-manager/bin/
+pc-app/account-manager/obj/
 tests/**/bin/
 tests/**/obj/
 

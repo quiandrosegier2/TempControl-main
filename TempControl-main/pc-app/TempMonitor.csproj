@@ -7,12 +7,13 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <AssemblyName>Qscreen</AssemblyName>
-    <Version>2.1.0-rc.2</Version>
+    <Version>2.2.0-rc.1</Version>
     <UseWindowsForms>true</UseWindowsForms>
     <DefaultItemExcludes>$(DefaultItemExcludes);installer\**</DefaultItemExcludes>
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="account-manager/**/*.cs" />
     <EmbeddedResource Include="assets/tactical-background.png" LogicalName="Qscreen.assets.tactical-background.png" />
     <PackageReference Include="LibreHardwareMonitorLib" Version="0.9.6" />
     <PackageReference Include="System.IO.Ports" Version="10.0.3" />

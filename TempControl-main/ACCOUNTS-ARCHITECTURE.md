@@ -2,6 +2,8 @@
 
 Status: fase 1, ontwerpvoorstel; geen authenticatie of beveiligingsclaim als geïmplementeerd markeren.
 
+Voortgang na dit ontwerp: de eerste accountmigratie is toegepast en de databaseregels zijn getest. Er is nu ook een afzonderlijke desktop-accountpreview; zie [ACCOUNTS-PREVIEW.md](ACCOUNTS-PREVIEW.md) voor werkelijk uitgevoerde controles en nog ontbrekende koppelingen. Dit oorspronkelijke architectuurvoorstel blijft de leidraad voor de resterende fasen.
+
 ## 1. Inspectie van de bestaande app
 
 Qscreen is een .NET 10 Windows Forms-app met LibreHardwareMonitor, PresentMon en een bestaande USB/FRAME2-verbinding. Er is geen accountserver, gebruikersdatabase, mailprovider, tokenopslag of cloud-authconfiguratie aangetroffen in de repository. De bestaande `ICommunityDesignSource` is een bruikbaar uitbreidingspunt voor een officiële bibliotheek; `LocalTemplateLibrary` blijft de persoonlijke, lokale bron.
