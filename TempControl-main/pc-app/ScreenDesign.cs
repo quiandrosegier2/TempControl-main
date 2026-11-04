@@ -212,7 +212,9 @@ sealed class DesignRenderer : IDisposable
     readonly MotionLayerRenderer motion=new();
     public double? MotionTimeSeconds {get;set;}
     public bool ReactivePreview {get;set;}
+    public double? PlaybackSeconds {get;set;}
     public int[] CurrentMotionFrames=>motion.CurrentFrames;
+    public double DecodeMilliseconds {get;private set;}
     readonly Dictionary<ScreenWidget,(float From,float Target,DateTime Changed)> meters=new();
     public bool HasPendingMotion {get;private set;}
     readonly Dictionary<(string Family,float Size,FontStyle Style),Font> fonts=new();
@@ -225,13 +227,15 @@ sealed class DesignRenderer : IDisposable
     string? cachedBackground;
     public Bitmap Render(ScreenDesign design, ScreenReadings readings)
     {
-        DateTime animationNow=MotionTimeSeconds.HasValue?DateTime.Today.AddSeconds(MotionTimeSeconds.Value):readings.Now;
-        HasPendingMotion=false;
+        double? animationSeconds=MotionTimeSeconds??PlaybackSeconds;
+        DateTime animationNow=animationSeconds.HasValue?DateTime.Today.AddSeconds(animationSeconds.Value):readings.Now;
+        HasPendingMotion=false;DecodeMilliseconds=0;
         var bitmap = new Bitmap(412, 412, PixelFormat.Format24bppRgb);
         using var g = Graphics.FromImage(bitmap);
         g.Clear(Color.FromArgb(design.BackgroundArgb));
         g.SmoothingMode = SmoothingMode.AntiAlias;
         g.TextRenderingHint = TextRenderingHint.AntiAliasGridFit;
+        long backgroundDecodeStart=System.Diagnostics.Stopwatch.GetTimestamp();
         if (cachedBackground != design.BackgroundPng)
         {
             background?.Dispose();backgroundStream?.Dispose(); background = null; cachedBackground = design.BackgroundPng;frameDelays=[];CurrentGifFrameIndex=null;
@@ -250,6 +254,7 @@ sealed class DesignRenderer : IDisposable
         if (background != null)
         {
             if(frameDelays.Length>1){int phase=design.AnimationsEnabled?(int)(animationNow.TimeOfDay.TotalMilliseconds*design.AnimationSpeed%frameDelays.Sum()):0,index=0;while(index<frameDelays.Length-1&&phase>=frameDelays[index]){phase-=frameDelays[index];index++;}background.SelectActiveFrame(FrameDimension.Time,index);CurrentGifFrameIndex=index;}
+            DecodeMilliseconds+=System.Diagnostics.Stopwatch.GetElapsedTime(backgroundDecodeStart).TotalMilliseconds;
             float scale = design.Fit == BackgroundFit.Cover ? Math.Max(412f / background.Width, 412f / background.Height) : Math.Min(412f / background.Width, 412f / background.Height);
             float width = design.Fit == BackgroundFit.Stretch ? 412 : background.Width * scale;
             float height = design.Fit == BackgroundFit.Stretch ? 412 : background.Height * scale;
@@ -259,7 +264,7 @@ sealed class DesignRenderer : IDisposable
         if(readings.Weather!=null&&design.Widgets.Any(w=>w.Visible&&w.Kind==WidgetKind.WeatherIcon&&w.WeatherDayNight)){using var mode=new SolidBrush(readings.Weather.Day?Color.FromArgb(55,100,180,240):Color.FromArgb(35,0,0,25));g.FillRectangle(mode,0,0,412,412);}
         using (var shade = new SolidBrush(Color.FromArgb((int)(Math.Clamp(design.Darken, 0, 100) * 2.55), Color.Black))) g.FillRectangle(shade, 0, 0, 412, 412);
         if(design.AnimationsEnabled)DrawAnimation(g,design.Animation,animationNow,design.AnimationSpeed);
-        motion.Draw(g,design,readings,MotionTimeSeconds,ReactivePreview);
+        motion.Draw(g,design,readings,MotionTimeSeconds,ReactivePreview,PlaybackSeconds);DecodeMilliseconds+=motion.DecodeMilliseconds;
         foreach (var w in design.Widgets.Where(w => w.Visible))
         {
             var bounds = new RectangleF(w.X, w.Y, Math.Clamp(w.Width, 1, 824), Math.Clamp(w.Height, 1, 824));

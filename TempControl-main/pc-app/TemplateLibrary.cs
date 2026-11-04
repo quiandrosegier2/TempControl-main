@@ -37,12 +37,13 @@ static class QscreenPackage
     {
         string json=DesignFiles.Serialize(design);DesignFiles.Parse(json);
         manifest=JsonSerializer.Deserialize<TemplateManifest>(JsonSerializer.Serialize(manifest,DesignFiles.Json),DesignFiles.Json)!;
-        if(!Version.TryParse(manifest.MinimumAppVersion,out var requestedMinimum)||requestedMinimum>new Version(2,5,0))throw new InvalidDataException("Ongeldige minimale appversie.");
+        if(!Version.TryParse(manifest.MinimumAppVersion,out var requestedMinimum)||requestedMinimum>new Version(2,5,1))throw new InvalidDataException("Ongeldige minimale appversie.");
         bool advanced=new[]{DisplayPage.From(design)}.Concat(design.Pages).Any(p=>p.Animation>PageAnimation.Pulse||p.AnimationSpeed!=1||!p.AnimationsEnabled||p.Widgets.Any(w=>w.Kind>=WidgetKind.CircularGauge||w.Motion!=WidgetMotion.None||w.ColorRules.Count>0||w.Opacity!=100));
         if(advanced)manifest.MinimumAppVersion="2.1.0";
         if(new[]{DisplayPage.From(design)}.Concat(design.Pages).Any(p=>p.Animation>PageAnimation.Smoke||p.Widgets.Any(w=>w.Kind==WidgetKind.ThermalFace||w.Rainbow||w.ClockCharacter>=0)))manifest.MinimumAppVersion="2.3.0";
         if(manifest.Category>=TemplateCategory.Japanese||new[]{DisplayPage.From(design)}.Concat(design.Pages).Any(p=>p.Animation>PageAnimation.Snow||p.Widgets.Any(w=>w.Kind>=WidgetKind.InfinityRibbon||w.DecorativeRing)))manifest.MinimumAppVersion="2.4.0";
         if(new[]{DisplayPage.From(design)}.Concat(design.Pages).Any(p=>p.MotionLayers.Count>0||p.StreamingQuality!=AnimationQuality.Balanced))manifest.MinimumAppVersion="2.5.0";
+        if(new[]{DisplayPage.From(design)}.Concat(design.Pages).Any(p=>p.StreamingQuality==AnimationQuality.Ultra))manifest.MinimumAppVersion="2.5.1";
         if(requestedMinimum>Version.Parse(manifest.MinimumAppVersion))manifest.MinimumAppVersion=requestedMinimum.ToString();
         manifest.Animated=DesignRenderer.IsAnimated(design)||design.Pages.Any(p=>DesignRenderer.IsAnimated(p.Design()));
         manifest.RequiredAssets=(new[]{DisplayPage.From(design)}.Concat(design.Pages).Any(p=>!string.IsNullOrEmpty(p.BackgroundPng))?new[]{"embedded:background"}:Array.Empty<string>()).Concat(new[]{DisplayPage.From(design)}.Concat(design.Pages).Any(p=>p.MotionLayers.Count>0)?new[]{"embedded:motion"}:Array.Empty<string>()).ToArray();
@@ -77,7 +78,7 @@ static class QscreenPackage
             return ReadBounded(entry.Open(),max);
         }
         var manifest=JsonSerializer.Deserialize<TemplateManifest>(Read("manifest.json",16384),DesignFiles.Json)??throw new InvalidDataException("Manifest ontbreekt.");
-        if(manifest.RequiredAssets==null||manifest.RequiredAssets.Length>16||manifest.RequiredAssets.Any(a=>a!="embedded:background"&&a!="embedded:motion")||manifest.CanvasWidth!=412||manifest.CanvasHeight!=412||manifest.Description==null||manifest.Description.Length>2000||manifest.TemplateId==null||manifest.TemplateId.Length>120||manifest.Format!="QscreenPackage"||manifest.Version!=1||manifest.Target!="WS146"||string.IsNullOrWhiteSpace(manifest.Name)||manifest.Name.Length>120||manifest.Author==null||manifest.Author.Length>120||!Enum.IsDefined(manifest.Category)||!Version.TryParse(manifest.MinimumAppVersion,out var minimum)||minimum>new Version(2,5,0))throw new InvalidDataException("Pakket is niet compatibel met deze versie of dit scherm.");
+        if(manifest.RequiredAssets==null||manifest.RequiredAssets.Length>16||manifest.RequiredAssets.Any(a=>a!="embedded:background"&&a!="embedded:motion")||manifest.CanvasWidth!=412||manifest.CanvasHeight!=412||manifest.Description==null||manifest.Description.Length>2000||manifest.TemplateId==null||manifest.TemplateId.Length>120||manifest.Format!="QscreenPackage"||manifest.Version!=1||manifest.Target!="WS146"||string.IsNullOrWhiteSpace(manifest.Name)||manifest.Name.Length>120||manifest.Author==null||manifest.Author.Length>120||!Enum.IsDefined(manifest.Category)||!Version.TryParse(manifest.MinimumAppVersion,out var minimum)||minimum>new Version(2,5,1))throw new InvalidDataException("Pakket is niet compatibel met deze versie of dit scherm.");
         var design=DesignFiles.Parse(Read("design.qscreen",(int)Limit));
         return new(Guid.NewGuid().ToString("N"),manifest,design);
     }
@@ -88,7 +89,7 @@ static class QscreenPackage
         if(zip.Entries.Count is <2 or >3||zip.Entries.Any(e=>!names.Contains(e.FullName))||zip.Entries.Sum(e=>e.Length)>Limit||zip.Entries.Select(e=>e.FullName).Distinct().Count()!=zip.Entries.Count)throw new InvalidDataException("Onveilig pakket.");
         var entry=zip.GetEntry("manifest.json")??throw new InvalidDataException("Manifest ontbreekt.");if(entry.Length>16384)throw new InvalidDataException("Manifest te groot.");
         var manifest=JsonSerializer.Deserialize<TemplateManifest>(ReadBounded(entry.Open(),16384),DesignFiles.Json)??throw new InvalidDataException("Manifest ontbreekt.");
-        if(manifest.RequiredAssets==null||manifest.RequiredAssets.Length>16||manifest.RequiredAssets.Any(a=>a!="embedded:background"&&a!="embedded:motion")||manifest.CanvasWidth!=412||manifest.CanvasHeight!=412||manifest.Description==null||manifest.Description.Length>2000||manifest.TemplateId==null||manifest.TemplateId.Length>120||manifest.Format!="QscreenPackage"||manifest.Version!=1||manifest.Target!="WS146"||string.IsNullOrWhiteSpace(manifest.Name)||manifest.Name.Length>120||manifest.Author==null||manifest.Author.Length>120||!Enum.IsDefined(manifest.Category)||!Version.TryParse(manifest.MinimumAppVersion,out var min)||min>new Version(2,5,0))throw new InvalidDataException("Niet compatibel.");
+        if(manifest.RequiredAssets==null||manifest.RequiredAssets.Length>16||manifest.RequiredAssets.Any(a=>a!="embedded:background"&&a!="embedded:motion")||manifest.CanvasWidth!=412||manifest.CanvasHeight!=412||manifest.Description==null||manifest.Description.Length>2000||manifest.TemplateId==null||manifest.TemplateId.Length>120||manifest.Format!="QscreenPackage"||manifest.Version!=1||manifest.Target!="WS146"||string.IsNullOrWhiteSpace(manifest.Name)||manifest.Name.Length>120||manifest.Author==null||manifest.Author.Length>120||!Enum.IsDefined(manifest.Category)||!Version.TryParse(manifest.MinimumAppVersion,out var min)||min>new Version(2,5,1))throw new InvalidDataException("Niet compatibel.");
         return manifest;
     }
 }

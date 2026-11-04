@@ -10,6 +10,7 @@ static class Program
     static void Run(string[] args)
     {
         string output=Path.GetFullPath(args[0]);Directory.CreateDirectory(output);byte[] gif=GhostFixture.Create();File.WriteAllBytes(Path.Combine(output,"ghost-cute.gif"),gif);
+        if(args.Contains("--prepare-suite")){SmoothBenchmarks.Prepare(output,gif);return;}
         var info=GifAnimation.Inspect(gif);Check(info.FrameCount==12&&info.DurationMs==1440&&info.Transparent&&info.Width==64,"GIF metadata/timing incorrect");
         using(var stream=new MemoryStream(gif))using(var image=Image.FromStream(stream)){Check(image.GetFrameCount(FrameDimension.Time)==12,"Windows cannot decode fixture");}
         var design=new ScreenDesign{Name="Ghost Cute · GIF stream test",BackgroundArgb=Color.FromArgb(8,13,28).ToArgb(),BackgroundPng=Convert.ToBase64String(gif),Darken=0,StreamingQuality=AnimationQuality.Maximum,Widgets=[new(){Name="Klok",Kind=WidgetKind.Time,Format="HH:mm:ss",X=90,Y=50,Width=232,Height=40,FontSize=32},new(){Name="CPU",Kind=WidgetKind.CpuTemperature,Format="CPU {value}°C",X=72,Y=325,Width=130,Height=30,FontSize=18},new(){Name="GPU",Kind=WidgetKind.GpuTemperature,Format="GPU {value}°C",X=210,Y=325,Width=130,Height=30,FontSize=18},new(){Name="FPS",Kind=WidgetKind.Fps,Format="{value} FPS",X=116,Y=363,Width=180,Height=26,FontSize=17}]};
@@ -60,6 +61,13 @@ static class Program
         }
         using(var studio=new MotionStudioWindow(layered,()=>readings)){studio.Show();Application.DoEvents();using var capture=new Bitmap(studio.Width,studio.Height);studio.DrawToBitmap(capture,new Rectangle(0,0,studio.Width,studio.Height));capture.Save(Path.Combine(output,"motion-studio.png"));}
         using var editor=new DesignWindow(output,null,design);var flags=BindingFlags.Instance|BindingFlags.NonPublic;var actual=(ScreenDesign)typeof(DesignWindow).GetField("design",flags)!.GetValue(editor)!;Check(actual.BackgroundPng==design.BackgroundPng,"Editor flattened imported GIF");
+        using(var composer=new AnimationComposer())using(var limit=new CancellationTokenSource(TimeSpan.FromSeconds(5)))
+        {
+            long firstId=composer.Submit("same-project",layered,readings);using var firstFrame=composer.Next(firstId,limit.Token).GetAwaiter().GetResult();
+            Thread.Sleep(180);long secondId=composer.Submit("same-project",layered,readings with{Cpu=90,Now=start.AddYears(-10)});using var secondFrame=composer.Next(secondId,limit.Token).GetAwaiter().GetResult();
+            Check(secondFrame.PlaybackSeconds>firstFrame.PlaybackSeconds+.1,"Sensor update restarted monotonic animation clock");
+            Thread.Sleep(400);Check(composer.ReplacedFrames>0,"Slow transport accumulated an unbounded queue instead of replacing outdated frames");
+        }
         Console.WriteLine("PASS: GIF timing/transparency and character movement; native alpha frame assets; project/page/undo/package preservation; timeline UI; keyframe interpolation; sensor hysteresis/cooldown/fallback; delta transport/rejection recovery; actual Windows conversion when converter supplied. Hardware verification is reported separately.");
     }
 }

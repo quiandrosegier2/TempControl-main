@@ -20,7 +20,7 @@ sealed class DeviceWorker : IDisposable
     readonly Action<string> notify;
     readonly Channel<DisplayJob> jobs=Channel.CreateBounded<DisplayJob>(new BoundedChannelOptions(1){FullMode=BoundedChannelFullMode.DropOldest,SingleReader=true,SingleWriter=true});
     readonly CancellationTokenSource stopped=new();
-    readonly PageController pages=new();readonly AlertEngine alerts=new();readonly DesignRenderer renderer=new();
+    readonly PageController pages=new();readonly AlertEngine alerts=new();readonly AnimationComposer composer=new();
     IDisplaySession? session;
     DisplayJob? current;
     string profile="",lastConfig="",pageRequest="";
@@ -66,7 +66,7 @@ sealed class DeviceWorker : IDisposable
                     var notices=alerts.Evaluate(job.Config.Alerts,job.Readings,true,DateTime.UtcNow);
                     if(brightness==0&&session.Information.Advanced)
                     {
-                        session.KeepAlive();if(primary)ScreenDelivery.Write(directory,job.Revision,"sleeping",assignment.Name);
+                        composer.Pause();session.KeepAlive();if(primary)ScreenDelivery.Write(directory,job.Revision,"sleeping",assignment.Name);
                         report(new(session.Information.Id,assignment.Name,candidate.Port,true,session.Information.Firmware,job.ProfileId,job.Design?.Name??"Ingebouwde layout",pages.Index,count,0,"Slaapstand · tik op het scherm of gebruik de pc om te wekken",DateTime.UtcNow,candidate.UsbId,session.Information.Touch,session.Information.Advanced));continue;
                     }
                     var readings=job.Readings with{Alerts=notices};
@@ -76,12 +76,12 @@ sealed class DeviceWorker : IDisposable
                     {
                         pages.Tick(renderProject,DateTime.UtcNow);int renderedPage=pages.Index;var page=DisplayPages.At(renderProject,renderedPage);
                         if(measuredRevision!=job.Revision){streamMeter=new();measuredRevision=job.Revision;}
-                        var renderClock=Stopwatch.StartNew();
-                        using var image=renderer.Render(page,readings);
-                        repeatAnimation=DesignRenderer.IsAnimated(page)||renderer.HasPendingMotion||page.AnimationsEnabled&&renderer.HasAnimatedBackground;
+                        long composeRequest=composer.Submit(job.Revision+":"+renderedPage,page,readings);
+                        using var composed=await composer.Next(composeRequest,stopped.Token);
+                        var image=composed.Image;
+                        repeatAnimation=composed.Animated;
                         if(DateTime.UtcNow<quickMenuUntil)DrawQuickMenu(image);
-                        byte[] bytes=DesignRenderer.Rgb565(image);uint hash=CustomScreenSender.Hash(bytes);
-                        renderClock.Stop();
+                        byte[] bytes=DateTime.UtcNow<quickMenuUntil?DesignRenderer.Rgb565(image):composed.Bytes;uint hash=CustomScreenSender.Hash(bytes);
                         bool changedPage=lastPage>=0&&lastPage!=renderedPage;
                         if(changedPage&&hash!=lastHash&&renderProject.Transition!=PageTransition.Cut&&session.Information.Advanced&&previous!=null)
                         {
@@ -95,7 +95,7 @@ sealed class DeviceWorker : IDisposable
                             if(primary&&progressRevision!=job.Revision&&session is IProgressDisplaySession progressSession)
                             {int published=-10;sent=progressSession.SendWithProgress(bytes,percent=>{if(percent>=published+10||percent==100){published=percent;ScreenDelivery.Write(directory,job.Revision,"sending",percent+"% van dit beeld bevestigd · "+assignment.Name);}});if(sent)progressRevision=job.Revision;}
                             else sent=session.Send(bytes);
-                            transferClock.Stop();if(sent)streamMeter.Received(renderClock.Elapsed.TotalMilliseconds,transferClock.Elapsed.TotalMilliseconds,session is DisplaySession physical?physical.LastPayloadBytes:bytes.Length,page.StreamingQuality,renderer.CurrentGifFrameIndex,hash,renderer.CurrentMotionFrames);
+                            transferClock.Stop();if(sent)streamMeter.Received(composed.RenderMs,transferClock.Elapsed.TotalMilliseconds,session is DisplaySession physical?physical.LastPayloadBytes:bytes.Length,page.StreamingQuality,composed.GifFrame,hash,composed.LayerFrames,composed.DecodeMs,composer.ReplacedFrames);
                             receivedFrame=sent;lastHash=hash;lastSent=DateTime.UtcNow;
                         }
                         else if(session.Information.Advanced)session.KeepAlive();
@@ -108,7 +108,7 @@ sealed class DeviceWorker : IDisposable
                     }
                     else
                     {
-                        receivedFrame=false;session.Native(job.NativePacket);if(primary)ScreenDelivery.Write(directory,"","preset",assignment.Name);
+                        composer.Pause();receivedFrame=false;session.Native(job.NativePacket);if(primary)ScreenDelivery.Write(directory,"","preset",assignment.Name);
                         report(new(session.Information.Id,assignment.Name,candidate.Port,true,session.Information.Firmware,job.ProfileId,"Ingebouwde layout",0,1,session.Information.Advanced?brightness:100,"USB verbonden",DateTime.UtcNow,candidate.UsbId,session.Information.Touch,session.Information.Advanced));
                     }
                 }
@@ -119,11 +119,11 @@ sealed class DeviceWorker : IDisposable
                     if(primary)ScreenDelivery.Write(directory,job.Revision,"disconnected",ex.Message);
                     session?.Dispose();session=null;lastConfig="";lastHash=0;retryAfter=DateTime.UtcNow.AddSeconds(12);
                 }
-                if(repeatAnimation&&session!=null){int delay=streamMeter.DelayMilliseconds(job.Design?.StreamingQuality??AnimationQuality.Balanced,frameClock.Elapsed.TotalMilliseconds);if(delay>0)await Task.Delay(delay,stopped.Token);pending=job with{Readings=job.Readings with{Now=DateTime.Now}};}
+                if(repeatAnimation&&session!=null){pending=job with{Readings=job.Readings with{Now=DateTime.Now}};}
             }
         }
         catch(Exception ex)when(ex is OperationCanceledException or ChannelClosedException){ }
-        finally{if(current!=null&&everConnected)alerts.Evaluate(current.Config.Alerts,current.Readings,false,DateTime.UtcNow);session?.Dispose();renderer.Dispose();previous?.Dispose();}
+        finally{if(current!=null&&everConnected)alerts.Evaluate(current.Config.Alerts,current.Readings,false,DateTime.UtcNow);session?.Dispose();composer.Dispose();previous?.Dispose();}
     }
     void TouchEvent(string packet)
     {

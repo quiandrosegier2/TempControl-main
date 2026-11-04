@@ -125,12 +125,13 @@ sealed class MotionLayerRenderer : IDisposable
     DateTime? epoch;
     List<MotionLayer>? lastLayers;
     public int[] CurrentFrames {get;private set;}=[];
-    public void Draw(Graphics g,ScreenDesign design,ScreenReadings readings,double? seek,bool reactiveSeek=false)
+    public double DecodeMilliseconds {get;private set;}
+    public void Draw(Graphics g,ScreenDesign design,ScreenReadings readings,double? seek,bool reactiveSeek=false,double? playbackSeconds=null)
     {
-        var now=readings.Now;
+        DecodeMilliseconds=0;var now=readings.Now;
         if(!ReferenceEquals(lastLayers,design.MotionLayers)){lastLayers=design.MotionLayers;epoch=now;rules.Clear();}
         var selectedFrames=new List<int>();
-        epoch??=now;double elapsed=seek??Math.Max(0,(now-epoch.Value).TotalSeconds);
+        epoch??=now;double elapsed=seek??playbackSeconds??Math.Max(0,(now-epoch.Value).TotalSeconds);
         var active=design.MotionLayers.Where(l=>l.ImageData!=null).Select(l=>l.ImageData!).ToHashSet(StringComparer.Ordinal);
         foreach(var key in sources.Keys.Where(k=>!active.Contains(k)).ToArray()){sources[key].Dispose();sources.Remove(key);}
         foreach(var key in rules.Keys.Where(k=>!design.MotionLayers.Contains(k)).ToArray())rules.Remove(key);
@@ -141,20 +142,22 @@ sealed class MotionLayerRenderer : IDisposable
             if(l.Reactive.Enabled&&(seek==null||reactiveSeek)&&design.AnimationsEnabled)
             {
                 var r=l.Reactive;var value=readings.Value(r.Sensor);
-                if(!rules.TryGetValue(l,out var state))state=(false,DateTime.MinValue,1,1,now,local*l.Speed);
+                var reactiveNow=playbackSeconds.HasValue?DateTime.UnixEpoch.AddSeconds(playbackSeconds.Value):now;
+                if(!rules.TryGetValue(l,out var state))state=(false,DateTime.MinValue,1,1,reactiveNow,local*l.Speed);
                 bool next=value.HasValue&&(state.Active?value.Value>=r.Threshold-r.Hysteresis:value.Value>=r.Threshold);
-                if(next!=state.Active&&(!value.HasValue||(now-state.Changed).TotalSeconds>=r.CooldownSeconds))state=(next,now,state.Speed,state.Opacity,state.Last,state.Phase);
-                float blend=(float)Math.Clamp((now-state.Last).TotalSeconds/.4,0,1);
+                if(next!=state.Active&&(!value.HasValue||(reactiveNow-state.Changed).TotalSeconds>=r.CooldownSeconds))state=(next,reactiveNow,state.Speed,state.Opacity,state.Last,state.Phase);
+                float blend=(float)Math.Clamp((reactiveNow-state.Last).TotalSeconds/.4,0,1);
                 float speed=state.Speed+((state.Active?r.ActiveSpeed:1)-state.Speed)*blend;
                 opacity=state.Opacity+((state.Active?r.ActiveOpacity:1)-state.Opacity)*blend;
-                double phase=state.Phase+Math.Max(0,(now-state.Last).TotalSeconds)*l.Speed*speed;
-                rules[l]=(state.Active,state.Changed,speed,opacity,now,phase);local=seek.HasValue?local*l.Speed*speed:phase;
+                double phase=state.Phase+Math.Max(0,(reactiveNow-state.Last).TotalSeconds)*l.Speed*speed;
+                rules[l]=(state.Active,state.Changed,speed,opacity,reactiveNow,phase);local=seek.HasValue?local*l.Speed*speed:phase;
             }
             else local*=l.Speed;
             local=l.Loop?local%l.Duration:Math.Min(local,l.Duration);
+            long decodeStart=System.Diagnostics.Stopwatch.GetTimestamp();
             if(!sources.TryGetValue(l.ImageData!,out var source)){source=new(l.ImageData!);sources.Add(l.ImageData!,source);}
             int index=0;if(source.Delays.Length>1){double phase=local*1000;phase=l.Loop?phase%source.Delays.Sum():Math.Min(phase,source.Delays.Sum()-1);while(index<source.Delays.Length-1&&phase>=source.Delays[index])phase-=source.Delays[index++];}
-            var frame=source.Frame(index);var pose=l.PoseAt(local);pose.Opacity*=opacity;var stateGraphics=g.Save();
+            var frame=source.Frame(index);DecodeMilliseconds+=System.Diagnostics.Stopwatch.GetElapsedTime(decodeStart).TotalMilliseconds;var pose=l.PoseAt(local);pose.Opacity*=opacity;var stateGraphics=g.Save();
             selectedFrames.Add(index);
             try{g.TranslateTransform(pose.X,pose.Y);g.RotateTransform(pose.Rotation);g.ScaleTransform(pose.Scale,pose.Scale);using var attrs=new ImageAttributes();attrs.SetColorMatrix(new ColorMatrix{Matrix33=pose.Opacity});g.DrawImage(frame,new Rectangle(-l.Width/2,-l.Height/2,l.Width,l.Height),0,0,frame.Width,frame.Height,GraphicsUnit.Pixel,attrs);}finally{g.Restore(stateGraphics);}
         }

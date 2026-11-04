@@ -139,7 +139,7 @@ sealed class MotionStudioWindow : Form
     {
         if(DateTime.UtcNow>=nextPerformance){measured=performance?.Invoke();if(measured!=null&&DateTime.UtcNow-measured.UpdatedUtc>TimeSpan.FromSeconds(10))measured=null;nextPerformance=DateTime.UtcNow.AddSeconds(1);}
         timer.Interval=devicePace.Checked&&measured?.AcknowledgedFps is >0?Math.Clamp((int)(1000/measured.AcknowledgedFps.Value),40,2000):83;
-        if(performanceOverlay.Checked){info.Height=76;info.Text=measured?.Description??"Nog geen actuele meting van het scherm. De editor gebruikt 12 Hz; USB-prestaties zijn onbekend.";}else info.Height=42;
+        if(performanceOverlay.Checked){info.Height=110;info.Text=measured?.Description??"Nog geen actuele meting van het scherm. De editor gebruikt 12 Hz; USB-prestaties zijn onbekend.";}else info.Height=42;
         double t=animate.Checked?Current:0;renderer.MotionTimeSeconds=t;renderer.ReactivePreview=playback.IsRunning&&sensors.Checked&&animate.Checked;var live=readings();if(!sensors.Checked)live=new(null,null,null,null,null,null,live.Now);var next=renderer.Render(Project,live);
         if(guide.Checked){using var g=Graphics.FromImage(next);using var pen=new Pen(Color.FromArgb(190,255,40,110),1){DashStyle=System.Drawing.Drawing2D.DashStyle.Dash};g.DrawEllipse(pen,24,24,364,364);g.DrawLine(pen,196,206,216,206);g.DrawLine(pen,206,196,206,216);}
         var old=preview.Image;preview.Image=next;old?.Dispose();
