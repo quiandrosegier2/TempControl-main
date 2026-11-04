@@ -1,4 +1,4 @@
-param([string]$Port='COM3',[switch]$Apply,[switch]$Restore,[string]$ExpectedBackupSha='')
+param([string]$Port='COM3',[switch]$Apply,[switch]$Restore,[string]$ExpectedBackupSha='',[ValidatePattern('^[a-zA-Z0-9-]{1,50}$')][string]$BackupName='motion-firmware-backup')
 $ErrorActionPreference='Stop'
 if($Apply -and $Restore){throw 'Choose either upgrade or recovery.'}
 $writeRequested=$Apply -or $Restore
@@ -6,7 +6,7 @@ $repo=Split-Path $PSScriptRoot -Parent
 $python=Join-Path $repo '.platformio/penv/Scripts/python.exe'
 $esptool=Join-Path $repo '.platformio/packages/tool-esptoolpy/esptool.py'
 $build=Join-Path $repo 'firmware/.pio/build/waveshare_s3_touch_lcd_146'
-$backupRoot=Join-Path $repo 'pc-app/installer/tool-cache/motion-firmware-backup'
+$backupRoot=Join-Path $repo ('pc-app/installer/tool-cache/'+$BackupName)
 New-Item -ItemType Directory -Path $backupRoot -Force | Out-Null
 $backup=Join-Path $backupRoot 'flash-16MB.bin'
 $status=Join-Path $backupRoot 'status.json'

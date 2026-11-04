@@ -31,6 +31,7 @@ sealed class DeviceWorker : IDisposable
     int lastBrightness=100;
     DateTime lastTouch=DateTime.MinValue;
     Bitmap? previous;
+    long replacementBaseline;
     AnimationStreamMeter streamMeter=new();string measuredRevision="",progressRevision="";
     public Task Completion { get; }
     public DeviceWorker(DeviceCandidate candidate,string directory,bool primary,Action<DeviceRuntimeStatus> report,Action<string> notify,Func<DeviceCandidate,Action<string>,IDisplaySession>? open=null)
@@ -75,7 +76,7 @@ sealed class DeviceWorker : IDisposable
                     if(renderProject!=null)
                     {
                         pages.Tick(renderProject,DateTime.UtcNow);int renderedPage=pages.Index;var page=DisplayPages.At(renderProject,renderedPage);
-                        if(measuredRevision!=job.Revision){streamMeter=new();measuredRevision=job.Revision;}
+                        if(measuredRevision!=job.Revision){streamMeter=new();replacementBaseline=composer.ReplacedFrames;measuredRevision=job.Revision;}
                         long composeRequest=composer.Submit(job.Revision+":"+renderedPage,page,readings);
                         using var composed=await composer.Next(composeRequest,stopped.Token);
                         var image=composed.Image;
@@ -95,7 +96,7 @@ sealed class DeviceWorker : IDisposable
                             if(primary&&progressRevision!=job.Revision&&session is IProgressDisplaySession progressSession)
                             {int published=-10;sent=progressSession.SendWithProgress(bytes,percent=>{if(percent>=published+10||percent==100){published=percent;ScreenDelivery.Write(directory,job.Revision,"sending",percent+"% van dit beeld bevestigd · "+assignment.Name);}});if(sent)progressRevision=job.Revision;}
                             else sent=session.Send(bytes);
-                            transferClock.Stop();if(sent)streamMeter.Received(composed.RenderMs,transferClock.Elapsed.TotalMilliseconds,session is DisplaySession physical?physical.LastPayloadBytes:bytes.Length,page.StreamingQuality,composed.GifFrame,hash,composed.LayerFrames,composed.DecodeMs,composer.ReplacedFrames);
+                            transferClock.Stop();if(sent)streamMeter.Received(composed.RenderMs,transferClock.Elapsed.TotalMilliseconds,session is DisplaySession physical?physical.LastPayloadBytes:bytes.Length,page.StreamingQuality,composed.GifFrame,hash,composed.LayerFrames,composed.DecodeMs,Math.Max(0,composer.ReplacedFrames-replacementBaseline));
                             receivedFrame=sent;lastHash=hash;lastSent=DateTime.UtcNow;
                         }
                         else if(session.Information.Advanced)session.KeepAlive();

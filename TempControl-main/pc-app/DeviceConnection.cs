@@ -5,10 +5,12 @@ using System.Text;
 using System.Text.RegularExpressions;
 
 sealed record DeviceCandidate(string Port,string UsbId,string Label);
-sealed record DeviceInformation(string Id,string Firmware,bool Advanced,bool Touch,bool Patch=false);
+sealed record DeviceInformation(string Id,string Firmware,bool Advanced,bool Touch,bool Patch=false,bool Burst=false,bool Compression=false);
 sealed record DeviceRuntimeStatus(string DeviceId,string Name,string Port,bool Connected,string Firmware,string ProfileId,string ProfileName,int Page,int PageCount,int Brightness,string Message,DateTime UpdatedUtc,string UsbId="",bool TouchAvailable=false,bool AdvancedControls=false,AnimationTransferMetrics? Performance=null);
 sealed record DeviceMeasurements(long HeapFree,long PsramFree,long PsramTotal,long FlashBytes,double DrawMs,double? CompletedDrawsPerSecond,DateTime UpdatedUtc)
 {
+    public double? ComposeMs {get;init;}
+    public double? DisplayTransferMs {get;init;}
     public string Description=>$"ESP heap vrij {HeapFree/1024} KB · PSRAM {(PsramTotal-PsramFree)/1024}/{PsramTotal/1024} KB · tekenen {DrawMs:0.##} ms · voltooide beelden {(CompletedDrawsPerSecond.HasValue?CompletedDrawsPerSecond.Value.ToString("0.##"):"--")}/s";
 }
 static class DeviceDiscovery
@@ -41,7 +43,7 @@ sealed class DisplaySession : IDisplaySession,IProgressDisplaySession
     public DeviceInformation Information { get; }
     public DisplaySession(DeviceCandidate candidate,Action<string> onEvent)
     {
-        port=new SerialPort(candidate.Port,115200){NewLine="\n",DtrEnable=false,RtsEnable=false,WriteTimeout=5000,ReadTimeout=900};
+        port=new SerialPort(candidate.Port,115200){NewLine="\n",DtrEnable=false,RtsEnable=false,WriteTimeout=5000,ReadTimeout=2500};
         try
         {
             port.Open();port.WriteLine("INFO");string? info=null;
@@ -49,7 +51,7 @@ sealed class DisplaySession : IDisplaySession,IProgressDisplaySession
             if(info!=null)
             {
                 var fields=info.Split(';').Where(s=>s.Contains('=')).Select(s=>s.Split('=',2)).ToDictionary(s=>s[0],s=>s[1]);
-                string id=fields.GetValueOrDefault("ID","");string caps=fields.GetValueOrDefault("CAPS","");Information=new(id.Length>0?"mac:"+id:candidate.UsbId,fields.GetValueOrDefault("FW","onbekend"),caps.Contains("BRIGHTNESS",StringComparison.Ordinal)&&caps.Contains("ALIVE",StringComparison.Ordinal),caps.Contains("TOUCH:1",StringComparison.Ordinal),caps.Split(',').Contains("PATCH1"));
+                string id=fields.GetValueOrDefault("ID","");string caps=fields.GetValueOrDefault("CAPS","");Information=new(id.Length>0?"mac:"+id:candidate.UsbId,fields.GetValueOrDefault("FW","onbekend"),caps.Contains("BRIGHTNESS",StringComparison.Ordinal)&&caps.Contains("ALIVE",StringComparison.Ordinal),caps.Contains("TOUCH:1",StringComparison.Ordinal),caps.Split(',').Contains("PATCH1"),caps.Split(',').Contains("BURST8K"),caps.Split(',').Contains("RLE565"));
             }
             else
             {
@@ -58,7 +60,7 @@ sealed class DisplaySession : IDisplaySession,IProgressDisplaySession
                 if(!identified)throw new IOException("Geen compatibel Qscreen-scherm.");
                 Information=new(candidate.UsbId,"Legacy (versie niet beschikbaar)",false,false);
             }
-            port.ReadTimeout=12000;sender=new(new SerialFrameConnection(port),onEvent,Information.Patch);
+            port.ReadTimeout=12000;sender=new(new SerialFrameConnection(port),onEvent,Information.Patch,Information.Burst,Information.Compression);
         }
         catch{port.Dispose();throw;}
     }
@@ -76,7 +78,7 @@ sealed class DisplaySession : IDisplaySession,IProgressDisplaySession
         var values=sender.ReadStatistics().Split(';').Skip(1).Select(s=>s.Split('=',2)).Where(p=>p.Length==2&&long.TryParse(p[1],out _)).ToDictionary(p=>p[0],p=>long.Parse(p[1],System.Globalization.CultureInfo.InvariantCulture));
         if(!new[]{"HEAP","PSRAM_FREE","PSRAM_TOTAL","FLASH","DRAW_US","FRAMES","UPTIME_MS"}.All(values.ContainsKey))throw new IOException("Onvolledige ESP-statistieken.");
         long frames=values["FRAMES"],uptime=values["UPTIME_MS"];double? fps=lastUptime>0&&uptime>lastUptime&&frames>=lastFrames?(frames-lastFrames)*1000d/(uptime-lastUptime):null;
-        Measurements=new(values["HEAP"],values["PSRAM_FREE"],values["PSRAM_TOTAL"],values["FLASH"],values["DRAW_US"]/1000d,fps,DateTime.UtcNow);lastFrames=frames;lastUptime=uptime;
+        Measurements=new(values["HEAP"],values["PSRAM_FREE"],values["PSRAM_TOTAL"],values["FLASH"],values["DRAW_US"]/1000d,fps,DateTime.UtcNow){ComposeMs=values.TryGetValue("COMPOSE_US",out var compose)?compose/1000d:null,DisplayTransferMs=values.TryGetValue("DISPLAY_US",out var display)?display/1000d:null};lastFrames=frames;lastUptime=uptime;
     }
     public void Dispose()=>port.Dispose();
 }

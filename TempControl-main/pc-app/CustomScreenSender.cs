@@ -17,7 +17,7 @@ sealed class SerialFrameConnection(SerialPort port) : IEventFrameConnection
     public string ReadLine() => port.ReadLine().Trim();
 }
 
-sealed class CustomScreenSender(IFrameConnection connection,Action<string>? onEvent=null,bool patchSupported=false)
+sealed class CustomScreenSender(IFrameConnection connection,Action<string>? onEvent=null,bool patchSupported=false,bool burstSupported=false,bool compressionSupported=false)
 {
     bool? supported;
     byte[]? previousFrame;
@@ -66,16 +66,19 @@ sealed class CustomScreenSender(IFrameConnection connection,Action<string>? onEv
         }
         if(supported!=true)return false;
         byte[] payload=patchSupported&&previousFrame!=null?FramePatch.Create(previousFrame,bytes)??bytes:bytes;
-        bool patch=!ReferenceEquals(payload,bytes);LastPayloadBytes=payload.Length;
+        bool patch=!ReferenceEquals(payload,bytes),compressed=false;
+        if(compressionSupported&&burstSupported){var packed=PixelRuns.Encode(payload);if(packed.Length<payload.Length*.9){payload=packed;compressed=true;}}
+        LastPayloadBytes=payload.Length;
         // A failed transfer invalidates the delta baseline. Next attempt is a complete frame.
         previousFrame=null;
-        connection.WriteLine(patch?"PATCH1="+payload.Length.ToString(CultureInfo.InvariantCulture)+","+Hash(payload).ToString(CultureInfo.InvariantCulture)+","+Hash(bytes).ToString(CultureInfo.InvariantCulture):"FRAME2="+FrameBytes.ToString(CultureInfo.InvariantCulture)+","+Hash(bytes).ToString(CultureInfo.InvariantCulture));
+        connection.WriteLine(compressed?(patch?"RLEP=":"RLEF=")+payload.Length.ToString(CultureInfo.InvariantCulture)+","+Hash(payload).ToString(CultureInfo.InvariantCulture)+","+Hash(bytes).ToString(CultureInfo.InvariantCulture):patch?(burstSupported?"PATCH2=":"PATCH1=")+payload.Length.ToString(CultureInfo.InvariantCulture)+","+Hash(payload).ToString(CultureInfo.InvariantCulture)+","+Hash(bytes).ToString(CultureInfo.InvariantCulture):(burstSupported?"FRAME3=":"FRAME2=")+FrameBytes.ToString(CultureInfo.InvariantCulture)+","+Hash(bytes).ToString(CultureInfo.InvariantCulture));
         Expect("FRAMEREADY");
         progress?.Invoke(0);
-        // Never outrun the ESP32 RX queue: wait after each complete 1024-byte block.
-        for(int offset=0;offset<payload.Length;offset+=1024)
+        // Larger windows are used only when the receiver explicitly advertises BURST8K.
+        int chunkBytes=burstSupported?8192:1024;
+        for(int offset=0;offset<payload.Length;offset+=chunkBytes)
         {
-            int count=Math.Min(1024,payload.Length-offset);
+            int count=Math.Min(chunkBytes,payload.Length-offset);
             connection.Write(payload,offset,count);
             if(offset+count<payload.Length)Expect("FRAMECHUNK");
             if(offset+count<payload.Length)progress?.Invoke((offset+count)*100/payload.Length);

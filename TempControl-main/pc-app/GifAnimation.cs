@@ -4,7 +4,7 @@ sealed record GifAnimationInfo(int Width,int Height,int[] DelaysMs,bool Transpar
 {
     public int FrameCount=>DelaysMs.Length;
     public int DurationMs=>DelaysMs.Sum();
-    public string Description=>$"GIF · {Width} × {Height} · {FrameCount} frames · {DurationMs/1000d:0.##} s · {Bytes/1024d:0.#} KB";
+    public string Description=>$"GIF · {Width} × {Height} · {FrameCount} frames ({FrameCount*1000d/DurationMs:0.#} bron-FPS) · {DurationMs/1000d:0.##} s · {Bytes/1024d:0.#} KB";
 }
 static class GifAnimation
 {
