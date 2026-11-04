@@ -42,7 +42,7 @@ static class AdvancedUi
 }
 sealed class HistoryPlot : Control
 {
-    public HistorySeries? Series;
+    public HistorySeries? Series=null;
     public HistoryPlot(){DoubleBuffered=true;Dock=DockStyle.Fill;BackColor=StudioTheme.Surface;ForeColor=StudioTheme.Text;}
     protected override void OnPaint(PaintEventArgs e)
     {

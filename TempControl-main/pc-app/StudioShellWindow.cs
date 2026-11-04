@@ -28,12 +28,12 @@ sealed class StudioShellWindow : Form
         var mark=new PictureBox{Image=NeonArtwork.BrandMark(),SizeMode=PictureBoxSizeMode.Zoom,Width=49,Height=43,Dock=DockStyle.Left};mark.Disposed+=(_,_)=>mark.Image?.Dispose();
         branding.Controls.Add(new Label{Text="Qscreen Studio",Dock=DockStyle.Fill,TextAlign=ContentAlignment.MiddleCenter,ForeColor=StudioTheme.Text,Font=new("Segoe UI",12,FontStyle.Bold)});branding.Controls.Add(mark);navigation.Controls.Add(branding);
         Button(navigation,"Layouts",Home);Button(navigation,"Mijn ontwerpen",()=>Manage("Profielen"));
-        Button(navigation,"PC Monitor",()=>Manage("Historie"));Button(navigation,"Apparaten",()=>Manage("Apparaten"));
+        Button(navigation,"PC Monitor",()=>Manage("PC Monitor"));Button(navigation,"Apparaten",()=>Manage("Apparaten"));
         Button(actions,"+ Eigen ontwerp",NewDesign,true);
         var more=new ContextMenuStrip();
         more.Items.Add("Motion Studio",null,(_,_)=>{ResumeDesign();editor?.OpenMotionStudio();});
         var resume=more.Items.Add("Verder met open ontwerp",null,(_,_)=>ResumeDesign());more.Opening+=(_,_)=>resume.Enabled=editor is{IsDisposed:false};
-        foreach(string section in new[]{"Automatisch wisselen","Waarschuwingen","Design Hub"})more.Items.Add(section,null,(_,_)=>Manage(section));
+        foreach(string section in new[]{"Historie","Automatisch wisselen","Waarschuwingen","Design Hub"})more.Items.Add(section,null,(_,_)=>Manage(section));
         more.Items.Add("Ingebouwde layouts",null,(_,_)=>Cached("legacy",()=>new SettingsWindow()));
         Button(actions,"Meer",()=>more.Show(actions,new Point(actions.Width-180,55)));
         foreach(Button button in navigation.Controls.OfType<Button>().Concat(actions.Controls.OfType<Button>()))button.Width=button.Text=="+ Eigen ontwerp"?160:button.Text=="Meer"?72:116;

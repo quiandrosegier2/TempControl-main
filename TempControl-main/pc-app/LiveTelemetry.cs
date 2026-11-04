@@ -15,7 +15,7 @@ sealed record LiveTelemetry(DateTime UpdatedUtc,ScreenReadings Readings)
     {
         try
         {
-            string file=PathFor(directory);if(new FileInfo(file).Length>8192)return null;
+            string file=PathFor(directory);if(new FileInfo(file).Length>65536)return null;
             var snapshot=JsonSerializer.Deserialize<LiveTelemetry>(File.ReadAllText(file),DesignFiles.Json);
             return snapshot?.Readings!=null&&utcNow-snapshot.UpdatedUtc<=TimeSpan.FromSeconds(5)&&snapshot.UpdatedUtc-utcNow<TimeSpan.FromSeconds(2)?snapshot:null;
         }

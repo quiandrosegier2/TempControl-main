@@ -25,7 +25,7 @@ sealed class AdvancedStudioWindow : Form
     readonly ComboBox deviceProfile=new(){Width=260,DropDownStyle=ComboBoxStyle.DropDownList,DisplayMember="Name",ValueMember="Id"};
     readonly TrackBar brightness=new(){Minimum=0,Maximum=100,TickFrequency=10,Width=260};
     readonly CheckBox liveBrightness=new(){Text="Helderheid direct toepassen",AutoSize=true};
-    readonly HistoryPlot history=new();
+
     readonly Label liveValues=StudioTheme.Label("",11,true,58);
     readonly ComboBox metric=new(){Width=220,DropDownStyle=ComboBoxStyle.DropDownList};
     readonly ComboBox window=new(){Width=100,DropDownStyle=ComboBoxStyle.DropDownList};
@@ -33,7 +33,7 @@ sealed class AdvancedStudioWindow : Form
     DeviceRuntimeStatus[] runtime=[];
     DeviceAssignment? selectedDevice;
     bool updating;
-    DateTime nextHistory,nextBrightness;
+    DateTime nextBrightness;
     readonly List<DataGridView> grids=[];
     public AdvancedStudioWindow(string directory)
     {
@@ -45,7 +45,8 @@ sealed class AdvancedStudioWindow : Form
         AdvancedUi.Button(bar,"Instellingen bewaren",Save,Error,true);AdvancedUi.Button(bar,"Achtergrondmeting starten",()=>System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo("powershell.exe","-NoProfile -Command \"Start-ScheduledTask -TaskName TempMonitor\""){UseShellExecute=false,CreateNoWindow=true}),Error);
         BuildProfiles();BuildDevices();BuildRules();BuildHistory();BuildAlerts();BuildLibrary();
         Controls.Add(tabs);Controls.Add(status);Controls.Add(bar);status.Dock=DockStyle.Bottom;
-        timer.Tick+=(_,_)=>{RefreshDevices();if(tabs.SelectedTab?.Text=="Historie")RefreshHistory();if(nextBrightness!=default&&DateTime.UtcNow>=nextBrightness){nextBrightness=default;Safe(Save);}};timer.Start();RefreshProfiles();RefreshDevices();StudioTheme.FitWindow(this,new(1180,820),new(940,680));
+        tabs.SelectedIndexChanged+=(_,_)=>{bool monitor=tabs.SelectedTab?.Text is "PC Monitor" or "Historie";status.Visible=!monitor;bar.Visible=!monitor;};
+        timer.Tick+=(_,_)=>{RefreshDevices();if(nextBrightness!=default&&DateTime.UtcNow>=nextBrightness){nextBrightness=default;Safe(Save);}};timer.Start();RefreshProfiles();RefreshDevices();StudioTheme.FitWindow(this,new(1180,820),new(940,680));
     }
     TabPage Tab(string name){var page=new TabPage(name){BackColor=StudioTheme.Background,ForeColor=StudioTheme.Text,Padding=new(14)};tabs.TabPages.Add(page);return page;}
     void Error(Exception ex){status.ForeColor=Color.Orange;status.Text=ex.Message;}
@@ -135,23 +136,8 @@ sealed class AdvancedStudioWindow : Form
     }
     void BuildHistory()
     {
-        var page=Tab("Historie");var choices=new FlowLayoutPanel{Dock=DockStyle.Top,Height=66};
-        metric.Items.AddRange(SensorHistory.Metrics.Cast<object>().ToArray());metric.FormattingEnabled=true;metric.Format+=(_,e)=>{if(e.ListItem is WidgetKind k)e.Value=WidgetLabels.Title(k);};metric.SelectedIndex=0;
-        window.Items.AddRange([1,5,15,60]);window.SelectedItem=5;StudioTheme.Input(metric);StudioTheme.Input(window);
-        var sampling=new NumericUpDown{Minimum=1,Maximum=60,Value=config.SamplingSeconds,Width=70};sampling.ValueChanged+=(_,_)=>config.SamplingSeconds=(int)sampling.Value;
-        choices.Controls.AddRange([metric,window,new Label{Text="minuten · meetinterval (s)",AutoSize=true},sampling]);
-        metric.SelectedIndexChanged+=(_,_)=>nextHistory=DateTime.MinValue;window.SelectedIndexChanged+=(_,_)=>nextHistory=DateTime.MinValue;
-        page.Controls.Add(history);page.Controls.Add(choices);page.Controls.Add(liveValues);
-    }
-    void RefreshHistory()
-    {
-        liveValues.Text=LiveTelemetry.Summary(LiveTelemetry.Read(directory,DateTime.UtcNow));
-        try
-        {
-            if(DateTime.UtcNow>=nextHistory){AtomicJson.Write(Path.Combine(directory,"history-request.json"),new HistoryRequest((WidgetKind)metric.SelectedItem!,(int)window.SelectedItem!,DateTime.UtcNow));nextHistory=DateTime.UtcNow.AddSeconds(5);}
-            string file=Path.Combine(directory,"history-preview.json");if(File.Exists(file)){var response=JsonSerializer.Deserialize<HistoryResponse>(File.ReadAllText(file),DesignFiles.Json);history.Series=response!=null&&response.Metric==(WidgetKind)metric.SelectedItem!&&response.Minutes==(int)window.SelectedItem!&&DateTime.UtcNow-response.UpdatedUtc<TimeSpan.FromSeconds(15)?response.Series:null;history.Invalidate();}
-        }
-        catch(Exception ex)when(ex is IOException or JsonException){ }
+        var live=Tab("PC Monitor");var historyPage=Tab("Historie");var dashboard=new MonitorDashboard(directory,samplingChanged:seconds=>{config.SamplingSeconds=seconds;Save();});live.Controls.Add(dashboard);
+        tabs.SelectedIndexChanged+=(_,_)=>{if(tabs.SelectedTab==live||tabs.SelectedTab==historyPage){tabs.SelectedTab.Controls.Add(dashboard);dashboard.RefreshNow();}};
     }
     void BuildAlerts()
     {

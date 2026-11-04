@@ -9,13 +9,13 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 
 [TypeConverter(typeof(WidgetKindConverter))]
-enum WidgetKind { Text, CpuTemperature, GpuTemperature, Fps, Time, Date, CpuLoad, GpuLoad, MemoryLoad, Rectangle, Ellipse, ProgressBar, CpuClock, GpuClock, HistoryGraph, CircularGauge, AnalogClock, Panel, WeatherTemperature, WeatherIcon, ThermalFace, InfinityRibbon, NeonLine }
+enum WidgetKind { Text, CpuTemperature, GpuTemperature, Fps, Time, Date, CpuLoad, GpuLoad, MemoryLoad, Rectangle, Ellipse, ProgressBar, CpuClock, GpuClock, HistoryGraph, CircularGauge, AnalogClock, Panel, WeatherTemperature, WeatherIcon, ThermalFace, InfinityRibbon, NeonLine, FrameTime }
 enum BackgroundFit { Cover, Contain, Stretch }
 
 static class WidgetLabels
 {
     public static string Title(WidgetKind kind) => kind switch {
-        WidgetKind.Text=>"Eigen tekst",WidgetKind.CpuTemperature=>"CPU-temperatuur",WidgetKind.GpuTemperature=>"GPU-temperatuur",WidgetKind.Fps=>"FPS",
+        WidgetKind.FrameTime=>"Frametijd (ms)",WidgetKind.Text=>"Eigen tekst",WidgetKind.CpuTemperature=>"CPU-temperatuur",WidgetKind.GpuTemperature=>"GPU-temperatuur",WidgetKind.Fps=>"FPS",
         WidgetKind.Time=>"Klok",WidgetKind.Date=>"Datum",WidgetKind.CpuLoad=>"CPU-belasting (%)",WidgetKind.GpuLoad=>"GPU-belasting (%)",WidgetKind.MemoryLoad=>"Geheugengebruik (%)",
         WidgetKind.Rectangle=>"Rechthoek",WidgetKind.Ellipse=>"Cirkel / ovaal",WidgetKind.ProgressBar=>"Voortgangsbalk",WidgetKind.CpuClock=>"CPU-kloksnelheid (MHz)",WidgetKind.GpuClock=>"GPU-kloksnelheid (MHz)",WidgetKind.HistoryGraph=>"Historiegrafiek",WidgetKind.CircularGauge=>"Ronde meter",WidgetKind.AnalogClock=>"Analoge klok",WidgetKind.Panel=>"Paneel",WidgetKind.WeatherTemperature=>"Weertemperatuur",WidgetKind.WeatherIcon=>"Weerpictogram",WidgetKind.ThermalFace=>"Temperatuurgezicht",WidgetKind.InfinityRibbon=>"Neon oneindigheid",WidgetKind.NeonLine=>"Neonlijn",_=>kind.ToString()
     };
@@ -110,13 +110,13 @@ sealed class ScreenDesign
     };
 }
 
-sealed record ScreenReadings(float? Cpu, float? Gpu, float? Fps, float? CpuLoad, float? GpuLoad, float? MemoryLoad, DateTime Now,float? CpuClock=null,float? GpuClock=null,SensorHistory? History=null,IReadOnlyList<AlertNotice>? Alerts=null,WeatherReading? Weather=null)
+sealed record ScreenReadings(float? Cpu, float? Gpu, float? Fps, float? CpuLoad, float? GpuLoad, float? MemoryLoad, DateTime Now,float? CpuClock=null,float? GpuClock=null,SensorHistory? History=null,IReadOnlyList<AlertNotice>? Alerts=null,WeatherReading? Weather=null,HardwareTelemetry? Hardware=null)
 {
     public static ScreenReadings Demo => new(42, 58, 165, 35, 76, 52, DateTime.Now);
     public float? Value(WidgetKind kind)
     {
         float? value=kind switch{
-        WidgetKind.CpuTemperature => Cpu, WidgetKind.GpuTemperature => Gpu, WidgetKind.Fps => Fps,
+        WidgetKind.FrameTime=>Hardware?.FrameTimeMs,WidgetKind.CpuTemperature => Cpu, WidgetKind.GpuTemperature => Gpu, WidgetKind.Fps => Fps,
         WidgetKind.CpuLoad => CpuLoad, WidgetKind.GpuLoad => GpuLoad, WidgetKind.MemoryLoad => MemoryLoad,WidgetKind.CpuClock=>CpuClock,WidgetKind.GpuClock=>GpuClock,WidgetKind.WeatherTemperature=>Weather?.Temperature, _ => null
         };return value.HasValue&&float.IsFinite(value.Value)?value:null;
     }

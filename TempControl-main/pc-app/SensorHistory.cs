@@ -5,7 +5,7 @@ sealed record HistorySeries(DateTime From,DateTime To,List<HistoryPoint> Points,
 sealed record HistoryPoint(DateTime Time,float? Value);
 sealed class SensorHistory
 {
-    public static readonly WidgetKind[] Metrics=[WidgetKind.CpuTemperature,WidgetKind.GpuTemperature,WidgetKind.CpuLoad,WidgetKind.GpuLoad,WidgetKind.CpuClock,WidgetKind.GpuClock,WidgetKind.MemoryLoad,WidgetKind.Fps];
+    public static readonly WidgetKind[] Metrics=[WidgetKind.CpuTemperature,WidgetKind.GpuTemperature,WidgetKind.CpuLoad,WidgetKind.GpuLoad,WidgetKind.CpuClock,WidgetKind.GpuClock,WidgetKind.MemoryLoad,WidgetKind.Fps,WidgetKind.FrameTime];
     readonly Queue<SensorSample> samples=new();readonly object sync=new();
     public int Count{get{lock(sync)return samples.Count;}}
     public void Add(ScreenReadings readings)

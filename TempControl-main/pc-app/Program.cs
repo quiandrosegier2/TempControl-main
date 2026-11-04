@@ -9,7 +9,7 @@ using LibreHardwareMonitor.Hardware;
 
 if (args.Length == 0 || args.Contains("--settings"))
 {
-    var ui = new Thread(() => { System.Windows.Forms.Application.EnableVisualStyles(); System.Windows.Forms.Application.Run(new StudioShellWindow()); });
+    var ui = new Thread(() => { System.Windows.Forms.Application.SetHighDpiMode(System.Windows.Forms.HighDpiMode.PerMonitorV2); System.Windows.Forms.Application.EnableVisualStyles(); System.Windows.Forms.Application.Run(new StudioShellWindow()); });
     ui.SetApartmentState(ApartmentState.STA);
     ui.Start(); ui.Join(); return;
 }
@@ -33,7 +33,7 @@ if (!listOnly)
     Log.Write("Qscreen-achtergrondmeting wordt gestart.");
     AppDomain.CurrentDomain.UnhandledException += (_, e) => Log.Write($"Onverwachte fout: {e.ExceptionObject}");
 }
-var computer = new Computer { IsCpuEnabled = true, IsGpuEnabled = true, IsMemoryEnabled = true };
+var computer = new Computer { IsCpuEnabled = true, IsGpuEnabled = true, IsMemoryEnabled = true, IsMotherboardEnabled=true, IsStorageEnabled=true };
 computer.Open();
 AppDomain.CurrentDomain.ProcessExit += (_, _) => computer.Close();
 
@@ -49,13 +49,14 @@ if (listOnly)
 Log.Write("Qscreen-achtergrondmeting gestart.");
 using var fpsMonitor = new FpsMonitor();
 AppDomain.CurrentDomain.ProcessExit += (_, _) => fpsMonitor.Dispose();
-await AdvancedMonitor.RunAsync(AppContext.BaseDirectory, () => { UpdateAll(computer); return new ScreenReadings(
-    ReadCpuTemp(computer), ReadGpuTemp(computer), fpsMonitor.TakeFps(),
+var hardwareCollector=new HardwareCollector();
+await AdvancedMonitor.RunAsync(AppContext.BaseDirectory, () => { UpdateAll(computer); var gpu=AllHardware(computer).Where(h=>h.HardwareType is HardwareType.GpuNvidia or HardwareType.GpuAmd or HardwareType.GpuIntel).OrderBy(h=>h.HardwareType==HardwareType.GpuNvidia?0:h.HardwareType==HardwareType.GpuAmd?1:2).FirstOrDefault(); var readings=new ScreenReadings(
+    ReadCpuTemp(computer), gpu==null?null:PickTemp([gpu],["GPU Core","GPU Hot Spot"]), fpsMonitor.TakeFps(),
     ReadLoad(computer, HardwareType.Cpu),
-    ReadLoad(computer, HardwareType.GpuNvidia, HardwareType.GpuAmd, HardwareType.GpuIntel),
+    GpuSensor(gpu,SensorType.Load,"GPU Core"),
     ReadLoad(computer, HardwareType.Memory), DateTime.Now,
     ReadClock(computer, HardwareType.Cpu),
-    ReadClock(computer, HardwareType.GpuNvidia, HardwareType.GpuAmd, HardwareType.GpuIntel)); }, fixedPort);
+    GpuSensor(gpu,SensorType.Clock,"GPU Core"));return readings with{Hardware=hardwareCollector.Capture(AllHardware(computer),readings,fpsMonitor.Latest,gpu)}; }, fixedPort);
 return;
 
 static float? ReadClock(Computer computer, params HardwareType[] types)
@@ -79,8 +80,8 @@ static void UpdateAll(Computer c)
 {
     foreach (var hw in c.Hardware)
     {
-        hw.Update();
-        foreach (var sub in hw.SubHardware) sub.Update();
+        try{hw.Update();foreach(var sub in hw.SubHardware)sub.Update();}
+        catch(Exception ex)when(hw.HardwareType is HardwareType.Motherboard or HardwareType.SuperIO or HardwareType.Storage && ex is IOException or InvalidOperationException or System.ComponentModel.Win32Exception or System.Runtime.InteropServices.ExternalException){Log.Write("Optionele sensor tijdelijk niet beschikbaar: "+hw.Name);}
     }
 }
 
@@ -103,13 +104,4 @@ static float? ReadCpuTemp(Computer c) => PickTemp(
     AllHardware(c).Where(h => h.HardwareType == HardwareType.Cpu),
     ["Core (Tctl/Tdie)", "CPU Package", "Core (Tdie)", "Core (Tctl)", "Core Average"]);
 
-static float? ReadGpuTemp(Computer c)
-{
-    // Eerst een losse videokaart (NVIDIA/AMD), anders de iGPU
-    foreach (var type in new[] { HardwareType.GpuNvidia, HardwareType.GpuAmd, HardwareType.GpuIntel })
-    {
-        var t = PickTemp(AllHardware(c).Where(h => h.HardwareType == type), ["GPU Core", "GPU Hot Spot"]);
-        if (t.HasValue) return t;
-    }
-    return null;
-}
+static float? GpuSensor(IHardware? gpu,SensorType type,string name)=>gpu?.Sensors.FirstOrDefault(s=>s.SensorType==type&&s.Name.Equals(name,StringComparison.OrdinalIgnoreCase))?.Value;

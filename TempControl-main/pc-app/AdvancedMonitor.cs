@@ -221,6 +221,7 @@ static class AdvancedMonitor
                 if(now>=nextHistory)
                 {
                     nextHistory=now.AddSeconds(5);
+                    try{string path=Path.Combine(directory,"dashboard-history-request.json");if(File.Exists(path)){var request=JsonSerializer.Deserialize<DashboardHistoryRequest>(File.ReadAllText(path),DesignFiles.Json);if(request!=null&&request.Minutes is >=1 and <=60&&now-request.UpdatedUtc<TimeSpan.FromSeconds(15))AtomicJson.Write(Path.Combine(directory,"dashboard-history.json"),new DashboardHistorySnapshot(now,request.Minutes,SensorHistory.Metrics.ToDictionary(m=>m,m=>history.Window(m,request.Minutes,readings.Now,240)),SensorHistory.Metrics.ToDictionary(m=>m,m=>history.Window(m,1,readings.Now,120))));}}catch(Exception ex)when(ex is IOException or JsonException){}
                     try{string path=Path.Combine(directory,"history-request.json");if(File.Exists(path)){var request=JsonSerializer.Deserialize<HistoryRequest>(File.ReadAllText(path),DesignFiles.Json);if(request!=null&&now-request.UpdatedUtc<TimeSpan.FromSeconds(15))AtomicJson.Write(Path.Combine(directory,"history-preview.json"),new HistoryResponse(request.Metric,request.Minutes,now,history.Window(request.Metric,request.Minutes,readings.Now)));}}catch(Exception ex)when(ex is IOException or JsonException){ }
                 }
                 await Task.Delay(1000,cancellation);
