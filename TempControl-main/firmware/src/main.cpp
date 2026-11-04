@@ -12,6 +12,7 @@
 #include <Preferences.h>
 #include "display-layout.h"
 #include "custom-frame.h"
+#include "frame-patch.h"
 #include "touch-gestures.h"
 #include "waveshare-touch.h"
 
@@ -68,6 +69,10 @@ static float cpuHistory[60], gpuHistory[60];
 static uint8_t historyCount = 0, historyNext = 0;
 static uint8_t *customPixels = nullptr;
 static size_t customReceived = 0;
+static uint8_t *patchPayload=nullptr,*patchCandidate=nullptr;
+static bool patchReceiving=false;
+static size_t receivingBytes=CustomFrame::Bytes;
+static uint32_t patchFrameHash=0,lastDrawMicros=0,displayedFrames=0;
 static uint32_t customExpectedHash = 0, customHash = CustomFrame::StartHash, customLastByte = 0;
 static bool customReceiving = false, customActive = false;
 static bool touchEnabled=false,touchPresent=false,touchFeedback=true;
@@ -84,7 +89,17 @@ static float parseValue(const char *s) {
 }
 
 static void handleLine(char *line) {
-  if(strcmp(line,"INFO")==0){Serial.printf("QSCREEN;MODEL=WS146;FW=2.0.0-rc.1;ID=%012llX;CAPS=FRAME2,TOUCH:%d,BRIGHTNESS,ALIVE\n",ESP.getEfuseMac(),touchPresent?1:0);return;}
+  if(strcmp(line,"INFO")==0){Serial.printf("QSCREEN;MODEL=WS146;FW=2.5.0-rc.1;ID=%012llX;CAPS=FRAME2,PATCH1,STATS,TOUCH:%d,BRIGHTNESS,ALIVE\n",ESP.getEfuseMac(),touchPresent?1:0);return;}
+  if(strcmp(line,"STATS")==0){Serial.printf("QSTATS;HEAP=%u;PSRAM_FREE=%u;PSRAM_TOTAL=%u;FLASH=%u;DRAW_US=%u;FRAMES=%u;UPTIME_MS=%u\n",ESP.getFreeHeap(),ESP.getFreePsram(),ESP.getPsramSize(),ESP.getFlashChipSize(),lastDrawMicros,displayedFrames,millis());return;}
+  if(strncmp(line,"PATCH1=",7)==0){
+    unsigned long count,hash,frameHash;char extra;
+    if(sscanf(line+7,"%lu,%lu,%lu%c",&count,&hash,&frameHash,&extra)!=3||count<10||count>CustomFrame::Bytes+514||!customActive||!customPixels){Serial.println("FRAMEERR patch baseline/length");return;}
+    if(!patchPayload)patchPayload=static_cast<uint8_t*>(ps_malloc(CustomFrame::Bytes+514));
+    if(!patchCandidate)patchCandidate=static_cast<uint8_t*>(ps_malloc(CustomFrame::Bytes));
+    if(!patchPayload||!patchCandidate){Serial.println("FRAMEERR memory");return;}
+    receivingBytes=count;patchFrameHash=frameHash;customReceived=0;customHash=CustomFrame::StartHash;customExpectedHash=hash;customLastByte=millis();patchReceiving=true;customReceiving=true;
+    Serial.println("FRAMEREADY");return;
+  }
   if(strcmp(line,"ALIVE")==0){lastRx=millis();Serial.println("ALIVEOK");return;}
   if(strncmp(line,"QSET;",5)==0){
     char *state;
@@ -114,6 +129,7 @@ static void handleLine(char *line) {
     }
     if (!customPixels) customPixels = static_cast<uint8_t *>(ps_malloc(CustomFrame::Bytes));
     if (!customPixels) { Serial.println("FRAMEERR memory"); return; }
+    patchReceiving=false;receivingBytes=CustomFrame::Bytes;
     customReceived = 0; customHash = CustomFrame::StartHash; customExpectedHash = hash;
     customLastByte = millis(); customReceiving = true;
     Serial.println("FRAMEREADY");
@@ -165,16 +181,25 @@ static void readSerial() {
   while (Serial.available()) {
     if(micros()-budgetStarted>2000u)return;
     if (customReceiving) {
-      int count = Serial.read(customPixels + customReceived,
-        min(static_cast<size_t>(Serial.available()), CustomFrame::Bytes - customReceived));
+      uint8_t *incoming=patchReceiving?patchPayload:customPixels;
+      int count = Serial.read(incoming + customReceived,
+        min(static_cast<size_t>(Serial.available()), receivingBytes - customReceived));
       if (count <= 0) break;
-      for (int i = 0; i < count; ++i) customHash = CustomFrame::hashByte(customHash, customPixels[customReceived + i]);
+      for (int i = 0; i < count; ++i) customHash = CustomFrame::hashByte(customHash, incoming[customReceived + i]);
       customReceived += count; customLastByte = millis();
-      if (customReceived == CustomFrame::Bytes) {
+      if (customReceived == receivingBytes) {
         customReceiving = false;
         if (customHash != customExpectedHash) { Serial.println("FRAMEERR checksum"); continue; }
+        if(patchReceiving){
+          memcpy(patchCandidate,customPixels,CustomFrame::Bytes);
+          if(!FramePatch::apply(patchPayload,receivingBytes,patchCandidate)){Serial.println("FRAMEERR patch rectangles");continue;}
+          uint32_t hash=CustomFrame::StartHash;for(size_t i=0;i<CustomFrame::Bytes;i++)hash=CustomFrame::hashByte(hash,patchCandidate[i]);
+          if(hash!=patchFrameHash){Serial.println("FRAMEERR patch frame checksum");continue;}
+          uint8_t *old=customPixels;customPixels=patchCandidate;patchCandidate=old;
+        }
+        uint32_t drawStarted=micros();
         gfx->draw16bitRGBBitmap(0, 0, reinterpret_cast<uint16_t *>(customPixels), 412, 412);
-        gfx->flush();
+        gfx->flush();lastDrawMicros=micros()-drawStarted;++displayedFrames;
         customActive = true; everReceived = true; lastRx = millis(); dirty = false;
         Serial.println("FRAMEOK");
       }

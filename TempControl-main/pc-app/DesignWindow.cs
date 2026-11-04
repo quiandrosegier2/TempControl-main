@@ -21,6 +21,7 @@ sealed class DesignWindow : Form
     readonly ComboBox animation=new(){DropDownStyle=ComboBoxStyle.DropDownList,Dock=DockStyle.Top};
     readonly NumericUpDown animationSpeed=new(){Minimum=.1m,Maximum=5,DecimalPlaces=1,Increment=.1m,Width=80};
     readonly CheckBox animationsEnabled=new(){Text="Animaties inschakelen",AutoSize=true};
+    readonly ComboBox streamingQuality=new(){DropDownStyle=ComboBoxStyle.DropDownList,Dock=DockStyle.Top};
     readonly CheckBox demoMode=new(){Text="Demowaarden",AutoSize=true,ForeColor=StudioTheme.Muted,Padding=new(8,10,0,0)};
     readonly Label sourceNote=StudioTheme.Label("",9,false,54);
     LiveTelemetry? telemetry;
@@ -73,6 +74,7 @@ sealed class DesignWindow : Form
         var apply=ActionButton(savePage!=null&&applyProfile==null?"Wijzigingen bewaren":"Toepassen op scherm",Apply,true,190);apply.Dock=DockStyle.Right;
         top.Controls.Add(files);top.Controls.Add(apply);top.Controls.Add(brand);
         var tools=new FlowLayoutPanel{Dock=DockStyle.Top,Height=62,Padding=new Padding(20,8,20,8),BackColor=StudioTheme.Background,WrapContents=false};
+        tools.Controls.Add(ActionButton("Motion Studio",OpenMotionStudio,true,140));
         tools.Controls.Add(ActionButton("Afbeelding kiezen",ImportBackground,false,155));
         tools.Controls.Add(ActionButton("Afbeelding wissen",()=>Change(()=>design.BackgroundPng=null),false,150));
         tools.Controls.Add(ActionButton("Achtergrondkleur",()=>{using var d=new ColorDialog{Color=Color.FromArgb(design.BackgroundArgb)};if(d.ShowDialog(this)==DialogResult.OK)Change(()=>design.BackgroundArgb=d.Color.ToArgb());},false,150));
@@ -121,6 +123,8 @@ sealed class DesignWindow : Form
         var animationLabel=StudioTheme.Label("Animatie",9,false,26);
         animationSpeed.Value=(decimal)design.AnimationSpeed;animationSpeed.ValueChanged+=(_,_)=>Change(()=>design.AnimationSpeed=(float)animationSpeed.Value);
         animationsEnabled.Checked=design.AnimationsEnabled;animationsEnabled.CheckedChanged+=(_,_)=>Change(()=>design.AnimationsEnabled=animationsEnabled.Checked);
+        StudioTheme.Input(streamingQuality);streamingQuality.Items.AddRange(Enum.GetNames<AnimationQuality>());streamingQuality.SelectedItem=design.StreamingQuality.ToString();streamingQuality.SelectedIndexChanged+=(_,_)=>Change(()=>design.StreamingQuality=Enum.Parse<AnimationQuality>((string)streamingQuality.SelectedItem!));
+        backgroundOptions.Controls.Add(streamingQuality);backgroundOptions.Height+=36;
         var animationControls=new FlowLayoutPanel{Dock=DockStyle.Bottom,Height=56};animationControls.Controls.AddRange([animationsEnabled,animationSpeed]);backgroundOptions.Controls.Add(animationControls);backgroundOptions.Height+=56;
         backgroundOptions.Controls.Add(animation);backgroundOptions.Controls.Add(animationLabel);backgroundOptions.Controls.Add(darken);backgroundOptions.Controls.Add(darkLabel);backgroundOptions.Controls.Add(fit);backgroundOptions.Controls.Add(fitLabel);backgroundOptions.Controls.Add(backgroundLabel);
         right.Controls.Add(properties);right.Controls.Add(backgroundOptions);right.Controls.Add(hint);
@@ -180,8 +184,14 @@ sealed class DesignWindow : Form
         elements.Items.Clear(); elements.Items.AddRange(design.Widgets.Cast<object>().ToArray());
         if(elements.Items.Count>0)elements.SelectedIndex=Math.Clamp(index,0,elements.Items.Count-1);
         else properties.SelectedObject=null;
-        name.Text=design.Name;fit.SelectedItem=design.Fit.ToString();darken.Value=design.Darken;animation.SelectedItem=design.Animation.ToString();animationSpeed.Value=(decimal)design.AnimationSpeed;animationsEnabled.Checked=design.AnimationsEnabled; refreshing=false; Render();
+        name.Text=design.Name;fit.SelectedItem=design.Fit.ToString();darken.Value=design.Darken;animation.SelectedItem=design.Animation.ToString();animationSpeed.Value=(decimal)design.AnimationSpeed;animationsEnabled.Checked=design.AnimationsEnabled;streamingQuality.SelectedItem=design.StreamingQuality.ToString(); refreshing=false; Render();
     }
+    AnimationTransferMetrics? MotionPerformance()
+    {
+        try{return (System.Text.Json.JsonSerializer.Deserialize<DeviceRuntimeStatus[]>(File.ReadAllText(Path.Combine(directory,"devices-runtime.json")),DesignFiles.Json)??[]).FirstOrDefault(d=>d.Connected&&DateTime.UtcNow-d.UpdatedUtc<TimeSpan.FromSeconds(10))?.Performance;}
+        catch(Exception ex)when(ex is IOException or System.Text.Json.JsonException){return null;}
+    }
+    public void OpenMotionStudio()=>Safe(()=>{using var studio=new MotionStudioWindow(design,PreviewReadings,MotionPerformance);if(studio.ShowDialog(this)==DialogResult.OK)Change(()=>design=studio.Project);});
     void Render()
     {
         renderQueued=false;
@@ -220,6 +230,9 @@ sealed class DesignWindow : Form
     void ImportBackground(){using var d=new OpenFileDialog{Filter="Afbeeldingen|*.png;*.jpg;*.jpeg;*.bmp;*.gif"};if(d.ShowDialog(this)==DialogResult.OK)SetBackground(d.FileName);}
     void SetBackground(string path)
     {
+        if(new FileInfo(path).Length>64_000_000)throw new InvalidDataException("Achtergrondbestand groter dan 64 MB.");
+        if(MotionAsset.IsApng(File.ReadAllBytes(path)))throw new InvalidDataException("Gebruik Motion Studio > Video / WebP / APNG om alle APNG-beelden te behouden.");
+        using(var probe=File.OpenRead(path)){var header=new byte[6];int count=probe.Read(header);if(GifAnimation.IsGif(header.AsSpan(0,count))){var imported=GifAnimation.Import(path);GifAnimation.CachePersonal(Convert.FromBase64String(imported.Data));Change(()=>design.BackgroundPng=imported.Data);status.Text=imported.Info.Description+" · Windows schaalt/cropt naar 412 × 412 en streamt RGB565. USB-snelheid wordt gemeten; geen vaste FPS-belofte.";return;}}
         using var image=Image.FromFile(path);
         if(image.FrameDimensionsList.Contains(FrameDimension.Time.Guid)&&image.GetFrameCount(FrameDimension.Time)>1)
         {

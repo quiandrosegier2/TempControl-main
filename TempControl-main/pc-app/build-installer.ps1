@@ -34,6 +34,7 @@ $factoryImage = Join-Path $firmwareDir '.pio\build\waveshare_s3_touch_lcd_146\fi
 if (-not (Test-Path $factoryImage)) { throw "Factory-firmware ontbreekt: $factoryImage" }
 
 # 2. App publiceren (self-contained: .NET hoeft niet op de doel-pc te staan).
+& (Join-Path $installerDir 'prepare-motion-tools.ps1')
 # Oude build-uitvoer verwijderen binnen de gecontroleerde publish-map.
 if (Test-Path $publishDir) {
     $resolvedPublish = [IO.Path]::GetFullPath($publishDir)

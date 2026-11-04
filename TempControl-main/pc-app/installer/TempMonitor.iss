@@ -4,7 +4,7 @@
 #define AppName "Qscreen"
 #define PreviewFrameCount 40
 #ifndef AppVersion
-  #define AppVersion "2.4.0-rc.1"
+  #define AppVersion "2.5.0-rc.1"
 #endif
 
 [Setup]
@@ -45,6 +45,7 @@ Name: "pawnio"; Description: "PawnIO-driver installeren (nodig om de CPU-tempera
 Source: "publish\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 Source: "task.ps1"; DestDir: "{app}"; Flags: ignoreversion
 Source: "flash-firmware.ps1"; DestDir: "{app}"; Flags: ignoreversion
+Source: "firmware-safety.ps1"; DestDir: "{app}"; Flags: ignoreversion
 Source: "layout-previews\layout-classic.bmp"; Flags: dontcopy solidbreak
 Source: "layout-previews\layout-gauges.bmp"; Flags: dontcopy solidbreak
 Source: "layout-previews\layout-minimal.bmp"; Flags: dontcopy solidbreak

@@ -1,0 +1,20 @@
+Qscreen uses FFmpeg as a separate Windows conversion process.
+FFmpeg project: https://ffmpeg.org/
+Windows build provider: https://github.com/BtbN/FFmpeg-Builds
+Build artifact: ffmpeg-master-latest-win64-lgpl.zip
+Reviewed archive SHA-256: 3f91f0581df7cbe62bab08d670a41f11bc80e064143b09376dea05ffcc9d09fc
+The bundled FFmpeg-LICENSE.txt is supplied by that build.
+Build recipes and source acquisition scripts:
+https://github.com/BtbN/FFmpeg-Builds
+FFmpeg source: https://git.ffmpeg.org/ffmpeg.git
+FFmpeg version: N-128352-gec887b13a8-20261103
+Exact FFmpeg source commit: ec887b13a8
+https://github.com/FFmpeg/FFmpeg/tree/ec887b13a8
+Versioned binary release:
+https://github.com/BtbN/FFmpeg-Builds/releases/tag/autobuild-2026-11-03-12-50
+Versioned archive SHA-256: 890397244b378ff565442b30db907e3ab4880728ff0fd5adfa4cd43a9852dc8d
+Qscreen does not modify or link the FFmpeg executable into the application.
+The converter can be replaced independently in tools/ffmpeg.exe.
+Before publicly redistributing a changed FFmpeg build, retain its corresponding
+license notices and exact source/build provenance. Do not replace this reviewed
+LGPL build with a GPL/nonfree variant without reviewing distribution terms.

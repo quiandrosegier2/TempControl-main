@@ -7,13 +7,17 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <AssemblyName>Qscreen</AssemblyName>
-    <Version>2.4.0-rc.1</Version>
+    <Version>2.5.0-rc.1</Version>
     <UseWindowsForms>true</UseWindowsForms>
     <DefaultItemExcludes>$(DefaultItemExcludes);installer\**</DefaultItemExcludes>
   </PropertyGroup>
 
   <ItemGroup>
+    <Content Include="FFmpeg-NOTICE.txt" Link="tools/FFmpeg-NOTICE.txt" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <Content Include="installer/tool-cache/ffmpeg/ffmpeg-master-latest-win64-lgpl/bin/ffmpeg.exe" Link="tools/ffmpeg.exe" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" Condition="Exists('installer/tool-cache/ffmpeg/ffmpeg-master-latest-win64-lgpl/bin/ffmpeg.exe')" />
+    <Content Include="installer/tool-cache/ffmpeg/ffmpeg-master-latest-win64-lgpl/LICENSE.txt" Link="tools/FFmpeg-LICENSE.txt" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" Condition="Exists('installer/tool-cache/ffmpeg/ffmpeg-master-latest-win64-lgpl/LICENSE.txt')" />
     <Compile Remove="account-manager/**/*.cs" />
+    <EmbeddedResource Include="assets/motion/ghost-cute.gif" LogicalName="Qscreen.motion.ghost-cute.gif" />
     <EmbeddedResource Include="assets/tactical-background.png" LogicalName="Qscreen.assets.tactical-background.png" />
     <EmbeddedResource Include="assets/neon50/*.png" LogicalName="Qscreen.neon50.%(Filename)%(Extension)" />
     <EmbeddedResource Include="assets/expansion50/*.png" LogicalName="Qscreen.expansion50.%(Filename)%(Extension)" />

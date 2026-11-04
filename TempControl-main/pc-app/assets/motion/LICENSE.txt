@@ -1,0 +1,5 @@
+Ghost Cute animation: original Qscreen/QPRINTS test and example artwork.
+Created programmatically for this project; generation source:
+tests/Motion.Tests/GhostFixture.cs.
+Twelve frames: body movement, blinking eyes, waving arm and floating heart.
+No third-party character art, game footage or stock animation is included.

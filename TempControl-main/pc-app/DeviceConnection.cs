@@ -5,8 +5,12 @@ using System.Text;
 using System.Text.RegularExpressions;
 
 sealed record DeviceCandidate(string Port,string UsbId,string Label);
-sealed record DeviceInformation(string Id,string Firmware,bool Advanced,bool Touch);
-sealed record DeviceRuntimeStatus(string DeviceId,string Name,string Port,bool Connected,string Firmware,string ProfileId,string ProfileName,int Page,int PageCount,int Brightness,string Message,DateTime UpdatedUtc,string UsbId="",bool TouchAvailable=false,bool AdvancedControls=false);
+sealed record DeviceInformation(string Id,string Firmware,bool Advanced,bool Touch,bool Patch=false);
+sealed record DeviceRuntimeStatus(string DeviceId,string Name,string Port,bool Connected,string Firmware,string ProfileId,string ProfileName,int Page,int PageCount,int Brightness,string Message,DateTime UpdatedUtc,string UsbId="",bool TouchAvailable=false,bool AdvancedControls=false,AnimationTransferMetrics? Performance=null);
+sealed record DeviceMeasurements(long HeapFree,long PsramFree,long PsramTotal,long FlashBytes,double DrawMs,double? CompletedDrawsPerSecond,DateTime UpdatedUtc)
+{
+    public string Description=>$"ESP heap vrij {HeapFree/1024} KB · PSRAM {(PsramTotal-PsramFree)/1024}/{PsramTotal/1024} KB · tekenen {DrawMs:0.##} ms · voltooide beelden {(CompletedDrawsPerSecond.HasValue?CompletedDrawsPerSecond.Value.ToString("0.##"):"--")}/s";
+}
 static class DeviceDiscovery
 {
     public static IReadOnlyList<DeviceCandidate> Scan(string? fixedPort=null)
@@ -27,10 +31,13 @@ interface IDisplaySession : IDisposable
     void KeepAlive();
     void Poll();
 }
-sealed class DisplaySession : IDisplaySession
+sealed class DisplaySession : IDisplaySession,IProgressDisplaySession
 {
     readonly SerialPort port;
     readonly CustomScreenSender sender;
+    DateTime nextStatistics;
+    long lastFrames,lastUptime;
+    public DeviceMeasurements? Measurements {get;private set;}
     public DeviceInformation Information { get; }
     public DisplaySession(DeviceCandidate candidate,Action<string> onEvent)
     {
@@ -42,7 +49,7 @@ sealed class DisplaySession : IDisplaySession
             if(info!=null)
             {
                 var fields=info.Split(';').Where(s=>s.Contains('=')).Select(s=>s.Split('=',2)).ToDictionary(s=>s[0],s=>s[1]);
-                string id=fields.GetValueOrDefault("ID","");string caps=fields.GetValueOrDefault("CAPS","");Information=new(id.Length>0?"mac:"+id:candidate.UsbId,fields.GetValueOrDefault("FW","onbekend"),caps.Contains("BRIGHTNESS",StringComparison.Ordinal)&&caps.Contains("ALIVE",StringComparison.Ordinal),caps.Contains("TOUCH:1",StringComparison.Ordinal));
+                string id=fields.GetValueOrDefault("ID","");string caps=fields.GetValueOrDefault("CAPS","");Information=new(id.Length>0?"mac:"+id:candidate.UsbId,fields.GetValueOrDefault("FW","onbekend"),caps.Contains("BRIGHTNESS",StringComparison.Ordinal)&&caps.Contains("ALIVE",StringComparison.Ordinal),caps.Contains("TOUCH:1",StringComparison.Ordinal),caps.Split(',').Contains("PATCH1"));
             }
             else
             {
@@ -51,14 +58,25 @@ sealed class DisplaySession : IDisplaySession
                 if(!identified)throw new IOException("Geen compatibel Qscreen-scherm.");
                 Information=new(candidate.UsbId,"Legacy (versie niet beschikbaar)",false,false);
             }
-            port.ReadTimeout=12000;sender=new(new SerialFrameConnection(port),onEvent);
+            port.ReadTimeout=12000;sender=new(new SerialFrameConnection(port),onEvent,Information.Patch);
         }
         catch{port.Dispose();throw;}
     }
+    public int LastPayloadBytes=>sender.LastPayloadBytes;
     public bool Send(byte[] frame)=>sender.Send(frame);
-    public void Native(string packet)=>port.WriteLine(packet);
+    public bool SendWithProgress(byte[] frame,Action<int> progress)=>sender.Send(frame,progress);
+    public void Native(string packet){sender.InvalidateBaseline();port.WriteLine(packet);}
     public void Configure(string command){if(Information.Advanced)sender.Control(command,"QSETOK");}
     public void KeepAlive(){if(Information.Advanced)sender.Control("ALIVE","ALIVEOK");}
-    public void Poll()=>sender.PollEvents();
+    public void Poll()
+    {
+        sender.PollEvents();
+        if(!Information.Patch||DateTime.UtcNow<nextStatistics)return;
+        nextStatistics=DateTime.UtcNow.AddSeconds(5);
+        var values=sender.ReadStatistics().Split(';').Skip(1).Select(s=>s.Split('=',2)).Where(p=>p.Length==2&&long.TryParse(p[1],out _)).ToDictionary(p=>p[0],p=>long.Parse(p[1],System.Globalization.CultureInfo.InvariantCulture));
+        if(!new[]{"HEAP","PSRAM_FREE","PSRAM_TOTAL","FLASH","DRAW_US","FRAMES","UPTIME_MS"}.All(values.ContainsKey))throw new IOException("Onvolledige ESP-statistieken.");
+        long frames=values["FRAMES"],uptime=values["UPTIME_MS"];double? fps=lastUptime>0&&uptime>lastUptime&&frames>=lastFrames?(frames-lastFrames)*1000d/(uptime-lastUptime):null;
+        Measurements=new(values["HEAP"],values["PSRAM_FREE"],values["PSRAM_TOTAL"],values["FLASH"],values["DRAW_US"]/1000d,fps,DateTime.UtcNow);lastFrames=frames;lastUptime=uptime;
+    }
     public void Dispose()=>port.Dispose();
 }

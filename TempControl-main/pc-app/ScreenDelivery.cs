@@ -32,7 +32,7 @@ sealed record ScreenDelivery(DateTime UpdatedUtc, string Revision, string State,
             {
                 if(delivery.State=="received")return "Ontwerp ontvangen en weergegeven op het scherm.";
                 if(delivery.State=="invalid-design")return "Ontwerp kon niet worden verstuurd: "+delivery.Message;
-                if(delivery.State=="sending")return "Verbonden. Ontwerp wordt naar het scherm verstuurd; wachten op ontvangstbevestiging…";
+                if(delivery.State=="sending")return "Verbonden. Ontwerp wordt naar het scherm verstuurd; wachten op ontvangstbevestiging… "+delivery.Message;
             }
         }
         return now-requestedUtc>TimeSpan.FromSeconds(30)

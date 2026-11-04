@@ -4,6 +4,7 @@ using System.Globalization;
 using System.Text.Json;
 using System.Threading.Channels;
 using System.Management;
+using System.Diagnostics;
 
 sealed record HistoryRequest(WidgetKind Metric,int Minutes,DateTime UpdatedUtc);
 sealed record HistoryResponse(WidgetKind Metric,int Minutes,DateTime UpdatedUtc,HistorySeries Series);
@@ -30,6 +31,7 @@ sealed class DeviceWorker : IDisposable
     int lastBrightness=100;
     DateTime lastTouch=DateTime.MinValue;
     Bitmap? previous;
+    AnimationStreamMeter streamMeter=new();string measuredRevision="",progressRevision="";
     public Task Completion { get; }
     public DeviceWorker(DeviceCandidate candidate,string directory,bool primary,Action<DeviceRuntimeStatus> report,Action<string> notify,Func<DeviceCandidate,Action<string>,IDisplaySession>? open=null)
     {
@@ -46,11 +48,11 @@ sealed class DeviceWorker : IDisposable
             {
                 pending??=await jobs.Reader.ReadAsync(stopped.Token);
                 while(jobs.Reader.TryRead(out var newest))pending=newest;
-                var job=pending;pending=null;bool repeatAnimation=false;
+                var job=pending;pending=null;bool repeatAnimation=false;var frameClock=Stopwatch.StartNew();
                 current=job;if(DateTime.UtcNow<retryAfter)continue;
                 try
                 {
-                    if(session==null){session=open(candidate,TouchEvent);everConnected=true;receivedFrame=false;if(stopped.IsCancellationRequested){session.Dispose();session=null;break;}}
+                    if(session==null){session=open(candidate,TouchEvent);everConnected=true;receivedFrame=false;progressRevision="";measuredRevision="";streamMeter=new();if(stopped.IsCancellationRequested){session.Dispose();session=null;break;}}
                     session.Poll();
                     var assignment=job.Config.Devices.FirstOrDefault(d=>d.DeviceId==session.Information.Id||d.DeviceId==candidate.UsbId)??new DeviceAssignment{DeviceId=session.Information.Id,Name=candidate.Label};
                     TimeSpan idle=job.Activity.Idle,touchIdle=DateTime.UtcNow-lastTouch;if(touchIdle<idle)idle=touchIdle;
@@ -73,10 +75,13 @@ sealed class DeviceWorker : IDisposable
                     if(renderProject!=null)
                     {
                         pages.Tick(renderProject,DateTime.UtcNow);int renderedPage=pages.Index;var page=DisplayPages.At(renderProject,renderedPage);
+                        if(measuredRevision!=job.Revision){streamMeter=new();measuredRevision=job.Revision;}
+                        var renderClock=Stopwatch.StartNew();
                         using var image=renderer.Render(page,readings);
                         repeatAnimation=DesignRenderer.IsAnimated(page)||renderer.HasPendingMotion||page.AnimationsEnabled&&renderer.HasAnimatedBackground;
                         if(DateTime.UtcNow<quickMenuUntil)DrawQuickMenu(image);
                         byte[] bytes=DesignRenderer.Rgb565(image);uint hash=CustomScreenSender.Hash(bytes);
+                        renderClock.Stop();
                         bool changedPage=lastPage>=0&&lastPage!=renderedPage;
                         if(changedPage&&hash!=lastHash&&renderProject.Transition!=PageTransition.Cut&&session.Information.Advanced&&previous!=null)
                         {
@@ -86,7 +91,12 @@ sealed class DeviceWorker : IDisposable
                         if(!receivedFrame||hash!=lastHash||!session.Information.Advanced&&DateTime.UtcNow-lastSent>TimeSpan.FromSeconds(2))
                         {
                             if(primary)ScreenDelivery.Write(directory,job.Revision,"sending",assignment.Name);
-                            sent=session.Send(bytes);receivedFrame=sent;lastHash=hash;lastSent=DateTime.UtcNow;
+                            var transferClock=Stopwatch.StartNew();
+                            if(primary&&progressRevision!=job.Revision&&session is IProgressDisplaySession progressSession)
+                            {int published=-10;sent=progressSession.SendWithProgress(bytes,percent=>{if(percent>=published+10||percent==100){published=percent;ScreenDelivery.Write(directory,job.Revision,"sending",percent+"% van dit beeld bevestigd · "+assignment.Name);}});if(sent)progressRevision=job.Revision;}
+                            else sent=session.Send(bytes);
+                            transferClock.Stop();if(sent)streamMeter.Received(renderClock.Elapsed.TotalMilliseconds,transferClock.Elapsed.TotalMilliseconds,session is DisplaySession physical?physical.LastPayloadBytes:bytes.Length,page.StreamingQuality,renderer.CurrentGifFrameIndex,hash,renderer.CurrentMotionFrames);
+                            receivedFrame=sent;lastHash=hash;lastSent=DateTime.UtcNow;
                         }
                         else if(session.Information.Advanced)session.KeepAlive();
                         if(!sent)session.Native(job.NativePacket);
@@ -94,7 +104,7 @@ sealed class DeviceWorker : IDisposable
                         if(primary)ScreenDelivery.Write(directory,job.Revision,sent?"received":"firmware-required",assignment.Name);
                         previous?.Dispose();previous=renderProject.Transition==PageTransition.Cut?null:new Bitmap(image);lastPage=renderedPage;
                         string message=!sent?"Werk firmware bij":!session.Information.Advanced?"Ontwerp ontvangen · voor touch/helderheid is firmware 2.0 nodig":session.Information.Touch?"Ontwerp ontvangen":"Ontwerp ontvangen · touchcontroller niet gedetecteerd";
-                        report(new(session.Information.Id,assignment.Name,candidate.Port,true,session.Information.Firmware,job.ProfileId,job.Design?.Name??renderProject.Name,renderedPage,count,session.Information.Advanced?brightness:100,message,DateTime.UtcNow,candidate.UsbId,session.Information.Touch,session.Information.Advanced));
+                        report(new(session.Information.Id,assignment.Name,candidate.Port,true,session.Information.Firmware,job.ProfileId,job.Design?.Name??renderProject.Name,renderedPage,count,session.Information.Advanced?brightness:100,message,DateTime.UtcNow,candidate.UsbId,session.Information.Touch,session.Information.Advanced,streamMeter.Latest is {} metrics?metrics with{Device=(session as DisplaySession)?.Measurements}:null));
                     }
                     else
                     {
@@ -109,7 +119,7 @@ sealed class DeviceWorker : IDisposable
                     if(primary)ScreenDelivery.Write(directory,job.Revision,"disconnected",ex.Message);
                     session?.Dispose();session=null;lastConfig="";lastHash=0;retryAfter=DateTime.UtcNow.AddSeconds(12);
                 }
-                if(repeatAnimation&&session!=null){pending=job with{Readings=job.Readings with{Now=DateTime.Now}};await Task.Delay(150,stopped.Token);}
+                if(repeatAnimation&&session!=null){int delay=streamMeter.DelayMilliseconds(job.Design?.StreamingQuality??AnimationQuality.Balanced,frameClock.Elapsed.TotalMilliseconds);if(delay>0)await Task.Delay(delay,stopped.Token);pending=job with{Readings=job.Readings with{Now=DateTime.Now}};}
             }
         }
         catch(Exception ex)when(ex is OperationCanceledException or ChannelClosedException){ }

@@ -85,7 +85,8 @@ sealed class TemplatePreviewWindow : Form
     public TemplatePreviewWindow(DesignTemplate item,bool apply,string? directory=null)
     {
         Text="Qscreen · "+item.Manifest.Name;Size=new(650,800);MinimumSize=new(540,650);BackColor=StudioTheme.Background;ForeColor=StudioTheme.Text;StartPosition=FormStartPosition.CenterParent;
-        var details=StudioTheme.Label("",12,true,120);details.Padding=new(18,8,18,0);
+        var details=StudioTheme.Label("",11,true,170);details.Padding=new(18,8,18,0);
+        string motionNote=MotionTemplateMetadata.Describe(item.Design);
         var demoMode=new CheckBox{Text="Demowaarden",Checked=directory==null,AutoSize=true,Padding=new(6,12,0,0)};LiveTelemetry? snapshot=null;DateTime nextSnapshot=default;
         var still=DesignSnapshot.Capture(item.Design).Restore();still.AnimationsEnabled=false;
         var controls=new FlowLayoutPanel{Dock=DockStyle.Bottom,Height=110,Padding=new(12)};
@@ -96,7 +97,7 @@ sealed class TemplatePreviewWindow : Form
         {
             if(directory!=null&&DateTime.UtcNow>=nextSnapshot){snapshot=LiveTelemetry.Read(directory,DateTime.UtcNow);nextSnapshot=DateTime.UtcNow.AddSeconds(1);}
             var readings=demoMode.Checked?ScreenReadings.Demo:snapshot is {} live?live.Readings with{Now=DateTime.Now}:LiveTelemetry.Unavailable(DateTime.Now);
-            details.Text=item.Manifest.Name+"\n"+item.Manifest.Description+"\n"+(demoMode.Checked?"DEMO · testwaarden, geen actuele sensormeting.":LiveTelemetry.Summary(snapshot));
+            details.Text=item.Manifest.Name+"\n"+item.Manifest.Description+"\n"+motionNote+"\n"+(demoMode.Checked?"DEMO · testwaarden, geen actuele sensormeting.":LiveTelemetry.Summary(snapshot));
             var old=preview.Image;preview.Image=renderer.Render(paused?still:item.Design,readings);old?.Dispose();timer.Interval=!paused&&(DesignRenderer.IsAnimated(item.Design)||renderer.HasPendingMotion||renderer.HasAnimatedBackground)?100:1000;
         }
         timer.Tick+=(_,_)=>{if(Visible&&WindowState!=FormWindowState.Minimized)Render();};Controls.Add(preview);Controls.Add(controls);Controls.Add(details);Render();timer.Start();StudioTheme.FitWindow(this,new(650,800),new(540,650));

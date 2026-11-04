@@ -17,9 +17,12 @@ sealed class SerialFrameConnection(SerialPort port) : IEventFrameConnection
     public string ReadLine() => port.ReadLine().Trim();
 }
 
-sealed class CustomScreenSender(IFrameConnection connection,Action<string>? onEvent=null)
+sealed class CustomScreenSender(IFrameConnection connection,Action<string>? onEvent=null,bool patchSupported=false)
 {
     bool? supported;
+    byte[]? previousFrame;
+    public int LastPayloadBytes {get;private set;}
+    public void InvalidateBaseline()=>previousFrame=null;
     public const int FrameBytes = 412 * 412 * 2;
     public static uint Hash(byte[] bytes)
     {
@@ -41,12 +44,18 @@ sealed class CustomScreenSender(IFrameConnection connection,Action<string>? onEv
         throw new IOException("Onverwacht antwoord van Qscreen.");
     }
     public void Control(string command,string expected){connection.WriteLine(command);Expect(expected);}
+    public string ReadStatistics()
+    {
+        connection.WriteLine("STATS");
+        for(int i=0;i<128;i++){string line=connection.ReadLine().Trim();if(line.StartsWith("QSTATS;",StringComparison.Ordinal))return line;if(line.StartsWith("EVENT;",StringComparison.Ordinal))onEvent?.Invoke(line);}
+        throw new IOException("Schermstatistieken ontbreken.");
+    }
     public void PollEvents()
     {
         if(connection is not IEventFrameConnection events)return;
         for(int i=0;i<16&&events.HasData;i++){string line=events.ReadLine().Trim();if(line.StartsWith("EVENT;",StringComparison.Ordinal))onEvent?.Invoke(line);}
     }
-    public bool Send(byte[] bytes)
+    public bool Send(byte[] bytes,Action<int>? progress=null)
     {
         if(bytes.Length!=FrameBytes)throw new ArgumentException("Invalid frame length.");
         if(supported==null)
@@ -56,16 +65,24 @@ sealed class CustomScreenSender(IFrameConnection connection,Action<string>? onEv
             catch(Exception ex) when(ex is TimeoutException or NotSupportedException) { supported=false; }
         }
         if(supported!=true)return false;
-        connection.WriteLine("FRAME2="+FrameBytes.ToString(CultureInfo.InvariantCulture)+","+Hash(bytes).ToString(CultureInfo.InvariantCulture));
+        byte[] payload=patchSupported&&previousFrame!=null?FramePatch.Create(previousFrame,bytes)??bytes:bytes;
+        bool patch=!ReferenceEquals(payload,bytes);LastPayloadBytes=payload.Length;
+        // A failed transfer invalidates the delta baseline. Next attempt is a complete frame.
+        previousFrame=null;
+        connection.WriteLine(patch?"PATCH1="+payload.Length.ToString(CultureInfo.InvariantCulture)+","+Hash(payload).ToString(CultureInfo.InvariantCulture)+","+Hash(bytes).ToString(CultureInfo.InvariantCulture):"FRAME2="+FrameBytes.ToString(CultureInfo.InvariantCulture)+","+Hash(bytes).ToString(CultureInfo.InvariantCulture));
         Expect("FRAMEREADY");
+        progress?.Invoke(0);
         // Never outrun the ESP32 RX queue: wait after each complete 1024-byte block.
-        for(int offset=0;offset<bytes.Length;offset+=1024)
+        for(int offset=0;offset<payload.Length;offset+=1024)
         {
-            int count=Math.Min(1024,bytes.Length-offset);
-            connection.Write(bytes,offset,count);
-            if(offset+count<bytes.Length)Expect("FRAMECHUNK");
+            int count=Math.Min(1024,payload.Length-offset);
+            connection.Write(payload,offset,count);
+            if(offset+count<payload.Length)Expect("FRAMECHUNK");
+            if(offset+count<payload.Length)progress?.Invoke((offset+count)*100/payload.Length);
         }
         Expect("FRAMEOK");
+        progress?.Invoke(100);
+        if(patchSupported)previousFrame=(byte[])bytes.Clone();
         return true;
     }
 }

@@ -113,7 +113,7 @@ sealed class AdvancedStudioWindow : Form
                 devices.Items.Clear();foreach(string id in ids)devices.Items.Add(runtime.First(d=>d.DeviceId==id));
                 int index=Array.IndexOf(ids,current);if(devices.Items.Count>0)devices.SelectedIndex=Math.Max(0,index);
             }
-            var selected=SelectedRuntime();if(selected!=null)deviceStatus.Text=$"{selected.Name} · {selected.Port} · {(selected.Connected?"Verbonden":"Niet verbonden")}\nFirmware: {selected.Firmware}\nProfiel: {selected.ProfileName} · pagina {selected.Page+1}/{selected.PageCount}\n{selected.Message}";
+            var selected=SelectedRuntime();if(selected!=null){deviceStatus.Height=170;deviceStatus.Text=$"{selected.Name} · {selected.Port} · {(selected.Connected?"Verbonden":"Niet verbonden")}\nFirmware: {selected.Firmware}\nProfiel: {selected.ProfileName} · pagina {selected.Page+1}/{selected.PageCount}\n{selected.Message}\n"+(selected.Performance?.Description??"USB-prestatiemeting nog niet beschikbaar. Vrij ESP-geheugen: onbekend.");}
             liveBrightness.Enabled=selected is {Connected:true,AdvancedControls:true};
             devices.Invalidate();
         }

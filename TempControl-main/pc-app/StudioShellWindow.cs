@@ -31,6 +31,7 @@ sealed class StudioShellWindow : Form
         Button(navigation,"PC Monitor",()=>Manage("Historie"));Button(navigation,"Apparaten",()=>Manage("Apparaten"));
         Button(actions,"+ Eigen ontwerp",NewDesign,true);
         var more=new ContextMenuStrip();
+        more.Items.Add("Motion Studio",null,(_,_)=>{ResumeDesign();editor?.OpenMotionStudio();});
         var resume=more.Items.Add("Verder met open ontwerp",null,(_,_)=>ResumeDesign());more.Opening+=(_,_)=>resume.Enabled=editor is{IsDisposed:false};
         foreach(string section in new[]{"Automatisch wisselen","Waarschuwingen","Design Hub"})more.Items.Add(section,null,(_,_)=>Manage(section));
         more.Items.Add("Ingebouwde layouts",null,(_,_)=>Cached("legacy",()=>new SettingsWindow()));

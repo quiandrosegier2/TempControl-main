@@ -86,6 +86,7 @@ sealed class ScreenDesign
     public BackgroundFit Fit { get; set; } = BackgroundFit.Cover;
     public int Darken { get; set; } = 25;
     public List<ScreenWidget> Widgets { get; set; } = [];
+    public List<MotionLayer> MotionLayers {get;set;}=[];
     public List<DisplayPage> Pages { get; set; }=[];
     public List<TouchZone> TouchZones { get; set; }=[];
     public bool RotatePages { get; set; }
@@ -94,6 +95,7 @@ sealed class ScreenDesign
     public PageAnimation Animation { get; set; }
     public float AnimationSpeed { get; set; }=1;
     public bool AnimationsEnabled { get; set; }=true;
+    public AnimationQuality StreamingQuality {get;set;}=AnimationQuality.Balanced;
 
     public static ScreenDesign CreateDefault() => new()
     {
@@ -130,7 +132,7 @@ static class DesignFiles
         {
             if(document.RootElement.ValueKind!=JsonValueKind.Object)throw new InvalidDataException("Ongeldig ontwerpobject.");
             static void Limit(JsonElement element,string name,int count){if(element.TryGetProperty(name,out var array)&&array.ValueKind==JsonValueKind.Array&&array.GetArrayLength()>count)throw new InvalidDataException("Te veel onderdelen: "+name);}
-            Limit(document.RootElement,"Widgets",64);Limit(document.RootElement,"TouchZones",64);Limit(document.RootElement,"Pages",1024);
+            Limit(document.RootElement,"MotionLayers",12);Limit(document.RootElement,"Widgets",64);Limit(document.RootElement,"TouchZones",64);Limit(document.RootElement,"Pages",1024);
             if(document.RootElement.TryGetProperty("Pages",out var pages)&&pages.ValueKind==JsonValueKind.Array)foreach(var page in pages.EnumerateArray())if(page.ValueKind==JsonValueKind.Object){Limit(page,"Widgets",64);Limit(page,"TouchZones",64);}
         }
         var design = JsonSerializer.Deserialize<ScreenDesign>(json, Json) ?? throw new InvalidDataException("Leeg ontwerp.");
@@ -141,8 +143,10 @@ static class DesignFiles
         if (!Enum.IsDefined(design.Fit)) throw new InvalidDataException("Onbekende achtergrondmodus.");
         design.Darken = Math.Clamp(design.Darken, 0, 100);
         if(design.Pages==null||design.TouchZones==null||design.Pages.Count>1024||design.TouchZones.Count>64||!Enum.IsDefined(design.Transition)||!Enum.IsDefined(design.Animation))throw new InvalidDataException("Ongeldige pagina's of aanraakzones.");
+        MotionLayer.Validate(design.MotionLayers);
         design.RotationSeconds=Math.Clamp(design.RotationSeconds,2,3600);
         if(!float.IsFinite(design.AnimationSpeed)||design.AnimationSpeed is <0.1f or >5)throw new InvalidDataException("Animatiesnelheid: 0,1 tot 5.");
+        if(!Enum.IsDefined(design.StreamingQuality))throw new InvalidDataException("Onbekende animatiekwaliteit.");
         foreach(var zone in design.TouchZones)if(zone==null||zone.Name==null||zone.Name.Length>120||!Enum.IsDefined(zone.Action)||zone.Width<1||zone.Height<1||zone.Width>824||zone.Height>824||zone.X is < -412 or >412||zone.Y is < -412 or >412)throw new InvalidDataException("Ongeldige aanraakzone.");
         foreach(var page in design.Pages)
         {
@@ -167,7 +171,8 @@ static class DesignFiles
         {
             try
             {
-                using var stream = new MemoryStream(Convert.FromBase64String(design.BackgroundPng));
+                byte[] encoded=Convert.FromBase64String(design.BackgroundPng);using var stream = new MemoryStream(encoded);
+                if(GifAnimation.IsGif(encoded))GifAnimation.Inspect(encoded);
                 using var image = Image.FromStream(stream);
                 if (image.Width > 2048 || image.Height > 2048) throw new InvalidDataException("Achtergrond is te groot.");
                 int frames=image.FrameDimensionsList.Contains(System.Drawing.Imaging.FrameDimension.Time.Guid)?image.GetFrameCount(System.Drawing.Imaging.FrameDimension.Time):1;
@@ -204,6 +209,10 @@ static class DesignFiles
 
 sealed class DesignRenderer : IDisposable
 {
+    readonly MotionLayerRenderer motion=new();
+    public double? MotionTimeSeconds {get;set;}
+    public bool ReactivePreview {get;set;}
+    public int[] CurrentMotionFrames=>motion.CurrentFrames;
     readonly Dictionary<ScreenWidget,(float From,float Target,DateTime Changed)> meters=new();
     public bool HasPendingMotion {get;private set;}
     readonly Dictionary<(string Family,float Size,FontStyle Style),Font> fonts=new();
@@ -212,9 +221,11 @@ sealed class DesignRenderer : IDisposable
     MemoryStream? backgroundStream;
     int[] frameDelays=[];
     public bool HasAnimatedBackground=>frameDelays.Length>1;
+    public int? CurrentGifFrameIndex {get;private set;}
     string? cachedBackground;
     public Bitmap Render(ScreenDesign design, ScreenReadings readings)
     {
+        DateTime animationNow=MotionTimeSeconds.HasValue?DateTime.Today.AddSeconds(MotionTimeSeconds.Value):readings.Now;
         HasPendingMotion=false;
         var bitmap = new Bitmap(412, 412, PixelFormat.Format24bppRgb);
         using var g = Graphics.FromImage(bitmap);
@@ -223,21 +234,22 @@ sealed class DesignRenderer : IDisposable
         g.TextRenderingHint = TextRenderingHint.AntiAliasGridFit;
         if (cachedBackground != design.BackgroundPng)
         {
-            background?.Dispose();backgroundStream?.Dispose(); background = null; cachedBackground = design.BackgroundPng;frameDelays=[];
+            background?.Dispose();backgroundStream?.Dispose(); background = null; cachedBackground = design.BackgroundPng;frameDelays=[];CurrentGifFrameIndex=null;
             if (!string.IsNullOrEmpty(cachedBackground))
             {
-                backgroundStream=new MemoryStream(Convert.FromBase64String(cachedBackground));background=Image.FromStream(backgroundStream);
+                byte[] encoded=Convert.FromBase64String(cachedBackground);backgroundStream=new MemoryStream(encoded);background=Image.FromStream(backgroundStream);
                 if(background.FrameDimensionsList.Contains(FrameDimension.Time.Guid))
                 {
                     int count=background.GetFrameCount(FrameDimension.Time);frameDelays=Enumerable.Repeat(100,count).ToArray();
                     try{var delays=background.GetPropertyItem(0x5100)?.Value;if(delays!=null)for(int i=0;i<count&&i*4+4<=delays.Length;i++)frameDelays[i]=Math.Clamp(BitConverter.ToInt32(delays,i*4)*10,20,10000);}catch(ArgumentException){ }
+                    if(GifAnimation.IsGif(encoded))frameDelays=GifAnimation.Inspect(encoded).DelaysMs;
                 }
             }
         }
         using var circle = new GraphicsPath(); circle.AddEllipse(0, 0, 412, 412); g.SetClip(circle);
         if (background != null)
         {
-            if(frameDelays.Length>1){int phase=design.AnimationsEnabled?(int)(readings.Now.TimeOfDay.TotalMilliseconds*design.AnimationSpeed%frameDelays.Sum()):0,index=0;while(index<frameDelays.Length-1&&phase>=frameDelays[index]){phase-=frameDelays[index];index++;}background.SelectActiveFrame(FrameDimension.Time,index);}
+            if(frameDelays.Length>1){int phase=design.AnimationsEnabled?(int)(animationNow.TimeOfDay.TotalMilliseconds*design.AnimationSpeed%frameDelays.Sum()):0,index=0;while(index<frameDelays.Length-1&&phase>=frameDelays[index]){phase-=frameDelays[index];index++;}background.SelectActiveFrame(FrameDimension.Time,index);CurrentGifFrameIndex=index;}
             float scale = design.Fit == BackgroundFit.Cover ? Math.Max(412f / background.Width, 412f / background.Height) : Math.Min(412f / background.Width, 412f / background.Height);
             float width = design.Fit == BackgroundFit.Stretch ? 412 : background.Width * scale;
             float height = design.Fit == BackgroundFit.Stretch ? 412 : background.Height * scale;
@@ -246,7 +258,8 @@ sealed class DesignRenderer : IDisposable
         }
         if(readings.Weather!=null&&design.Widgets.Any(w=>w.Visible&&w.Kind==WidgetKind.WeatherIcon&&w.WeatherDayNight)){using var mode=new SolidBrush(readings.Weather.Day?Color.FromArgb(55,100,180,240):Color.FromArgb(35,0,0,25));g.FillRectangle(mode,0,0,412,412);}
         using (var shade = new SolidBrush(Color.FromArgb((int)(Math.Clamp(design.Darken, 0, 100) * 2.55), Color.Black))) g.FillRectangle(shade, 0, 0, 412, 412);
-        if(design.AnimationsEnabled)DrawAnimation(g,design.Animation,readings.Now,design.AnimationSpeed);
+        if(design.AnimationsEnabled)DrawAnimation(g,design.Animation,animationNow,design.AnimationSpeed);
+        motion.Draw(g,design,readings,MotionTimeSeconds,ReactivePreview);
         foreach (var w in design.Widgets.Where(w => w.Visible))
         {
             var bounds = new RectangleF(w.X, w.Y, Math.Clamp(w.Width, 1, 824), Math.Clamp(w.Height, 1, 824));
@@ -343,7 +356,7 @@ sealed class DesignRenderer : IDisposable
         if(fonts.Count>=64){foreach(var old in fonts.Values)old.Dispose();fonts.Clear();}
         font=CreateFont(family,size,style);fonts.Add(key,font);return font;
     }
-    public static bool IsAnimated(ScreenDesign design)=>design.AnimationsEnabled&&(design.Animation!=PageAnimation.None||design.Widgets.Any(w=>w.Visible&&(w.Motion!=WidgetMotion.None||w.Kind==WidgetKind.AnalogClock)));
+    public static bool IsAnimated(ScreenDesign design)=>design.AnimationsEnabled&&(design.MotionLayers.Any(l=>l.IsAnimated)||design.Animation!=PageAnimation.None||design.Widgets.Any(w=>w.Visible&&(w.Motion!=WidgetMotion.None||w.Kind==WidgetKind.AnalogClock)));
     static void DrawAnimation(Graphics g,PageAnimation style,DateTime now,float speed)
     {
         if(style==PageAnimation.None)return;double phase=now.TimeOfDay.TotalSeconds*speed;
@@ -353,5 +366,5 @@ sealed class DesignRenderer : IDisposable
         else if(style==PageAnimation.Pulse){int radius=160+(int)(Math.Sin(phase*2)*20);g.DrawEllipse(pen,206-radius,206-radius,radius*2,radius*2);}
         else for(int i=0;i<24;i++){double angle=i*2.399+phase*.35;double radius=style==PageAnimation.Orbit?155+12*Math.Sin(i):20+((phase*40+i*17)%170);float x=206+(float)(Math.Cos(angle)*radius),y=206+(float)(Math.Sin(angle)*radius);g.FillEllipse(brush,x-2,y-2,4,4);}
     }
-    public void Dispose(){background?.Dispose();backgroundStream?.Dispose();foreach(var font in fonts.Values)font.Dispose();fonts.Clear();}
+    public void Dispose(){motion.Dispose();background?.Dispose();backgroundStream?.Dispose();foreach(var font in fonts.Values)font.Dispose();fonts.Clear();}
 }

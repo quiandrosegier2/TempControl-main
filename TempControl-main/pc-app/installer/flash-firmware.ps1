@@ -2,13 +2,14 @@
 param([switch]$ValidateOnly)
 
 $ErrorActionPreference = 'Stop'
+. (Join-Path $PSScriptRoot 'firmware-safety.ps1')
 function Stop-MonitoringProcesses {
     # Layout Studio uses the same executable and must stay open during uploads.
     Get-CimInstance Win32_Process -Filter "Name='Qscreen.exe' OR Name='TempMonitor.exe'" | Where-Object {
         $_.CommandLine -notmatch '(?i)(?:^|\s)--settings(?:\s|$)' -and
         ($_.Name -eq 'TempMonitor.exe' -or $_.CommandLine -match '(?i)(?:^|\s)--(?:monitor|port)(?:\s|$)')
     } | ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }
-    Get-Process -Name PresentMon -ErrorAction SilentlyContinue | Stop-Process -Force
+    Get-Process -Name PresentMon -ErrorAction SilentlyContinue | Where-Object { $_.Path -eq (Join-Path $PSScriptRoot 'PresentMon.exe') } | Stop-Process -Force
 }
 $image = Join-Path $PSScriptRoot 'firmware\TempControl.factory.bin'
 $tool = Join-Path $PSScriptRoot 'firmware\esptool\esptool.exe'
@@ -72,7 +73,12 @@ $iconPath = Join-Path $PSScriptRoot 'branding\qprints.ico'
 if (Test-Path $iconPath) { $appIcon = [Drawing.Icon]::new($iconPath); $form.Icon = $appIcon }
 $intro = New-Object Windows.Forms.Label
 $intro.SetBounds(18, 65, 620, 100)
-$intro.Text = "Alleen voor Waveshare ESP32-S3-Touch-LCD-1.46 (16 MB).`r`nSluit het scherm aan met een USB-C-datakabel en kies de poort hieronder.`r`nGeen poort of geen verbinding? Houd BOOT ingedrukt, druk op RESET,`r`nlaat BOOT los en klik op Vernieuwen. De COM-poort kan dan veranderen.`r`nInstalleren vervangt de bestaande firmware op het geselecteerde scherm."
+$intro.Text = "Waveshare ESP32-S3-Touch-LCD-1.46 (16 MB). Kies je USB-poort.`r`nQscreen maakt eerst een volledige herstelkopie en controleert de indeling.`r`nBijwerken behoudt partities en gebruikersdata. BOOT/RESET bij verbindingsproblemen."
+$initialize = New-Object Windows.Forms.CheckBox
+$initialize.SetBounds(18,142,620,24)
+$initialize.Text = 'Nieuw leeg scherm initialiseren (alleen volledig gewist flashgeheugen)'
+$initialize.ForeColor = $form.ForeColor
+$form.Controls.Add($initialize)
 $ports = New-Object Windows.Forms.ComboBox
 $ports.SetBounds(18, 170, 440, 28)
 $ports.DropDownStyle = 'DropDownList'
@@ -164,22 +170,25 @@ $flash.Add_Click({
         New-Item -ItemType Directory -Path $logDir -Force | Out-Null
         $stdout = Join-Path $logDir 'firmware-upload.log'
         $stderr = Join-Path $logDir 'firmware-upload-error.log'
-        $log.Text = "Firmware wordt geschreven. Laat de USB-kabel aangesloten.`r`n"
-        $arguments = @('--chip', 'esp32s3', '--port', $selectedPort, '--baud', '460800',
-            '--before', 'default-reset', '--after', 'hard-reset', 'write-flash',
-            '--flash-size', '16MB', '0x0', ('"' + $image + '"'))
-        $process = Start-Process -FilePath $tool -ArgumentList $arguments -PassThru -WindowStyle Hidden `
-            -RedirectStandardOutput $stdout -RedirectStandardError $stderr
-        while (-not $process.HasExited) {
-            $log.Text = "Firmware wordt geschreven. Laat de USB-kabel aangesloten.`r`n" + (Get-Content $stdout -Raw -ErrorAction SilentlyContinue)
-            $log.SelectionStart = $log.TextLength
-            $log.ScrollToCaret()
-            [Windows.Forms.Application]::DoEvents()
-            Start-Sleep -Milliseconds 100
+        function Run-FirmwareTool([string[]]$Command,[string]$Caption) {
+            $arguments=@('--chip','esp32s3','--port',$selectedPort,'--baud','460800')+$Command
+            $script:firmwareProcess=Start-Process -FilePath $tool -ArgumentList $arguments -PassThru -WindowStyle Hidden -RedirectStandardOutput $stdout -RedirectStandardError $stderr
+            try {
+                while(!$script:firmwareProcess.HasExited){$log.Text=$Caption+"`r`n"+(Get-Content $stdout -Raw -ErrorAction SilentlyContinue);$log.SelectionStart=$log.TextLength;$log.ScrollToCaret();[Windows.Forms.Application]::DoEvents();Start-Sleep -Milliseconds 100}
+                $script:firmwareProcess.WaitForExit()
+                if($script:firmwareProcess.ExitCode -ne 0){throw ($Caption+" mislukt. "+(Get-Content $stderr -Raw -ErrorAction SilentlyContinue))}
+            }finally{$script:firmwareProcess.Dispose();$script:firmwareProcess=$null}
         }
-        $process.WaitForExit()
-        $log.Text = (Get-Content $stdout -Raw) + "`r`n" + (Get-Content $stderr -Raw)
-        if ($process.ExitCode -ne 0) { throw "Upload mislukt (code $($process.ExitCode)). Gebruik BOOT/RESET, klik op Vernieuwen en probeer opnieuw. Logs: $logDir" }
+        $backupDir=Join-Path $logDir ('firmware-backups/'+[DateTime]::UtcNow.ToString('yyyyMMdd-HHmmss')+'-'+[Guid]::NewGuid().ToString('N'))
+        New-Item -ItemType Directory -Path $backupDir -Force | Out-Null
+        $backup=Join-Path $backupDir 'flash-16MB.bin'
+        Run-FirmwareTool @('read-flash','0','0x1000000',('"'+$backup+'"')) 'Volledige herstelkopie maken. Laat de USB-kabel aangesloten.'
+        $plan=Get-SafeFirmwarePlan -Backup ([IO.File]::ReadAllBytes($backup)) -Factory ([IO.File]::ReadAllBytes($image)) -AllowBlank $initialize.Checked
+        $candidate=Join-Path $backupDir 'candidate.bin';[IO.File]::WriteAllBytes($candidate,$plan.Image)
+        (Get-FileHash -LiteralPath $backup -Algorithm SHA256).Hash | Set-Content (Join-Path $backupDir 'backup.sha256')
+        Run-FirmwareTool @('write-flash',$plan.Offset,('"'+$candidate+'"')) 'Gecontroleerde firmware schrijven'
+        Run-FirmwareTool @('verify-flash',$plan.Offset,('"'+$candidate+'"')) 'Geschreven firmware teruglezen en controleren'
+        $log.Text="Firmware geschreven en geverifieerd. Herstelkopie: "+$backupDir
         $log.AppendText("`r`nKlaar! Druk zo nodig op RESET of sluit het scherm opnieuw aan. Qscreen maakt automatisch verbinding.")
     } catch {
         $log.AppendText("`r`n$($_.Exception.Message)")
